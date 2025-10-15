@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Product from '@/lib/models/Product';
-import DiscountRule from '@/lib/models/DiscountRule';
-import { calculateCartTotal } from '@/lib/utils/discountCalculator';
-import { CartItem } from '@/types/cart';
+import db from '@/lib/db';
+import { calculateCart } from '@/lib/utils/discountCalculator';
 import { PaymentMethod } from '@/types/payment';
-import { IDiscountRule } from '@/types/discount';
+import { CartItemDiscounts } from '@/types/discount';
 
 interface CalculateRequestItem {
   productId?: string;
@@ -16,11 +13,11 @@ interface CalculateRequestItem {
 
 /**
  * POST /api/calculate
- * Calculate cart total with discounts
+ * Calculate cart total with discounts (v2 - 엑셀 로직 기반)
  */
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    await db.connect();
 
     const { items, paymentMethod } = await request.json() as {
       items: CalculateRequestItem[];
@@ -35,19 +32,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch all products
-    const productIds = items
-      .map((item) => item.productId)
-      .filter(Boolean);
-    const barcodes = items
-      .map((item) => item.barcode)
-      .filter(Boolean);
+    const products = [];
+    for (const item of items) {
+      let product = null;
 
-    const products = await Product.find({
-      $or: [
-        { _id: { $in: productIds } },
-        { barcode: { $in: barcodes } },
-      ],
-    });
+      if (item.barcode) {
+        product = await db.findProductByBarcode(item.barcode);
+      } else if (item.productId) {
+        product = await db.findProductById(item.productId);
+      }
+
+      if (product) {
+        products.push(product);
+      }
+    }
 
     if (products.length === 0) {
       return NextResponse.json(
@@ -56,59 +54,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Map products to cart items
-    const cartItems: CartItem[] = items
-      .map((item) => {
-        const product = products.find(
-          (p) =>
-            p._id.toString() === item.productId ||
-            p.barcode === item.barcode
-        );
-
-        if (!product) return null;
-
-        return {
-          product,
-          quantity: item.quantity,
-          selectedDiscountIds: item.selectedDiscountIds,
-        };
-      })
-      .filter((item): item is CartItem => item !== null);
-
     // Fetch all discount rules mentioned in the request
     const allDiscountIds = items
       .flatMap((item) => item.selectedDiscountIds || [])
-      .filter(Boolean);
+      .filter(Boolean) as string[];
 
-    const discountRules = await DiscountRule.find({
-      _id: { $in: allDiscountIds },
-    });
+    const discountRules = await db.findDiscountRulesByIds(allDiscountIds);
 
-    // Build discount map: productId -> discount rules
-    const itemDiscounts = new Map<string, IDiscountRule[]>();
+    // Build discount selections: productId -> discount rules
+    const discountSelections: CartItemDiscounts[] = [];
 
     for (const item of items) {
       const product = products.find(
         (p) =>
-          p._id.toString() === item.productId ||
+          String(p._id) === item.productId ||
           p.barcode === item.barcode
       );
 
       if (!product || !item.selectedDiscountIds) continue;
 
       const productDiscounts = discountRules.filter((d) =>
-        item.selectedDiscountIds!.includes(d._id.toString())
+        item.selectedDiscountIds!.includes(String(d._id))
       );
 
-      itemDiscounts.set(product._id.toString(), productDiscounts);
+      if (productDiscounts.length > 0) {
+        discountSelections.push({
+          productId: product._id,
+          productBarcode: product.barcode,
+          selectedDiscounts: productDiscounts,
+        });
+      }
     }
 
-    // Calculate cart total
-    const result = calculateCartTotal(
-      cartItems,
-      itemDiscounts,
-      paymentMethod
-    );
+    // Build cart items for calculation
+    const cartItems = items
+      .map((item) => {
+        const product = products.find(
+          (p) =>
+            String(p._id) === item.productId ||
+            p.barcode === item.barcode
+        );
+
+        if (!product) return null;
+
+        return {
+          productId: product._id,
+          quantity: item.quantity,
+          unitPrice: product.price,
+          productCategory: product.category,
+          productBrand: product.brand,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    // Calculate cart total using v2 engine
+    const result = calculateCart({
+      items: cartItems,
+      discountSelections,
+      paymentMethod,
+      currentDate: new Date(),
+    });
 
     return NextResponse.json({
       success: true,

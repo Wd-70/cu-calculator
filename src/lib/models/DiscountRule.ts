@@ -1,5 +1,51 @@
 import mongoose, { Schema, Model } from 'mongoose';
-import { IDiscountRule } from '@/types/discount';
+import { IDiscountRule, DiscountConfig } from '@/types/discount';
+
+/**
+ * DiscountConfig를 위한 서브스키마
+ * 6가지 할인 카테고리를 지원
+ */
+const DiscountConfigSchema = new Schema({
+  category: {
+    type: String,
+    required: true,
+    enum: ['coupon', 'telecom', 'payment_event', 'voucher', 'payment_instant', 'payment_compound'],
+  },
+  valueType: {
+    type: String,
+    required: true,
+    enum: ['percentage', 'fixed_amount', 'tiered_amount', 'voucher_amount'],
+  },
+
+  // 공통 필드
+  percentage: Number,
+  fixedAmount: Number,
+
+  // 통신사 할인 (구간 방식)
+  tierUnit: Number,
+  tierAmount: Number,
+  provider: String,
+  canCombineWithMembership: Boolean,
+
+  // 결제행사 할인
+  requiresQR: Boolean,
+  eventName: String,
+  restrictedProviders: [String],
+  blockedInPocketCU: Boolean,
+
+  // 금액권
+  amount: Number,
+  voucherType: String,
+  voucherName: String,
+
+  // 결제 할인(독립형)
+  isNaverPlus: Boolean,
+  canCombineWithNaverCard: Boolean,
+
+  // 쿠폰 할인
+  subscriptionCost: Number,
+  usageLimit: Number,
+}, { _id: false });
 
 const DiscountRuleSchema = new Schema<IDiscountRule>(
   {
@@ -7,52 +53,48 @@ const DiscountRuleSchema = new Schema<IDiscountRule>(
       type: String,
       required: true,
     },
-    type: {
-      type: String,
-      required: true,
-      enum: ['bundle', 'percentage', 'fixed', 'gift'],
-    },
     description: String,
 
-    // Discount logic
-    discountValue: Number,
-    requiredQuantity: Number,
-    freeQuantity: Number,
+    // 할인 설정 (v2)
+    config: {
+      type: DiscountConfigSchema,
+      required: true,
+    },
 
-    // Application conditions
-    minPurchase: Number,
-    maxDiscount: Number,
-
-    // Product targeting
+    // 적용 대상
     applicableProducts: [{
       type: Schema.Types.ObjectId,
       ref: 'Product',
     }],
     applicableCategories: [String],
+    applicableBrands: [String],
 
-    // Payment method restrictions
+    // 결제수단 제약
     requiredPaymentMethods: [String],
     paymentMethodNames: [String],
 
-    // Combination rules
-    canCombineWith: [Schema.Types.Mixed], // Can be ObjectId or string
-    cannotCombineWith: [Schema.Types.Mixed],
-    applicationOrder: {
-      type: Number,
-      required: true,
-      default: 1,
-    },
-    requiresPreviousDiscount: Schema.Types.Mixed,
+    // 중복 적용 규칙 (v2)
+    cannotCombineWithCategories: [String],
+    cannotCombineWithIds: [Schema.Types.Mixed],
+    requiresDiscountId: Schema.Types.Mixed,
 
-    // Event information
-    eventMonth: String, // Format: "2025-10"
+    // 최소 구매 조건
+    minPurchaseAmount: Number,
+    minQuantity: Number,
+
+    // 최대 할인 제한
+    maxDiscountAmount: Number,
+    maxDiscountPerItem: Number,
+
+    // 행사 정보
+    eventMonth: String,
     eventName: String,
     isRecurring: {
       type: Boolean,
       default: false,
     },
 
-    // Validity period
+    // 유효 기간
     validFrom: {
       type: Date,
       required: true,
@@ -62,9 +104,13 @@ const DiscountRuleSchema = new Schema<IDiscountRule>(
       required: true,
     },
 
-    // Crawling metadata
+    // 메타데이터
     sourceUrl: String,
     lastCrawledAt: Date,
+    priority: {
+      type: Number,
+      default: 0,
+    },
 
     isActive: {
       type: Boolean,
@@ -78,8 +124,10 @@ const DiscountRuleSchema = new Schema<IDiscountRule>(
 
 // Indexes for better query performance
 DiscountRuleSchema.index({ isActive: 1, validFrom: 1, validTo: 1 });
+DiscountRuleSchema.index({ 'config.category': 1, isActive: 1 });
 DiscountRuleSchema.index({ eventMonth: 1, isActive: 1 });
 DiscountRuleSchema.index({ applicableProducts: 1 });
+DiscountRuleSchema.index({ applicableCategories: 1 });
 
 const DiscountRule: Model<IDiscountRule> =
   mongoose.models.DiscountRule || mongoose.model<IDiscountRule>('DiscountRule', DiscountRuleSchema);

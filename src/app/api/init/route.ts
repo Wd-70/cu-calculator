@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/db';
+import db from '@/lib/db';
 import { seedDatabase } from '@/lib/db/seed-data';
 
 /**
@@ -10,7 +10,6 @@ import { seedDatabase } from '@/lib/db/seed-data';
  */
 export async function POST() {
   try {
-    const db = getDatabase();
     await db.connect();
 
     await seedDatabase(db);
@@ -38,7 +37,6 @@ export async function POST() {
  */
 export async function GET() {
   try {
-    const db = getDatabase();
     await db.connect();
 
     const productCount = await db.countProducts();

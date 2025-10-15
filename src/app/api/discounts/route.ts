@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import DiscountRule from '@/lib/models/DiscountRule';
+import db from '@/lib/db';
 
 /**
  * GET /api/discounts
@@ -8,39 +7,39 @@ import DiscountRule from '@/lib/models/DiscountRule';
  */
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    await db.connect();
 
     const searchParams = request.nextUrl.searchParams;
     const active = searchParams.get('active');
-    const type = searchParams.get('type');
+    const category = searchParams.get('category');
     const month = searchParams.get('month');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const paymentMethod = searchParams.get('paymentMethod');
     const includeExpired = searchParams.get('includeExpired') === 'true';
 
-    // Build query
-    const query: Record<string, unknown> = {};
+    // Build query filter
+    const filter: Record<string, unknown> = {};
 
     if (active !== null) {
-      query.isActive = active === 'true';
+      filter.isActive = active === 'true';
     }
 
-    if (type) {
-      query.type = type;
+    if (category) {
+      filter['config.category'] = category;
     }
 
     if (month) {
-      query.eventMonth = month;
+      filter.eventMonth = month;
     }
 
     // Date range filtering
     if (!includeExpired) {
-      query.validTo = { $gte: new Date() };
+      filter.validTo = { $gte: new Date() };
     }
 
     if (startDate && endDate) {
-      query.$and = [
+      filter.$and = [
         { validFrom: { $lte: new Date(endDate) } },
         { validTo: { $gte: new Date(startDate) } },
       ];
@@ -48,13 +47,15 @@ export async function GET(request: NextRequest) {
 
     // Payment method filtering
     if (paymentMethod) {
-      query.$or = [
+      filter.$or = [
         { requiredPaymentMethods: { $size: 0 } }, // No restrictions
         { requiredPaymentMethods: paymentMethod },
       ];
     }
 
-    const discounts = await DiscountRule.find(query).sort({ applicationOrder: 1 });
+    const discounts = await db.findDiscountRules(filter, {
+      sort: { 'config.category': 1, priority: 1 },
+    });
 
     return NextResponse.json({
       success: true,
@@ -75,11 +76,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    await db.connect();
 
     const body = await request.json();
 
-    const discount = await DiscountRule.create(body);
+    const discount = await db.createDiscountRule(body);
 
     return NextResponse.json(
       {

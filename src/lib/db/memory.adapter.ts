@@ -61,6 +61,11 @@ function generateObjectId(): string {
   return timestamp + randomValue.padEnd(16, '0');
 }
 
+// Helper to get nested value
+function getNestedValue(obj: any, path: string): any {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
 // Helper to match filter
 function matchesFilter<T extends Record<string, any>>(
   item: T,
@@ -82,7 +87,8 @@ function matchesFilter<T extends Record<string, any>>(
   for (const [key, value] of Object.entries(filter)) {
     if (key === '$or' || key === '$and') continue;
 
-    const itemValue = item[key];
+    // Support nested paths like 'config.category'
+    const itemValue = key.includes('.') ? getNestedValue(item, key) : item[key];
 
     // Handle special operators
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -156,8 +162,9 @@ function applyQueryOptions<T>(items: T[], options?: QueryOptions): T[] {
     const sortEntries = Object.entries(options.sort);
     result.sort((a: any, b: any) => {
       for (const [key, order] of sortEntries) {
-        const aVal = a[key];
-        const bVal = b[key];
+        // Support nested paths like 'config.category'
+        const aVal = key.includes('.') ? getNestedValue(a, key) : a[key];
+        const bVal = key.includes('.') ? getNestedValue(b, key) : b[key];
         if (aVal < bVal) return order === 1 ? -1 : 1;
         if (aVal > bVal) return order === 1 ? 1 : -1;
       }

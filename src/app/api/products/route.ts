@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/db';
-
-const db = getDatabase();
+import db from '@/lib/db';
 
 /**
  * GET /api/products

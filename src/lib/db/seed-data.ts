@@ -1,8 +1,8 @@
 /**
- * Seed Data for Testing
+ * Seed Data for Testing (v2 - 엑셀 로직 기반)
  *
  * 테스트용 초기 데이터입니다.
- * 이 데이터를 사용하여 앱의 기능을 테스트할 수 있습니다.
+ * 6가지 할인 카테고리를 사용한 실제 할인 예시
  */
 
 import { IProduct } from '@/types/product';
@@ -90,14 +90,28 @@ export const sampleProducts: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>[]
     verificationCount: 5,
     reportCount: 0,
   },
+  {
+    barcode: '8801234567896',
+    name: '도시락 불고기',
+    price: 3300,
+    category: '도시락',
+    brand: 'CU',
+    imageUrl: '',
+    createdBy: 'system',
+    modificationCount: 0,
+    isVerified: true,
+    verificationCount: 5,
+    reportCount: 0,
+  },
 ];
 
-// 샘플 할인 규칙 (상품 ID는 나중에 매핑)
-export function getSampleDiscountRules(productIds: {
+// 샘플 할인 규칙 v2 (엑셀 로직 기반)
+export function getSampleDiscountRulesV2(productIds: {
   coke: string;
   sprite: string;
   pringles: string;
   honeyButter: string;
+  dosirak: string;
 }): Omit<IDiscountRule, '_id' | 'createdAt' | 'updatedAt'>[] {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -105,104 +119,240 @@ export function getSampleDiscountRules(productIds: {
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
   return [
-    // 1+1 음료 (코카콜라, 스프라이트)
+    // ============================================================================
+    // 1. 쿠폰 할인 (Coupon)
+    // ============================================================================
     {
-      name: '음료 1+1',
-      type: 'bundle',
-      requiredQuantity: 2,
-      freeQuantity: 1,
-      applicationOrder: 1,
+      name: '도시락 20% 쿠폰',
+      description: '도시락 카테고리 20% 할인 쿠폰',
+      config: {
+        category: 'coupon',
+        valueType: 'percentage',
+        percentage: 20,
+      },
+      applicableProducts: [],
+      applicableCategories: ['도시락'],
       requiredPaymentMethods: [],
       paymentMethodNames: [],
-      applicableProducts: [
-        new Types.ObjectId(productIds.coke),
-        new Types.ObjectId(productIds.sprite),
-      ],
-      applicableCategories: [],
-      canCombineWith: [],
-      cannotCombineWith: [],
       validFrom: monthStart,
       validTo: monthEnd,
       eventMonth: currentMonth,
-      eventName: `${currentMonth.split('-')[1]}월 음료 행사`,
+      eventName: `${currentMonth.split('-')[1]}월 도시락 쿠폰`,
       isActive: true,
     },
-
-    // 2+1 과자 (프링글스, 허니버터칩)
     {
-      name: '과자 2+1',
-      type: 'bundle',
-      requiredQuantity: 3,
-      freeQuantity: 1,
-      applicationOrder: 1,
+      name: '과자 25% 쿠폰',
+      description: '과자 카테고리 25% 할인 쿠폰',
+      config: {
+        category: 'coupon',
+        valueType: 'percentage',
+        percentage: 25,
+      },
+      applicableProducts: [],
+      applicableCategories: ['과자'],
       requiredPaymentMethods: [],
       paymentMethodNames: [],
-      applicableProducts: [
-        new Types.ObjectId(productIds.pringles),
-        new Types.ObjectId(productIds.honeyButter),
-      ],
-      applicableCategories: [],
-      canCombineWith: [],
-      cannotCombineWith: [],
       validFrom: monthStart,
       validTo: monthEnd,
       eventMonth: currentMonth,
-      eventName: `${currentMonth.split('-')[1]}월 과자 행사`,
+      eventName: `${currentMonth.split('-')[1]}월 과자 쿠폰`,
       isActive: true,
     },
 
-    // 전체 상품 20% 할인
+    // ============================================================================
+    // 2. 통신사 할인 (Telecom)
+    // ============================================================================
     {
-      name: '전체 상품 20% 할인',
-      type: 'percentage',
-      discountValue: 20,
-      applicationOrder: 2,
-      requiredPaymentMethods: [],
-      paymentMethodNames: [],
+      name: '우주패스 (1천원당 300원)',
+      description: '우주패스 통신사 할인 - 1천원당 300원 할인',
+      config: {
+        category: 'telecom',
+        valueType: 'tiered_amount',
+        tierUnit: 1000,
+        tierAmount: 300,
+        provider: '우주패스',
+        canCombineWithMembership: false,
+      },
       applicableProducts: [],
       applicableCategories: [],
-      canCombineWith: [],
-      cannotCombineWith: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
       validFrom: monthStart,
       validTo: monthEnd,
-      description: '모든 상품 20% 즉시 할인',
+      description: '우주패스 가입자 할인',
+      isActive: true,
+    },
+    {
+      name: 'KT알뜰 (1천원당 200원)',
+      description: 'KT알뜰 통신사 할인 - 1천원당 200원 할인',
+      config: {
+        category: 'telecom',
+        valueType: 'tiered_amount',
+        tierUnit: 1000,
+        tierAmount: 200,
+        provider: 'KT알뜰',
+        canCombineWithMembership: true, // KT알뜰은 멤버십과 중복 가능
+      },
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
+      validFrom: monthStart,
+      validTo: monthEnd,
+      description: 'KT알뜰 요금제 가입자 할인',
       isActive: true,
     },
 
-    // 신한카드 10% 할인
+    // ============================================================================
+    // 3. 결제행사 할인 (Payment Event)
+    // ============================================================================
     {
-      name: '신한카드 10% 할인',
-      type: 'percentage',
-      discountValue: 10,
-      maxDiscount: 3000,
-      applicationOrder: 3,
+      name: '결제행사 1000원 할인',
+      description: '결제행사 - 1000원 즉시 할인',
+      config: {
+        category: 'payment_event',
+        valueType: 'fixed_amount',
+        fixedAmount: 1000,
+        eventName: '1월 신년 결제행사',
+        requiresQR: false,
+      },
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
+      minPurchaseAmount: 2000, // 최소 2천원 이상 구매 시
+      validFrom: monthStart,
+      validTo: monthEnd,
+      eventMonth: currentMonth,
+      eventName: '1월 신년 결제행사',
+      isActive: true,
+    },
+    {
+      name: '결제행사 40% 할인',
+      description: '결제행사 - 40% 퍼센트 할인',
+      config: {
+        category: 'payment_event',
+        valueType: 'percentage',
+        percentage: 40,
+        eventName: '특별 할인 행사',
+        requiresQR: true,
+      },
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
+      validFrom: monthStart,
+      validTo: monthEnd,
+      eventMonth: currentMonth,
+      eventName: '특별 할인 행사',
+      isActive: true,
+    },
+
+    // ============================================================================
+    // 4. 금액권 (Voucher)
+    // ============================================================================
+    {
+      name: 'CU 1천원권',
+      description: 'CU 상품권 1,000원',
+      config: {
+        category: 'voucher',
+        valueType: 'voucher_amount',
+        amount: 1000,
+        voucherType: 'cu_voucher',
+        voucherName: 'CU 1천원권',
+      },
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
+      cannotCombineWithCategories: ['payment_instant'], // 독립형과 중복 불가
+      validFrom: monthStart,
+      validTo: monthEnd,
+      description: 'CU 상품권',
+      isActive: true,
+    },
+
+    // ============================================================================
+    // 5. 결제 할인(독립형) (Payment Instant)
+    // ============================================================================
+    {
+      name: '즉시할인 카드 25%',
+      description: '즉시할인형 카드 - 25% 할인 (정가 기준)',
+      config: {
+        category: 'payment_instant',
+        valueType: 'percentage',
+        percentage: 25,
+        provider: '신한카드',
+        isNaverPlus: false,
+      },
+      applicableProducts: [],
+      applicableCategories: [],
       requiredPaymentMethods: [PAYMENT_METHODS.CARD_SHINHAN],
       paymentMethodNames: ['신한카드'],
-      applicableProducts: [],
-      applicableCategories: [],
-      canCombineWith: [],
-      cannotCombineWith: [],
+      cannotCombineWithCategories: ['voucher'], // 금액권과 중복 불가
       validFrom: monthStart,
       validTo: monthEnd,
-      description: '신한카드로 결제 시 10% 할인 (최대 3천원)',
+      description: '신한카드 즉시할인 25%',
+      isActive: true,
+    },
+    {
+      name: '네이버플러스 멤버십 10%',
+      description: '네이버플러스 멤버십 - 10% 할인',
+      config: {
+        category: 'payment_instant',
+        valueType: 'percentage',
+        percentage: 10,
+        provider: '네이버플러스',
+        isNaverPlus: true,
+        canCombineWithNaverCard: true, // 네이버페이 카드와 중복 가능
+      },
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [PAYMENT_METHODS.NAVER_PAY],
+      paymentMethodNames: ['네이버페이'],
+      validFrom: monthStart,
+      validTo: monthEnd,
+      description: '네이버플러스 멤버십 회원 할인',
       isActive: true,
     },
 
-    // 멤버십 5% 추가 할인
+    // ============================================================================
+    // 6. 결제 할인(누적형) (Payment Compound)
+    // ============================================================================
     {
-      name: '멤버십 5% 추가할인',
-      type: 'percentage',
-      discountValue: 5,
-      applicationOrder: 4,
-      requiredPaymentMethods: [],
-      paymentMethodNames: [],
+      name: '오키클럽 10% 추가할인',
+      description: '오키클럽 - 10% 추가할인 (누적 금액 기준)',
+      config: {
+        category: 'payment_compound',
+        valueType: 'percentage',
+        percentage: 10,
+        provider: '오키클럽',
+      },
       applicableProducts: [],
       applicableCategories: [],
-      canCombineWith: [],
-      cannotCombineWith: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
       validFrom: monthStart,
-      validTo: new Date(now.getFullYear(), now.getMonth() + 3, 0), // 3개월 후
-      description: 'CU 멤버십 회원 추가 5% 할인',
+      validTo: monthEnd,
+      description: '오키클럽 회원 누적 할인',
+      isActive: true,
+    },
+    {
+      name: 'KB국민카드 청구할인 5%',
+      description: 'KB국민카드 청구할인형 - 5% 할인',
+      config: {
+        category: 'payment_compound',
+        valueType: 'percentage',
+        percentage: 5,
+        provider: 'KB국민카드',
+      },
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [PAYMENT_METHODS.CARD_KB],
+      paymentMethodNames: ['KB국민카드'],
+      validFrom: monthStart,
+      validTo: monthEnd,
+      description: 'KB국민카드 청구할인',
       isActive: true,
     },
   ];
@@ -210,7 +360,7 @@ export function getSampleDiscountRules(productIds: {
 
 // 데이터베이스 초기화 함수
 export async function seedDatabase(db: any): Promise<void> {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 Seeding database with v2 structure...');
 
   try {
     // 1. 상품 생성
@@ -227,27 +377,31 @@ export async function seedDatabase(db: any): Promise<void> {
       }
     }
 
-    // 2. 할인 규칙 생성
+    // 2. 할인 규칙 생성 (v2)
     const productIdMap = {
       coke: createdProducts[0]._id.toString(),
       sprite: createdProducts[1]._id.toString(),
       pringles: createdProducts[2]._id.toString(),
       honeyButter: createdProducts[3]._id.toString(),
+      dosirak: createdProducts[6]._id.toString(),
     };
 
-    const discountRules = getSampleDiscountRules(productIdMap);
+    const discountRules = getSampleDiscountRulesV2(productIdMap);
 
     for (const ruleData of discountRules) {
       const existing = await db.findDiscountRules({ name: ruleData.name });
       if (existing.length === 0) {
         const rule = await db.createDiscountRule(ruleData);
-        console.log(`✅ Created discount rule: ${rule.name}`);
+        console.log(`✅ Created discount rule (v2): ${rule.name} [${rule.config.category}]`);
       } else {
         console.log(`⏭️  Discount rule already exists: ${ruleData.name}`);
       }
     }
 
-    console.log('✨ Database seeding completed!');
+    console.log('\n✨ Database seeding completed (v2)!');
+    console.log('📊 Created:');
+    console.log(`   - ${sampleProducts.length} products`);
+    console.log(`   - ${discountRules.length} discount rules across 6 categories`);
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;
