@@ -17,7 +17,7 @@ export default function Home() {
               </div>
             </div>
             <Link
-              href="/cart"
+              href="/carts"
               className="relative p-3 hover:bg-gray-100 rounded-xl transition-all"
             >
               <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,8 +186,27 @@ export default function Home() {
 
       {/* 푸터 */}
       <footer className="bg-gray-50 border-t border-gray-200 mt-20 py-8">
-        <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>© 2025 CU 할인계산기. Made with 💜 for smart shoppers.</p>
+        <div className="container mx-auto px-4">
+          <div className="flex flex-wrap justify-center gap-4 mb-4 text-sm">
+            <Link href="/discounts" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
+              할인 정보
+            </Link>
+            <span className="text-gray-300">•</span>
+            <Link href="/carts" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
+              장바구니 비교
+            </Link>
+            <span className="text-gray-300">•</span>
+            <Link href="/settings/presets" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
+              내 프리셋
+            </Link>
+            <span className="text-gray-300">•</span>
+            <Link href="/test" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
+              테스트
+            </Link>
+          </div>
+          <div className="text-center text-gray-500 text-sm">
+            <p>© 2025 CU 할인계산기. Made with 💜 for smart shoppers.</p>
+          </div>
         </div>
       </footer>
     </div>

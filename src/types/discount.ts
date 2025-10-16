@@ -28,7 +28,7 @@ export const DISCOUNT_CATEGORY_ORDER: Record<DiscountCategory, number> = {
 };
 
 export const DISCOUNT_CATEGORY_NAMES: Record<DiscountCategory, string> = {
-  coupon: '쿠폰 할인',
+  coupon: '구독',
   telecom: '통신사 할인',
   payment_event: '결제행사 할인',
   voucher: '금액권',
@@ -54,8 +54,13 @@ export interface CouponDiscount {
   category: 'coupon';
   valueType: 'percentage';
   percentage: number; // 예: 25 (25% 할인)
-  subscriptionCost?: number; // 구독료 (월 구독 쿠폰의 경우)
-  usageLimit?: number; // 사용 가능 횟수
+
+  // 구독 쿠폰 관련
+  isSubscription?: boolean; // 구독 쿠폰 여부
+  subscriptionCost?: number; // 구독료 (원)
+  subscriptionPeriodDays?: number; // 구독 기간 (일)
+  dailyUsageLimit?: number; // 하루 사용 횟수 제한
+  totalUsageLimit?: number; // 구독 기간 내 총 사용 가능 횟수
 }
 
 // ============================================================================

@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const paymentMethod = searchParams.get('paymentMethod');
-    const includeExpired = searchParams.get('includeExpired') === 'true';
 
     // Build query filter
     const filter: Record<string, unknown> = {};
@@ -34,7 +33,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Date range filtering
-    if (!includeExpired) {
+    // 기본적으로 모든 할인 표시, excludeExpired가 true일 때만 만료된 할인 제외
+    const excludeExpired = searchParams.get('excludeExpired') === 'true';
+    if (excludeExpired) {
       filter.validTo = { $gte: new Date() };
     }
 
