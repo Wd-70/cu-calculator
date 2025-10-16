@@ -54,10 +54,11 @@ export interface ICart {
   _id: Types.ObjectId | string;
 
   // 카트 메타데이터
-  name: string; // 예: "통신사 할인 조합", "카드 할인 조합"
+  name?: string; // 예: "통신사 할인 조합", "카드 할인 조합" (선택사항)
   emoji?: string; // 예: "📱", "💳"
   description?: string;
   color?: CartColor; // 카트 구분 색상
+  isMain?: boolean; // 메인 카트 여부 (상품 추가 시 기본 선택)
 
   // 카트 아이템
   items: ICartItem[];
@@ -81,13 +82,14 @@ export interface ICart {
 
 // 카트 생성 입력
 export interface CreateCartInput {
-  name: string;
+  name?: string;
   emoji?: string;
   description?: string;
   color?: CartColor;
   items?: ICartItem[];
   paymentMethod?: PaymentMethod;
   presetId?: Types.ObjectId | string;
+  isMain?: boolean;
 }
 
 // 카트 수정 입력
@@ -99,6 +101,7 @@ export interface UpdateCartInput {
   items?: ICartItem[];
   paymentMethod?: PaymentMethod;
   presetId?: Types.ObjectId | string;
+  isMain?: boolean;
   cachedTotalOriginalPrice?: number;
   cachedTotalFinalPrice?: number;
   cachedTotalDiscount?: number;

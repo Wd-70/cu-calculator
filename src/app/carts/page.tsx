@@ -31,13 +31,41 @@ export default function CartsPage() {
       const productsData = await productsRes.json();
       const discountsData = await discountsRes.json();
 
-      if (cartsData.success) setCarts(cartsData.data);
+      // 카트가 없으면 기본 카트 자동 생성
+      if (cartsData.success && cartsData.data.length === 0) {
+        await createDefaultCart();
+        // 기본 카트 생성 후 다시 카트 목록 조회
+        const newCartsRes = await fetch('/api/carts');
+        const newCartsData = await newCartsRes.json();
+        if (newCartsData.success) setCarts(newCartsData.data);
+      } else if (cartsData.success) {
+        setCarts(cartsData.data);
+      }
+
       if (productsData.success) setProducts(productsData.data);
       if (discountsData.success) setDiscounts(discountsData.data);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createDefaultCart = async () => {
+    try {
+      await fetch('/api/carts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: '내 장바구니',
+          emoji: '🛒',
+          color: 'purple',
+          items: [],
+          isMain: true,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to create default cart:', error);
     }
   };
 
@@ -66,7 +94,7 @@ export default function CartsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: `${cart.name} (복사본)`,
+          name: cart.name ? `${cart.name} (복사본)` : undefined,
           emoji: cart.emoji,
           description: cart.description,
           color: cart.color,
@@ -83,6 +111,23 @@ export default function CartsPage() {
     } catch (error) {
       console.error('Failed to duplicate cart:', error);
       alert('카트 복사에 실패했습니다.');
+    }
+  };
+
+  const handleSetMain = async (cartId: string) => {
+    try {
+      const response = await fetch(`/api/carts/${cartId}/set-main`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        await fetchData();
+      } else {
+        alert('메인 카트 설정에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to set main cart:', error);
+      alert('메인 카트 설정에 실패했습니다.');
     }
   };
 
@@ -175,8 +220,17 @@ export default function CartsPage() {
               return (
                 <div
                   key={String(cart._id)}
-                  className={`${colorScheme.bg} border-2 ${colorScheme.border} rounded-2xl p-6 hover:shadow-xl transition-all`}
+                  className={`${colorScheme.bg} border-2 ${colorScheme.border} rounded-2xl p-6 hover:shadow-xl transition-all ${
+                    cart.isMain ? 'ring-4 ring-yellow-400' : ''
+                  }`}
                 >
+                  {/* 메인 카트 배지 */}
+                  {cart.isMain && (
+                    <div className="mb-3 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-semibold inline-block">
+                      ⭐ 메인 카트
+                    </div>
+                  )}
+
                   {/* 카트 헤더 */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -185,7 +239,7 @@ export default function CartsPage() {
                       )}
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">
-                          {cart.name}
+                          {cart.name || '이름 없는 카트'}
                         </h3>
                         {cart.description && (
                           <p className="text-sm text-gray-600 mt-1">
@@ -250,27 +304,37 @@ export default function CartsPage() {
                   )}
 
                   {/* 액션 버튼 */}
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/carts/${cart._id}`}
-                      className={`flex-1 px-4 py-2 ${colorScheme.badge} ${colorScheme.text} rounded-lg font-medium hover:opacity-80 transition-opacity text-center`}
-                    >
-                      상세보기
-                    </Link>
-                    <button
-                      onClick={() => handleDuplicate(cart)}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                      title="복사"
-                    >
-                      📋
-                    </button>
-                    <button
-                      onClick={() => handleDelete(String(cart._id))}
-                      className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                      title="삭제"
-                    >
-                      🗑️
-                    </button>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/carts/${cart._id}`}
+                        className={`flex-1 px-4 py-2 ${colorScheme.badge} ${colorScheme.text} rounded-lg font-medium hover:opacity-80 transition-opacity text-center`}
+                      >
+                        상세보기
+                      </Link>
+                      <button
+                        onClick={() => handleDuplicate(cart)}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        title="복사"
+                      >
+                        📋
+                      </button>
+                      <button
+                        onClick={() => handleDelete(String(cart._id))}
+                        className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                        title="삭제"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    {!cart.isMain && (
+                      <button
+                        onClick={() => handleSetMain(String(cart._id))}
+                        className="w-full px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg font-medium hover:bg-yellow-200 transition-colors text-sm"
+                      >
+                        ⭐ 메인 카트로 설정
+                      </button>
+                    )}
                   </div>
 
                   {/* 메타 정보 */}
@@ -343,19 +407,20 @@ function CartCreateModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  // 랜덤 색상 선택
+  const getRandomColor = (): CartColor => {
+    const colors = Object.keys(CART_COLORS) as CartColor[];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState<CartColor>('purple');
+  const [color, setColor] = useState<CartColor>(getRandomColor());
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!name.trim()) {
-      alert('카트 이름을 입력해주세요.');
-      return;
-    }
 
     try {
       setSaving(true);
@@ -364,7 +429,7 @@ function CartCreateModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
+          name: name.trim() || undefined,
           emoji: emoji.trim() || undefined,
           description: description.trim() || undefined,
           color,
@@ -410,15 +475,14 @@ function CartCreateModal({
           <div className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                카트 이름 *
+                카트 이름 (선택사항)
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="예: 통신사 할인 조합"
+                placeholder="예: 통신사 할인 조합 (비워두면 자동 생성)"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
-                required
               />
             </div>
 

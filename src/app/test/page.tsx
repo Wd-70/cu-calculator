@@ -33,10 +33,46 @@ export default function TestPage() {
   };
 
   // API 테스트 함수들
-  const initDatabase = () => apiCall('데이터베이스 초기화', '/api/init', { method: 'POST' });
+  const initDatabase = async () => {
+    await apiCall('데이터베이스 초기화', '/api/init', { method: 'POST' });
+    // 기본 카트 생성
+    await createDefaultCart();
+  };
+
+  const createDefaultCart = async () => {
+    try {
+      // 기존 카트 확인
+      const cartsResponse = await fetch('/api/carts');
+      const cartsData = await cartsResponse.json();
+
+      if (cartsData.success && cartsData.data.length === 0) {
+        // 카트가 없으면 기본 카트 생성
+        await apiCall('기본 카트 생성', '/api/carts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: '내 장바구니',
+            emoji: '🛒',
+            color: 'purple',
+            items: [],
+            isMain: true,
+          }),
+        });
+      } else {
+        addResult('기본 카트 확인', {
+          message: '카트가 이미 존재합니다.',
+          count: cartsData.data?.length || 0
+        });
+      }
+    } catch (error) {
+      addResult('기본 카트 생성 오류', { error: String(error) });
+    }
+  };
+
   const checkStatus = () => apiCall('상태 확인', '/api/init');
   const getProducts = () => apiCall('상품 목록', '/api/products');
   const getDiscounts = () => apiCall('할인 목록', '/api/discounts');
+  const getCarts = () => apiCall('카트 목록', '/api/carts');
 
   const testCalculation = async () => {
     const products = await fetch('/api/products').then(r => r.json());
@@ -146,6 +182,13 @@ export default function TestPage() {
                 >
                   🏷️ 할인 목록
                 </button>
+                <button
+                  onClick={getCarts}
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
+                >
+                  🛒 카트 목록
+                </button>
               </div>
             </div>
 
@@ -234,7 +277,7 @@ export default function TestPage() {
               🔍 상품 검색
             </Link>
             <Link
-              href="/cart"
+              href="/carts"
               className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-center font-medium transition-colors"
             >
               🛒 장바구니

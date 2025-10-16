@@ -35,22 +35,25 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json() as CreateCartInput;
 
-    // 유효성 검사
-    if (!body.name || !body.name.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Name is required' },
-        { status: 400 }
-      );
+    // isMain이 true면 다른 카트들의 isMain을 false로 변경
+    if (body.isMain) {
+      const existingCarts = await db.findCarts({});
+      for (const existingCart of existingCarts) {
+        if (existingCart.isMain) {
+          await db.updateCart(String(existingCart._id), { isMain: false });
+        }
+      }
     }
 
     const cart = await db.createCart({
-      name: body.name.trim(),
+      name: body.name?.trim(),
       emoji: body.emoji,
       description: body.description?.trim(),
       color: body.color,
       items: body.items || [],
       paymentMethod: body.paymentMethod,
       presetId: body.presetId,
+      isMain: body.isMain,
     });
 
     return NextResponse.json({
