@@ -23,6 +23,7 @@ const ProductSchema = new Schema<IProduct>(
     brand: String,
     imageUrl: String,
     cuProductCode: String,
+    detailUrl: String, // CU 상세 페이지 URL
 
     // Metadata
     createdBy: {

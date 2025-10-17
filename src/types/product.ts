@@ -9,6 +9,7 @@ export interface IProduct {
   brand?: string;
   imageUrl?: string;
   cuProductCode?: string;
+  detailUrl?: string;
 
   // Metadata
   createdAt: Date;

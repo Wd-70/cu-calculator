@@ -61,13 +61,21 @@ export async function POST(request: NextRequest) {
     await db.connect();
 
     const body = await request.json();
-    const { barcode, name, price, category, brand, imageUrl } = body;
+    const { barcode, name, price, category, brand, imageUrl, createdBy } = body;
 
     // Validate required fields
     if (!barcode || !name || price === undefined) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
+      );
+    }
+
+    // Validate user account
+    if (!createdBy) {
+      return NextResponse.json(
+        { success: false, error: 'User account is required' },
+        { status: 401 }
       );
     }
 
@@ -80,11 +88,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user identifier (IP address or session)
-    const userIdentifier =
+    // Get IP address for logging
+    const ipAddress =
       request.headers.get('x-forwarded-for') ||
       request.headers.get('x-real-ip') ||
-      'anonymous';
+      'unknown';
 
     const product = await db.createProduct({
       barcode,
@@ -93,7 +101,7 @@ export async function POST(request: NextRequest) {
       category,
       brand,
       imageUrl,
-      createdBy: userIdentifier,
+      createdBy, // Use user's public address
       modificationCount: 0,
       isVerified: false,
       verificationCount: 0,
@@ -105,9 +113,9 @@ export async function POST(request: NextRequest) {
       productId: product._id,
       action: 'create',
       afterData: product as any,
-      modifiedBy: userIdentifier,
+      modifiedBy: createdBy, // Use user's public address
       modifiedAt: new Date(),
-      ipAddress: userIdentifier,
+      ipAddress: ipAddress,
     });
 
     return NextResponse.json(

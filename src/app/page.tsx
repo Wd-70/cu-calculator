@@ -200,6 +200,10 @@ export default function Home() {
               내 프리셋
             </Link>
             <span className="text-gray-300">•</span>
+            <Link href="/settings/account" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
+              계정 관리
+            </Link>
+            <span className="text-gray-300">•</span>
             <Link href="/test" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
               테스트
             </Link>

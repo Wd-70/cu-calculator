@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__playwright__playwright_screenshot",
+      "mcp__playwright__playwright_get_visible_html"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

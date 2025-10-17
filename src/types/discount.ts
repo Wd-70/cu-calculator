@@ -151,6 +151,14 @@ export type DiscountConfig =
   | PaymentCompoundDiscount;
 
 // ============================================================================
+// 할인 적용 방식
+// ============================================================================
+
+export type DiscountApplicationMethod =
+  | 'per_item'      // 상품별 개별 적용 (각 상품에 개별적으로 할인 적용)
+  | 'cart_total';   // 장바구니 전체 합산 후 적용
+
+// ============================================================================
 // 할인 규칙 (데이터베이스 모델)
 // ============================================================================
 
@@ -161,6 +169,9 @@ export interface IDiscountRuleV2 {
 
   // 할인 설정
   config: DiscountConfig;
+
+  // 적용 방식 (기본값: cart_total)
+  applicationMethod?: DiscountApplicationMethod;
 
   // 적용 대상
   applicableProducts: Types.ObjectId[]; // 빈 배열 = 전체 상품

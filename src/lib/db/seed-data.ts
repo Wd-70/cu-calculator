@@ -124,7 +124,7 @@ export function getSampleDiscountRulesV2(productIds: {
     // ============================================================================
     {
       name: '실속한끼 구독',
-      description: '도시락 카테고리 25% 할인 (하루 1회, 월 30회)',
+      description: '도시락 카테고리 25% 할인 (하루 5회, 총 15회)',
       config: {
         category: 'coupon',
         valueType: 'percentage',
@@ -132,9 +132,10 @@ export function getSampleDiscountRulesV2(productIds: {
         isSubscription: true,
         subscriptionCost: 4900,
         subscriptionPeriodDays: 30,
-        dailyUsageLimit: 1,
-        totalUsageLimit: 30,
+        dailyUsageLimit: 5,
+        totalUsageLimit: 15,
       },
+      applicationMethod: 'per_item', // 상품별 개별 적용
       applicableProducts: [],
       applicableCategories: ['도시락'],
       requiredPaymentMethods: [],
@@ -147,7 +148,7 @@ export function getSampleDiscountRulesV2(productIds: {
     },
     {
       name: '간편식사 구독',
-      description: '간편식 카테고리 25% 할인 (하루 1회, 월 30회)',
+      description: '간편식 카테고리 25% 할인 (하루 5회, 총 15회)',
       config: {
         category: 'coupon',
         valueType: 'percentage',
@@ -155,9 +156,10 @@ export function getSampleDiscountRulesV2(productIds: {
         isSubscription: true,
         subscriptionCost: 4900,
         subscriptionPeriodDays: 30,
-        dailyUsageLimit: 1,
-        totalUsageLimit: 30,
+        dailyUsageLimit: 5,
+        totalUsageLimit: 15,
       },
+      applicationMethod: 'per_item', // 상품별 개별 적용
       applicableProducts: [],
       applicableCategories: ['라면', '도시락'],
       requiredPaymentMethods: [],
@@ -170,7 +172,7 @@ export function getSampleDiscountRulesV2(productIds: {
     },
     {
       name: 'get 아메리카노 구독',
-      description: '음료 카테고리 30% 할인 (하루 2회, 월 60회)',
+      description: '음료 카테고리 30% 할인 (하루 5회, 총 15회)',
       config: {
         category: 'coupon',
         valueType: 'percentage',
@@ -178,9 +180,10 @@ export function getSampleDiscountRulesV2(productIds: {
         isSubscription: true,
         subscriptionCost: 9900,
         subscriptionPeriodDays: 30,
-        dailyUsageLimit: 2,
-        totalUsageLimit: 60,
+        dailyUsageLimit: 5,
+        totalUsageLimit: 15,
       },
+      applicationMethod: 'per_item', // 상품별 개별 적용
       applicableProducts: [],
       applicableCategories: ['음료'],
       requiredPaymentMethods: [],
@@ -427,7 +430,10 @@ export async function seedDatabase(db: any): Promise<void> {
         const rule = await db.createDiscountRule(ruleData);
         console.log(`✅ Created discount rule (v2): ${rule.name} [${rule.config.category}]`);
       } else {
-        console.log(`⏭️  Discount rule already exists: ${ruleData.name}`);
+        // 기존 데이터를 업데이트
+        const existingRule = existing[0];
+        const updated = await db.updateDiscountRule(existingRule._id, ruleData);
+        console.log(`🔄 Updated discount rule: ${ruleData.name} [${ruleData.config.category}]`);
       }
     }
 
