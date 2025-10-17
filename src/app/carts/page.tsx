@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ICart, CART_COLORS, CartColor } from '@/types/cart';
 import { IProduct } from '@/types/product';
 import { IDiscountRule } from '@/types/discount';
+import * as clientDb from '@/lib/clientDb';
 
 export default function CartsPage() {
   const [carts, setCarts] = useState<ICart[]>([]);
@@ -12,35 +13,29 @@ export default function CartsPage() {
   const [discounts, setDiscounts] = useState<IDiscountRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingCart, setEditingCart] = useState<ICart | null>(null);
 
   useEffect(() => {
+    // 클라이언트 저장소 초기화
+    clientDb.initializeClientStorage();
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [cartsRes, productsRes, discountsRes] = await Promise.all([
-        fetch('/api/carts'),
+
+      // 클라이언트 데이터 (LocalStorage)
+      const localCarts = clientDb.getCarts();
+      setCarts(localCarts);
+
+      // 서버 데이터 (공통 데이터)
+      const [productsRes, discountsRes] = await Promise.all([
         fetch('/api/products'),
         fetch('/api/discounts'),
       ]);
 
-      const cartsData = await cartsRes.json();
       const productsData = await productsRes.json();
       const discountsData = await discountsRes.json();
-
-      // 카트가 없으면 기본 카트 자동 생성
-      if (cartsData.success && cartsData.data.length === 0) {
-        await createDefaultCart();
-        // 기본 카트 생성 후 다시 카트 목록 조회
-        const newCartsRes = await fetch('/api/carts');
-        const newCartsData = await newCartsRes.json();
-        if (newCartsData.success) setCarts(newCartsData.data);
-      } else if (cartsData.success) {
-        setCarts(cartsData.data);
-      }
 
       if (productsData.success) setProducts(productsData.data);
       if (discountsData.success) setDiscounts(discountsData.data);
@@ -51,82 +46,39 @@ export default function CartsPage() {
     }
   };
 
-  const createDefaultCart = async () => {
-    try {
-      await fetch('/api/carts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: '내 장바구니',
-          emoji: '🛒',
-          color: 'purple',
-          items: [],
-          isMain: true,
-        }),
-      });
-    } catch (error) {
-      console.error('Failed to create default cart:', error);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm('이 카트를 삭제하시겠습니까?')) return;
 
-    try {
-      const response = await fetch(`/api/carts/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setCarts(carts.filter((c) => String(c._id) !== id));
-      } else {
-        alert('카트 삭제에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('Failed to delete cart:', error);
+    const success = clientDb.deleteCart(id);
+    if (success) {
+      setCarts(clientDb.getCarts());
+    } else {
       alert('카트 삭제에 실패했습니다.');
     }
   };
 
-  const handleDuplicate = async (cart: ICart) => {
-    try {
-      const response = await fetch('/api/carts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: cart.name ? `${cart.name} (복사본)` : undefined,
-          emoji: cart.emoji,
-          description: cart.description,
-          color: cart.color,
-          items: cart.items,
-          paymentMethod: cart.paymentMethod,
-        }),
-      });
+  const handleDuplicate = (cart: ICart) => {
+    const newCart = clientDb.createCart({
+      name: cart.name ? `${cart.name} (복사본)` : undefined,
+      emoji: cart.emoji,
+      description: cart.description,
+      color: cart.color,
+      items: cart.items,
+      paymentMethod: cart.paymentMethod,
+    });
 
-      if (response.ok) {
-        await fetchData();
-      } else {
-        alert('카트 복사에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('Failed to duplicate cart:', error);
+    if (newCart) {
+      setCarts(clientDb.getCarts());
+    } else {
       alert('카트 복사에 실패했습니다.');
     }
   };
 
-  const handleSetMain = async (cartId: string) => {
-    try {
-      const response = await fetch(`/api/carts/${cartId}/set-main`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        await fetchData();
-      } else {
-        alert('메인 카트 설정에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('Failed to set main cart:', error);
+  const handleSetMain = (cartId: string) => {
+    const updated = clientDb.setMainCart(cartId);
+    if (updated) {
+      setCarts(clientDb.getCarts());
+    } else {
       alert('메인 카트 설정에 실패했습니다.');
     }
   };
@@ -214,8 +166,6 @@ export default function CartsPage() {
             {carts.map((cart) => {
               const colorScheme = cart.color ? CART_COLORS[cart.color] : CART_COLORS.purple;
               const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-              const totalPrice = cart.cachedTotalOriginalPrice ||
-                cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
               return (
                 <div
@@ -384,14 +334,10 @@ export default function CartsPage() {
       {/* 카트 생성 모달 */}
       {showCreateModal && (
         <CartCreateModal
-          onClose={() => {
-            setShowCreateModal(false);
-            setEditingCart(null);
-          }}
+          onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
-            fetchData();
+            setCarts(clientDb.getCarts());
             setShowCreateModal(false);
-            setEditingCart(null);
           }}
         />
       )}
@@ -425,23 +371,18 @@ function CartCreateModal({
     try {
       setSaving(true);
 
-      const response = await fetch('/api/carts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim() || undefined,
-          emoji: emoji.trim() || undefined,
-          description: description.trim() || undefined,
-          color,
-          items: [],
-        }),
+      const newCart = clientDb.createCart({
+        name: name.trim() || undefined,
+        emoji: emoji.trim() || undefined,
+        description: description.trim() || undefined,
+        color,
+        items: [],
       });
 
-      if (response.ok) {
+      if (newCart) {
         onSuccess();
       } else {
-        const data = await response.json();
-        alert(data.error || '카트 생성에 실패했습니다.');
+        alert('카트 생성에 실패했습니다.');
       }
     } catch (error) {
       console.error('Failed to create cart:', error);

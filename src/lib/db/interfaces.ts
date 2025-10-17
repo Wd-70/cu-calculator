@@ -12,8 +12,6 @@
 import { IProduct } from '@/types/product';
 import { IDiscountRule } from '@/types/discount';
 import { IModificationHistory } from '@/lib/models/ModificationHistory';
-import { IUserPreset } from '@/types/preset';
-import { ICart } from '@/types/cart';
 
 // Generic query filter type
 export type QueryFilter<T> = Partial<T> & {
@@ -56,19 +54,4 @@ export interface IDatabase {
   // Modification History
   findModificationHistory(filter?: QueryFilter<IModificationHistory>, options?: QueryOptions): Promise<IModificationHistory[]>;
   createModificationHistory(data: Omit<IModificationHistory, '_id'>): Promise<IModificationHistory>;
-
-  // User Presets
-  findPresets(filter?: QueryFilter<IUserPreset>, options?: QueryOptions): Promise<IUserPreset[]>;
-  findPresetById(id: string): Promise<IUserPreset | null>;
-  createPreset(data: Omit<IUserPreset, '_id' | 'createdAt' | 'updatedAt' | 'usageCount' | 'lastUsedAt'>): Promise<IUserPreset>;
-  updatePreset(id: string, data: Partial<IUserPreset>): Promise<IUserPreset | null>;
-  deletePreset(id: string): Promise<boolean>;
-  incrementPresetUsage(id: string): Promise<IUserPreset | null>;
-
-  // Carts
-  findCarts(filter?: QueryFilter<ICart>, options?: QueryOptions): Promise<ICart[]>;
-  findCartById(id: string): Promise<ICart | null>;
-  createCart(data: Omit<ICart, '_id' | 'createdAt' | 'updatedAt'>): Promise<ICart>;
-  updateCart(id: string, data: Partial<ICart>): Promise<ICart | null>;
-  deleteCart(id: string): Promise<boolean>;
 }

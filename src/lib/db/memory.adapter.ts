@@ -12,8 +12,6 @@ import { IDatabase, QueryFilter, QueryOptions } from './interfaces';
 import { IProduct } from '@/types/product';
 import { IDiscountRule } from '@/types/discount';
 import { IModificationHistory } from '@/lib/models/ModificationHistory';
-import { IUserPreset } from '@/types/preset';
-import { ICart } from '@/types/cart';
 import { Types } from 'mongoose';
 
 // 메모리 저장소
@@ -21,8 +19,6 @@ class MemoryStore {
   private products: IProduct[] = [];
   private discountRules: IDiscountRule[] = [];
   private modificationHistory: IModificationHistory[] = [];
-  private presets: IUserPreset[] = [];
-  private carts: ICart[] = [];
 
   getProducts() {
     return this.products;
@@ -48,28 +44,10 @@ class MemoryStore {
     this.modificationHistory = history;
   }
 
-  getPresets() {
-    return this.presets;
-  }
-
-  setPresets(presets: IUserPreset[]) {
-    this.presets = presets;
-  }
-
-  getCarts() {
-    return this.carts;
-  }
-
-  setCarts(carts: ICart[]) {
-    this.carts = carts;
-  }
-
   clear() {
     this.products = [];
     this.discountRules = [];
     this.modificationHistory = [];
-    this.presets = [];
-    this.carts = [];
   }
 }
 
@@ -374,133 +352,5 @@ export class MemoryAdapter implements IDatabase {
     history.push(newHistory);
     this.store.setModificationHistory(history);
     return newHistory;
-  }
-
-  // User Presets
-  async findPresets(
-    filter?: QueryFilter<IUserPreset>,
-    options?: QueryOptions
-  ): Promise<IUserPreset[]> {
-    const presets = this.store.getPresets();
-    const filtered = presets.filter((p) => matchesFilter(p, filter));
-    return applyQueryOptions(filtered, options);
-  }
-
-  async findPresetById(id: string): Promise<IUserPreset | null> {
-    const presets = this.store.getPresets();
-    return presets.find((p) => String(p._id) === id) || null;
-  }
-
-  async createPreset(
-    data: Omit<IUserPreset, '_id' | 'createdAt' | 'updatedAt' | 'usageCount' | 'lastUsedAt'>
-  ): Promise<IUserPreset> {
-    const presets = this.store.getPresets();
-    const now = new Date();
-    const newPreset: IUserPreset = {
-      ...data,
-      _id: new Types.ObjectId(generateObjectId()),
-      usageCount: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-    presets.push(newPreset);
-    this.store.setPresets(presets);
-    return newPreset;
-  }
-
-  async updatePreset(
-    id: string,
-    data: Partial<IUserPreset>
-  ): Promise<IUserPreset | null> {
-    const presets = this.store.getPresets();
-    const index = presets.findIndex((p) => String(p._id) === id);
-    if (index === -1) return null;
-
-    presets[index] = {
-      ...presets[index],
-      ...data,
-      updatedAt: new Date(),
-    };
-    this.store.setPresets(presets);
-    return presets[index];
-  }
-
-  async deletePreset(id: string): Promise<boolean> {
-    const presets = this.store.getPresets();
-    const filtered = presets.filter((p) => String(p._id) !== id);
-    if (filtered.length === presets.length) return false;
-    this.store.setPresets(filtered);
-    return true;
-  }
-
-  async incrementPresetUsage(id: string): Promise<IUserPreset | null> {
-    const presets = this.store.getPresets();
-    const index = presets.findIndex((p) => String(p._id) === id);
-    if (index === -1) return null;
-
-    presets[index] = {
-      ...presets[index],
-      usageCount: presets[index].usageCount + 1,
-      lastUsedAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.store.setPresets(presets);
-    return presets[index];
-  }
-
-  // Carts
-  async findCarts(
-    filter?: QueryFilter<ICart>,
-    options?: QueryOptions
-  ): Promise<ICart[]> {
-    const carts = this.store.getCarts();
-    const filtered = carts.filter((c) => matchesFilter(c, filter));
-    return applyQueryOptions(filtered, options);
-  }
-
-  async findCartById(id: string): Promise<ICart | null> {
-    const carts = this.store.getCarts();
-    return carts.find((c) => String(c._id) === id) || null;
-  }
-
-  async createCart(
-    data: Omit<ICart, '_id' | 'createdAt' | 'updatedAt'>
-  ): Promise<ICart> {
-    const carts = this.store.getCarts();
-    const now = new Date();
-    const newCart: ICart = {
-      ...data,
-      _id: new Types.ObjectId(generateObjectId()),
-      createdAt: now,
-      updatedAt: now,
-    };
-    carts.push(newCart);
-    this.store.setCarts(carts);
-    return newCart;
-  }
-
-  async updateCart(
-    id: string,
-    data: Partial<ICart>
-  ): Promise<ICart | null> {
-    const carts = this.store.getCarts();
-    const index = carts.findIndex((c) => String(c._id) === id);
-    if (index === -1) return null;
-
-    carts[index] = {
-      ...carts[index],
-      ...data,
-      updatedAt: new Date(),
-    };
-    this.store.setCarts(carts);
-    return carts[index];
-  }
-
-  async deleteCart(id: string): Promise<boolean> {
-    const carts = this.store.getCarts();
-    const filtered = carts.filter((c) => String(c._id) !== id);
-    if (filtered.length === carts.length) return false;
-    this.store.setCarts(filtered);
-    return true;
   }
 }

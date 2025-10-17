@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import * as clientDb from '@/lib/clientDb';
 
 export default function TestPage() {
   const [results, setResults] = useState<any[]>([]);
@@ -34,45 +35,60 @@ export default function TestPage() {
 
   // API 테스트 함수들
   const initDatabase = async () => {
+    // 서버 데이터 초기화
     await apiCall('데이터베이스 초기화', '/api/init', { method: 'POST' });
-    // 기본 카트 생성
-    await createDefaultCart();
-  };
 
-  const createDefaultCart = async () => {
-    try {
-      // 기존 카트 확인
-      const cartsResponse = await fetch('/api/carts');
-      const cartsData = await cartsResponse.json();
-
-      if (cartsData.success && cartsData.data.length === 0) {
-        // 카트가 없으면 기본 카트 생성
-        await apiCall('기본 카트 생성', '/api/carts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: '내 장바구니',
-            emoji: '🛒',
-            color: 'purple',
-            items: [],
-            isMain: true,
-          }),
-        });
-      } else {
-        addResult('기본 카트 확인', {
-          message: '카트가 이미 존재합니다.',
-          count: cartsData.data?.length || 0
-        });
-      }
-    } catch (error) {
-      addResult('기본 카트 생성 오류', { error: String(error) });
-    }
+    // 클라이언트 저장소 초기화 (기본 카트 생성)
+    clientDb.initializeClientStorage();
+    addResult('클라이언트 저장소 초기화', {
+      success: true,
+      message: '기본 카트가 생성되었습니다.',
+      carts: clientDb.getCarts(),
+    });
   };
 
   const checkStatus = () => apiCall('상태 확인', '/api/init');
   const getProducts = () => apiCall('상품 목록', '/api/products');
   const getDiscounts = () => apiCall('할인 목록', '/api/discounts');
-  const getCarts = () => apiCall('카트 목록', '/api/carts');
+
+  const getCarts = () => {
+    const carts = clientDb.getCarts();
+    addResult('카트 목록 (LocalStorage)', { success: true, data: carts });
+  };
+
+  const getPresets = () => {
+    const presets = clientDb.getPresets();
+    addResult('프리셋 목록 (LocalStorage)', { success: true, data: presets });
+  };
+
+  const clearClientData = () => {
+    if (!confirm('모든 클라이언트 데이터(카트, 프리셋)를 삭제하시겠습니까?')) return;
+
+    clientDb.clearAllClientData();
+    addResult('클라이언트 데이터 삭제', {
+      success: true,
+      message: '모든 로컬 데이터가 삭제되었습니다.',
+    });
+  };
+
+  const exportData = () => {
+    const data = clientDb.exportClientData();
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cu-calculator-backup-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    addResult('데이터 내보내기', {
+      success: true,
+      message: '데이터를 JSON 파일로 다운로드했습니다.',
+      cartsCount: data.carts.length,
+      presetsCount: data.presets.length,
+    });
+  };
 
   const testCalculation = async () => {
     const products = await fetch('/api/products').then(r => r.json());
@@ -152,21 +168,21 @@ export default function TestPage() {
                   disabled={loading}
                   className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
                 >
-                  🔄 데이터베이스 초기화 (샘플 데이터 생성)
+                  🔄 전체 초기화 (서버 + 클라이언트)
                 </button>
                 <button
                   onClick={checkStatus}
                   disabled={loading}
                   className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
                 >
-                  ✅ 상태 확인
+                  ✅ 서버 상태 확인
                 </button>
               </div>
             </div>
 
-            {/* 데이터 조회 */}
+            {/* 서버 데이터 조회 */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">📦 데이터 조회</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">🌐 서버 데이터 (공통)</h2>
               <div className="space-y-3">
                 <button
                   onClick={getProducts}
@@ -182,12 +198,26 @@ export default function TestPage() {
                 >
                   🏷️ 할인 목록
                 </button>
+              </div>
+            </div>
+
+            {/* 클라이언트 데이터 조회 */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">💾 클라이언트 데이터 (개인)</h2>
+              <div className="space-y-3">
                 <button
                   onClick={getCarts}
                   disabled={loading}
-                  className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
+                  className="w-full px-4 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
                 >
-                  🛒 카트 목록
+                  🛒 카트 목록 (LocalStorage)
+                </button>
+                <button
+                  onClick={getPresets}
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
+                >
+                  ⭐ 프리셋 목록 (LocalStorage)
                 </button>
               </div>
             </div>
@@ -213,15 +243,29 @@ export default function TestPage() {
               </div>
             </div>
 
-            {/* 결과 제어 */}
+            {/* 데이터 관리 */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">🗑️ 결과 관리</h2>
-              <button
-                onClick={clearResults}
-                className="w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
-              >
-                결과 지우기
-              </button>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">🛠️ 데이터 관리</h2>
+              <div className="space-y-3">
+                <button
+                  onClick={exportData}
+                  className="w-full px-4 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  💾 데이터 내보내기
+                </button>
+                <button
+                  onClick={clearClientData}
+                  className="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  🗑️ 클라이언트 데이터 삭제
+                </button>
+                <button
+                  onClick={clearResults}
+                  className="w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  📝 결과 지우기
+                </button>
+              </div>
             </div>
           </div>
 
@@ -295,11 +339,13 @@ export default function TestPage() {
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="font-bold text-blue-900 mb-2">💡 사용 가이드</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li><strong>1단계:</strong> "데이터베이스 초기화" 버튼을 눌러 샘플 데이터 생성</li>
-            <li><strong>2단계:</strong> "상태 확인"으로 데이터가 제대로 생성되었는지 확인</li>
-            <li><strong>3단계:</strong> "상품 목록" 및 "할인 목록"으로 데이터 확인</li>
+            <li><strong>1단계:</strong> "전체 초기화" 버튼을 눌러 서버와 클라이언트 데이터 생성</li>
+            <li><strong>2단계:</strong> "서버 상태 확인"으로 서버 데이터 확인</li>
+            <li><strong>3단계:</strong> "카트 목록" 및 "프리셋 목록"으로 로컬 데이터 확인</li>
             <li><strong>4단계:</strong> "할인 계산 테스트"로 v2 엔진 테스트</li>
-            <li><strong>참고:</strong> Memory Adapter 사용 중 - 서버 재시작 시 데이터 초기화됨</li>
+            <li><strong>데이터 구조:</strong></li>
+            <li className="ml-4">• <strong>서버 (Memory)</strong>: 상품, 할인 - 모든 유저 공통</li>
+            <li className="ml-4">• <strong>클라이언트 (LocalStorage)</strong>: 카트, 프리셋 - 개인화 데이터</li>
           </ul>
         </div>
       </div>

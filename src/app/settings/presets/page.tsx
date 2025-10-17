@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { IUserPreset } from '@/types/preset';
+import { IPreset } from '@/types/preset';
 import { IDiscountRule, DISCOUNT_CATEGORY_NAMES } from '@/types/discount';
 import { PAYMENT_METHOD_NAMES } from '@/types/payment';
+import * as clientDb from '@/lib/clientDb';
 
 export default function PresetsPage() {
-  const [presets, setPresets] = useState<IUserPreset[]>([]);
+  const [presets, setPresets] = useState<IPreset[]>([]);
   const [discounts, setDiscounts] = useState<IDiscountRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingPreset, setEditingPreset] = useState<IUserPreset | null>(null);
+  const [editingPreset, setEditingPreset] = useState<IPreset | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -20,17 +21,15 @@ export default function PresetsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [presetsRes, discountsRes] = await Promise.all([
-        fetch('/api/presets'),
-        fetch('/api/discounts'),
-      ]);
 
-      const presetsData = await presetsRes.json();
+      // 클라이언트 데이터 (LocalStorage)
+      const localPresets = clientDb.getPresets();
+      setPresets(localPresets);
+
+      // 서버 데이터 (공통 데이터)
+      const discountsRes = await fetch('/api/discounts');
       const discountsData = await discountsRes.json();
 
-      if (presetsData.success) {
-        setPresets(presetsData.data);
-      }
       if (discountsData.success) {
         setDiscounts(discountsData.data);
       }
@@ -41,21 +40,13 @@ export default function PresetsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm('이 프리셋을 삭제하시겠습니까?')) return;
 
-    try {
-      const response = await fetch(`/api/presets/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setPresets(presets.filter((p) => String(p._id) !== id));
-      } else {
-        alert('프리셋 삭제에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('Failed to delete preset:', error);
+    const success = clientDb.deletePreset(id);
+    if (success) {
+      setPresets(clientDb.getPresets());
+    } else {
       alert('프리셋 삭제에 실패했습니다.');
     }
   };
@@ -181,7 +172,7 @@ export default function PresetsPage() {
                 <div className="space-y-2 mb-4">
                   <h4 className="text-sm font-semibold text-gray-700">선택된 할인:</h4>
                   <div className="flex flex-wrap gap-2">
-                    {preset.selectedDiscountIds.map((discountId) => (
+                    {preset.discountIds.map((discountId) => (
                       <span
                         key={String(discountId)}
                         className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium"
@@ -202,16 +193,13 @@ export default function PresetsPage() {
                   </div>
                 )}
 
-                {/* 통계 */}
+                {/* 메타 정보 */}
                 <div className="flex items-center gap-4 text-sm text-gray-500 border-t border-gray-200 pt-4">
-                  <span>사용 횟수: {preset.usageCount}회</span>
-                  {preset.lastUsedAt && (
-                    <span>
-                      마지막 사용: {new Date(preset.lastUsedAt).toLocaleDateString()}
-                    </span>
-                  )}
                   <span>
                     생성일: {new Date(preset.createdAt).toLocaleDateString()}
+                  </span>
+                  <span>
+                    수정일: {new Date(preset.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -230,7 +218,7 @@ export default function PresetsPage() {
             setEditingPreset(null);
           }}
           onSuccess={() => {
-            fetchData();
+            setPresets(clientDb.getPresets());
             setShowCreateModal(false);
             setEditingPreset(null);
           }}
@@ -247,7 +235,7 @@ function PresetModal({
   onClose,
   onSuccess,
 }: {
-  preset: IUserPreset | null;
+  preset: IPreset | null;
   discounts: IDiscountRule[];
   onClose: () => void;
   onSuccess: () => void;
@@ -256,7 +244,7 @@ function PresetModal({
   const [emoji, setEmoji] = useState(preset?.emoji || '');
   const [description, setDescription] = useState(preset?.description || '');
   const [selectedDiscountIds, setSelectedDiscountIds] = useState<string[]>(
-    preset?.selectedDiscountIds.map(String) || []
+    preset?.discountIds.map(String) || []
   );
   const [paymentMethod, setPaymentMethod] = useState(preset?.paymentMethod || '');
   const [saving, setSaving] = useState(false);
@@ -277,29 +265,27 @@ function PresetModal({
     try {
       setSaving(true);
 
-      const body = {
-        name: name.trim(),
-        emoji: emoji.trim() || undefined,
-        description: description.trim() || undefined,
-        selectedDiscountIds,
-        paymentMethod: paymentMethod || undefined,
-      };
-
-      const url = preset ? `/api/presets/${preset._id}` : '/api/presets';
-      const method = preset ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (response.ok) {
-        onSuccess();
+      if (preset) {
+        // 수정
+        clientDb.updatePreset(String(preset._id), {
+          name: name.trim(),
+          emoji: emoji.trim() || undefined,
+          description: description.trim() || undefined,
+          discountIds: selectedDiscountIds,
+          paymentMethod: paymentMethod || undefined,
+        });
       } else {
-        const data = await response.json();
-        alert(data.error || '프리셋 저장에 실패했습니다.');
+        // 생성
+        clientDb.createPreset({
+          name: name.trim(),
+          emoji: emoji.trim() || undefined,
+          description: description.trim() || undefined,
+          discountIds: selectedDiscountIds,
+          paymentMethod: paymentMethod || undefined,
+        });
       }
+
+      onSuccess();
     } catch (error) {
       console.error('Failed to save preset:', error);
       alert('프리셋 저장에 실패했습니다.');
