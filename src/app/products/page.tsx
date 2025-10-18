@@ -7,12 +7,17 @@ import * as clientDb from '@/lib/clientDb';
 import { ICart } from '@/types/cart';
 import Toast from '@/components/Toast';
 
+interface CategoryTag {
+  name: string;
+  level: number;
+}
+
 interface Product {
   _id: string;
   barcode: string;
   name: string;
   price: number;
-  category?: string;
+  categoryTags?: CategoryTag[];
   brand?: string;
   imageUrl?: string;
 }
@@ -27,6 +32,7 @@ export default function ProductsPage() {
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [allCategories, setAllCategories] = useState<string[]>([]);
   const [showCartModal, setShowCartModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -37,6 +43,7 @@ export default function ProductsPage() {
     setHasMore(true);
     fetchProducts(true);
     loadCarts();
+    fetchCategories();
 
     // URL 파라미터에서 검색어 가져오기
     const searchQuery = searchParams.get('search');
@@ -44,6 +51,17 @@ export default function ProductsPage() {
       setSearchTerm(searchQuery);
     }
   }, [searchParams]);
+
+  // 검색어나 카테고리가 변경되면 재검색
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setProducts([]);
+      setHasMore(true);
+      fetchProducts(true);
+    }, 300); // 300ms 디바운스
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm, selectedCategory]);
 
   // 무한 스크롤 이벤트 리스너
   useEffect(() => {
@@ -67,6 +85,18 @@ export default function ProductsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loading, loadingMore, hasMore, products.length]);
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/products/categories');
+      const data = await response.json();
+      if (data.success) {
+        setAllCategories(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   const fetchProducts = async (isInitial: boolean = false) => {
     if (isInitial) {
       setLoading(true);
@@ -77,7 +107,22 @@ export default function ProductsPage() {
     try {
       const offset = isInitial ? 0 : products.length;
       const limit = 50; // 한 번에 50개씩 로드
-      const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`);
+
+      // 검색 파라미터 구성
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+
+      if (searchTerm) {
+        params.append('name', searchTerm);
+      }
+
+      if (selectedCategory !== '전체') {
+        params.append('category', selectedCategory);
+      }
+
+      const response = await fetch(`/api/products?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
@@ -114,14 +159,7 @@ export default function ProductsPage() {
     setShowCartModal(true);
   };
 
-  const categories = ['전체', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
-
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.barcode.includes(searchTerm);
-    const matchesCategory = selectedCategory === '전체' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const categories = ['전체', ...allCategories];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -194,9 +232,9 @@ export default function ProductsPage() {
         <div className="flex items-center justify-between mb-4">
           <p className="text-gray-600">
             총 <span className="font-bold text-[#7C3FBF]">{total.toLocaleString()}</span>개 상품
-            {filteredProducts.length !== total && (
+            {products.length !== total && (
               <span className="text-sm text-gray-500 ml-2">
-                (현재 {filteredProducts.length.toLocaleString()}개 표시)
+                (현재 {products.length.toLocaleString()}개 로드됨)
               </span>
             )}
           </p>
@@ -207,7 +245,7 @@ export default function ProductsPage() {
           <div className="flex justify-center items-center py-20">
             <div className="w-12 h-12 border-4 border-[#7C3FBF] border-t-transparent rounded-full animate-spin"></div>
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,7 +272,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredProducts.map((product) => (
+            {products.map((product) => (
               <div
                 key={product._id}
                 className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 group relative"
@@ -270,11 +308,20 @@ export default function ProductsPage() {
                   </div>
                 )}
 
-                {/* 카테고리 */}
-                {product.category && (
-                  <span className="inline-block px-3 py-1 bg-purple-100 text-[#7C3FBF] text-xs font-semibold rounded-lg mb-2">
-                    {product.category}
-                  </span>
+                {/* 카테고리 태그들 */}
+                {product.categoryTags && product.categoryTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {product.categoryTags
+                      .sort((a, b) => a.level - b.level)
+                      .map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-block px-2 py-1 bg-purple-100 text-[#7C3FBF] text-xs font-semibold rounded-lg"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                  </div>
                 )}
 
                 {/* 상품명 */}
@@ -435,7 +482,7 @@ function AddToCartModal({
         name: product.name,
         price: product.price,
         quantity,
-        category: product.category,
+        category: product.categoryTags?.[0]?.name, // 첫 번째 카테고리 태그 사용
         brand: product.brand,
         selectedDiscountIds: [],
       });

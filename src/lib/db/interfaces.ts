@@ -39,6 +39,7 @@ export interface IDatabase {
   findProductById(id: string): Promise<IProduct | null>;
   findProductByBarcode(barcode: string): Promise<IProduct | null>;
   createProduct(data: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>): Promise<IProduct>;
+  bulkCreateProducts(data: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>[]): Promise<{ insertedCount: number; insertedIds: string[] }>;
   updateProduct(id: string, data: Partial<IProduct>): Promise<IProduct | null>;
   deleteProduct(id: string): Promise<boolean>;
   countProducts(filter?: QueryFilter<IProduct>): Promise<number>;

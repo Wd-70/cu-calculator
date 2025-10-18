@@ -71,6 +71,20 @@ export class MongoDBAdapter implements IDatabase {
     return product.toObject();
   }
 
+  async bulkCreateProducts(
+    data: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>[]
+  ): Promise<{ insertedCount: number; insertedIds: string[] }> {
+    if (data.length === 0) {
+      return { insertedCount: 0, insertedIds: [] };
+    }
+
+    const result = await Product.insertMany(data, { ordered: false });
+    return {
+      insertedCount: result.length,
+      insertedIds: result.map((doc) => doc._id.toString()),
+    };
+  }
+
   async updateProduct(
     id: string,
     data: Partial<IProduct>
@@ -78,7 +92,7 @@ export class MongoDBAdapter implements IDatabase {
     const product = await Product.findByIdAndUpdate(
       id,
       { $set: data },
-      { new: true, runValidators: false }
+      { new: true, runValidators: false, strict: false }
     ).exec();
     return product ? product.toObject() : null;
   }

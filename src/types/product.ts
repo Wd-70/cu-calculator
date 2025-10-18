@@ -1,11 +1,17 @@
 import { Types } from 'mongoose';
 
+// 카테고리 태그 계층 구조
+export interface CategoryTag {
+  name: string;
+  level: number; // 0: 메인 카테고리, 1: 중분류, 2: 소분류, etc.
+}
+
 export interface IProduct {
   _id: Types.ObjectId;
   barcode: string;
   name: string;
   price: number;
-  category?: string;
+  categoryTags?: CategoryTag[]; // 모든 카테고리 태그 (계층 구조 포함)
   brand?: string;
   imageUrl?: string;
   cuProductCode?: string;

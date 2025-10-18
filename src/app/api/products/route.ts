@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      filter.category = category;
+      // categoryTags 배열 내에서 해당 이름을 가진 태그가 있는지 검색
+      filter.categoryTags = { $elemMatch: { name: category } };
     }
 
     const total = await db.countProducts(filter);

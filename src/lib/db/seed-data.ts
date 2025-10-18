@@ -10,109 +10,8 @@ import { IDiscountRule } from '@/types/discount';
 import { PAYMENT_METHODS } from '@/types/payment';
 import { Types } from 'mongoose';
 
-// 샘플 상품 데이터
-export const sampleProducts: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>[] = [
-  {
-    barcode: '8801234567890',
-    name: '코카콜라 500ml',
-    price: 1500,
-    category: '음료',
-    brand: '코카콜라',
-    imageUrl: '',
-    createdBy: 'system',
-    modificationCount: 0,
-    isVerified: true,
-    verificationCount: 5,
-    reportCount: 0,
-  },
-  {
-    barcode: '8801234567891',
-    name: '스프라이트 500ml',
-    price: 1500,
-    category: '음료',
-    brand: '코카콜라',
-    imageUrl: '',
-    createdBy: 'system',
-    modificationCount: 0,
-    isVerified: true,
-    verificationCount: 5,
-    reportCount: 0,
-  },
-  {
-    barcode: '8801234567892',
-    name: '프링글스 오리지널',
-    price: 2500,
-    category: '과자',
-    brand: '프링글스',
-    imageUrl: '',
-    createdBy: 'system',
-    modificationCount: 0,
-    isVerified: true,
-    verificationCount: 5,
-    reportCount: 0,
-  },
-  {
-    barcode: '8801234567893',
-    name: '허니버터칩',
-    price: 2000,
-    category: '과자',
-    brand: '해태',
-    imageUrl: '',
-    createdBy: 'system',
-    modificationCount: 0,
-    isVerified: true,
-    verificationCount: 5,
-    reportCount: 0,
-  },
-  {
-    barcode: '8801234567894',
-    name: '삼각김밥 참치',
-    price: 1800,
-    category: '도시락',
-    brand: 'CU',
-    imageUrl: '',
-    createdBy: 'system',
-    modificationCount: 0,
-    isVerified: true,
-    verificationCount: 5,
-    reportCount: 0,
-  },
-  {
-    barcode: '8801234567895',
-    name: '컵라면 신라면',
-    price: 1300,
-    category: '라면',
-    brand: '농심',
-    imageUrl: '',
-    createdBy: 'system',
-    modificationCount: 0,
-    isVerified: true,
-    verificationCount: 5,
-    reportCount: 0,
-  },
-  {
-    barcode: '8801234567896',
-    name: '도시락 불고기',
-    price: 3300,
-    category: '도시락',
-    brand: 'CU',
-    imageUrl: '',
-    createdBy: 'system',
-    modificationCount: 0,
-    isVerified: true,
-    verificationCount: 5,
-    reportCount: 0,
-  },
-];
-
 // 샘플 할인 규칙 v2 (엑셀 로직 기반)
-export function getSampleDiscountRulesV2(productIds: {
-  coke: string;
-  sprite: string;
-  pringles: string;
-  honeyButter: string;
-  dosirak: string;
-}): Omit<IDiscountRule, '_id' | 'createdAt' | 'updatedAt'>[] {
+export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'createdAt' | 'updatedAt'>[] {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -391,6 +290,56 @@ export function getSampleDiscountRulesV2(productIds: {
       description: 'KB국민카드 청구할인',
       isActive: true,
     },
+
+    // ============================================================================
+    // 7. 1+1 행사
+    // ============================================================================
+    {
+      name: '1+1',
+      description: '1+1 행사 - 하나 사면 하나 더 (무료 증정)',
+      config: {
+        category: 'promotion',
+        valueType: 'buy_n_get_m',
+        buyQuantity: 1,
+        getQuantity: 1,
+        promotionType: '1+1',
+      },
+      applicationMethod: 'per_item',
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
+      validFrom: monthStart,
+      validTo: monthEnd,
+      eventMonth: currentMonth,
+      eventName: '1+1 행사',
+      isActive: true,
+    },
+
+    // ============================================================================
+    // 8. 2+1 행사
+    // ============================================================================
+    {
+      name: '2+1',
+      description: '2+1 행사 - 두 개 사면 하나 더 (무료 증정)',
+      config: {
+        category: 'promotion',
+        valueType: 'buy_n_get_m',
+        buyQuantity: 2,
+        getQuantity: 1,
+        promotionType: '2+1',
+      },
+      applicationMethod: 'per_item',
+      applicableProducts: [],
+      applicableCategories: [],
+      requiredPaymentMethods: [],
+      paymentMethodNames: [],
+      validFrom: monthStart,
+      validTo: monthEnd,
+      eventMonth: currentMonth,
+      eventName: '2+1 행사',
+      isActive: true,
+    },
   ];
 }
 
@@ -399,30 +348,8 @@ export async function seedDatabase(db: any): Promise<void> {
   console.log('🌱 Seeding database with v2 structure...');
 
   try {
-    // 1. 상품 생성
-    const createdProducts: any[] = [];
-    for (const productData of sampleProducts) {
-      const existing = await db.findProductByBarcode(productData.barcode);
-      if (!existing) {
-        const product = await db.createProduct(productData);
-        createdProducts.push(product);
-        console.log(`✅ Created product: ${product.name}`);
-      } else {
-        createdProducts.push(existing);
-        console.log(`⏭️  Product already exists: ${existing.name}`);
-      }
-    }
-
-    // 2. 할인 규칙 생성 (v2)
-    const productIdMap = {
-      coke: createdProducts[0]._id.toString(),
-      sprite: createdProducts[1]._id.toString(),
-      pringles: createdProducts[2]._id.toString(),
-      honeyButter: createdProducts[3]._id.toString(),
-      dosirak: createdProducts[6]._id.toString(),
-    };
-
-    const discountRules = getSampleDiscountRulesV2(productIdMap);
+    // 할인 규칙 생성 (v2)
+    const discountRules = getSampleDiscountRulesV2();
 
     for (const ruleData of discountRules) {
       const existing = await db.findDiscountRules({ name: ruleData.name });
@@ -439,8 +366,7 @@ export async function seedDatabase(db: any): Promise<void> {
 
     console.log('\n✨ Database seeding completed (v2)!');
     console.log('📊 Created:');
-    console.log(`   - ${sampleProducts.length} products`);
-    console.log(`   - ${discountRules.length} discount rules across 6 categories`);
+    console.log(`   - ${discountRules.length} discount rules across 8 categories (including 1+1 and 2+1)`);
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;

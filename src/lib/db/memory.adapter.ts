@@ -255,6 +255,31 @@ export class MemoryAdapter implements IDatabase {
     return newProduct;
   }
 
+  async bulkCreateProducts(
+    data: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>[]
+  ): Promise<{ insertedCount: number; insertedIds: string[] }> {
+    if (data.length === 0) {
+      return { insertedCount: 0, insertedIds: [] };
+    }
+
+    const products = this.store.getProducts();
+    const now = new Date();
+    const newProducts: IProduct[] = data.map((item) => ({
+      ...item,
+      _id: new Types.ObjectId(generateObjectId()),
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    products.push(...newProducts);
+    this.store.setProducts(products);
+
+    return {
+      insertedCount: newProducts.length,
+      insertedIds: newProducts.map((p) => p._id.toString()),
+    };
+  }
+
   async updateProduct(
     id: string,
     data: Partial<IProduct>

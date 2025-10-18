@@ -3,18 +3,18 @@ import { IDiscountRule, DiscountConfig } from '@/types/discount';
 
 /**
  * DiscountConfig를 위한 서브스키마
- * 6가지 할인 카테고리를 지원
+ * 7가지 할인 카테고리를 지원 (프로모션 추가)
  */
 const DiscountConfigSchema = new Schema({
   category: {
     type: String,
     required: true,
-    enum: ['coupon', 'telecom', 'payment_event', 'voucher', 'payment_instant', 'payment_compound'],
+    enum: ['coupon', 'telecom', 'payment_event', 'voucher', 'payment_instant', 'payment_compound', 'promotion'],
   },
   valueType: {
     type: String,
     required: true,
-    enum: ['percentage', 'fixed_amount', 'tiered_amount', 'voucher_amount'],
+    enum: ['percentage', 'fixed_amount', 'tiered_amount', 'voucher_amount', 'buy_n_get_m'],
   },
 
   // 공통 필드
@@ -45,6 +45,11 @@ const DiscountConfigSchema = new Schema({
   // 쿠폰 할인
   subscriptionCost: Number,
   usageLimit: Number,
+
+  // 프로모션 할인 (1+1, 2+1 등)
+  buyQuantity: Number,
+  getQuantity: Number,
+  promotionType: String,
 }, { _id: false });
 
 const DiscountRuleSchema = new Schema<IDiscountRule>(

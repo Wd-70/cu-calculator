@@ -16,7 +16,8 @@ export type DiscountCategory =
   | 'payment_event'    // 결제행사 할인 (CU 결제행사)
   | 'voucher'          // 금액권 (CU 상품권, 포인트)
   | 'payment_instant'  // 결제 할인(독립형) - 네플, 즉시할인 카드
-  | 'payment_compound'; // 결제 할인(누적형) - 오키클럽, 청구할인 카드
+  | 'payment_compound' // 결제 할인(누적형) - 오키클럽, 청구할인 카드
+  | 'promotion';       // 프로모션 할인 (1+1, 2+1 등)
 
 export const DISCOUNT_CATEGORY_ORDER: Record<DiscountCategory, number> = {
   coupon: 1,
@@ -25,6 +26,7 @@ export const DISCOUNT_CATEGORY_ORDER: Record<DiscountCategory, number> = {
   voucher: 4,
   payment_instant: 5,
   payment_compound: 6,
+  promotion: 7,
 };
 
 export const DISCOUNT_CATEGORY_NAMES: Record<DiscountCategory, string> = {
@@ -34,6 +36,7 @@ export const DISCOUNT_CATEGORY_NAMES: Record<DiscountCategory, string> = {
   voucher: '금액권',
   payment_instant: '결제 할인(독립형)',
   payment_compound: '결제 할인(누적형)',
+  promotion: '프로모션',
 };
 
 // ============================================================================
@@ -44,7 +47,8 @@ export type DiscountValueType =
   | 'percentage'        // 퍼센트 할인 (예: 25%)
   | 'fixed_amount'      // 고정 금액 할인 (예: 1000원)
   | 'tiered_amount'     // 구간 금액 할인 (예: 1천원당 300원)
-  | 'voucher_amount';   // 금액권 차감
+  | 'voucher_amount'    // 금액권 차감
+  | 'buy_n_get_m';      // N개 구매 시 M개 무료 (1+1, 2+1 등)
 
 // ============================================================================
 // 쿠폰 할인
@@ -139,6 +143,19 @@ export interface PaymentCompoundDiscount {
 }
 
 // ============================================================================
+// 프로모션 할인 (1+1, 2+1 등)
+// ============================================================================
+
+export interface PromotionDiscount {
+  category: 'promotion';
+  valueType: 'buy_n_get_m';
+
+  buyQuantity: number; // 구매해야 하는 수량 (예: 1+1의 경우 1, 2+1의 경우 2)
+  getQuantity: number; // 무료로 받는 수량 (예: 1+1의 경우 1, 2+1의 경우 1)
+  promotionType: string; // 프로모션 이름 (예: '1+1', '2+1', '3+1')
+}
+
+// ============================================================================
 // 통합 할인 타입
 // ============================================================================
 
@@ -148,7 +165,8 @@ export type DiscountConfig =
   | PaymentEventDiscount
   | VoucherDiscount
   | PaymentInstantDiscount
-  | PaymentCompoundDiscount;
+  | PaymentCompoundDiscount
+  | PromotionDiscount;
 
 // ============================================================================
 // 할인 적용 방식

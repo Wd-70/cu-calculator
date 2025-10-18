@@ -155,39 +155,8 @@ export async function POST(request: NextRequest) {
         price: number;
         imageUrl: string;
         barcode: string;
-        category: string;
         detailUrl: string;
       }> = [];
-
-      // 카테고리 매핑 함수
-      const getCategoryFromPrefix = (name: string): string => {
-        // CU 상품명 접두사 패턴
-        if (name.startsWith('도)')) {
-          return '도시락/김밥';
-        } else if (name.startsWith('김)')) {
-          return '도시락/김밥';
-        } else if (name.startsWith('주)')) {
-          return '삼각김밥';
-        } else if (name.startsWith('햄)')) {
-          return '샌드위치/햄버거';
-        } else if (name.startsWith('샌)')) {
-          return '샌드위치/햄버거';
-        } else if (name.startsWith('샐)')) {
-          return '샐러드';
-        } else if (name.startsWith('면)')) {
-          return '식품';
-        } else if (name.startsWith('핫)')) {
-          return '식품';
-        } else if (name.includes('음료') || name.includes('커피') || name.includes('주스')) {
-          return '음료';
-        } else if (name.includes('과자') || name.includes('스낵')) {
-          return '과자';
-        } else if (name.includes('아이스') || name.includes('빙과')) {
-          return '아이스크림';
-        } else {
-          return '식품';
-        }
-      };
 
       productElements.forEach((elem, index) => {
 
@@ -252,16 +221,12 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // 카테고리 결정 (일단 임시로, 나중에 상세페이지에서 업데이트)
-          const category = getCategoryFromPrefix(name);
-
           if (name && price > 0 && barcode) {
             results.push({
-              name: name.replace(/^[가-힣]\)/, '').trim(), // 접두사 제거
+              name: name.trim(), // 원본 이름 유지
               price,
               imageUrl,
               barcode,
-              category,
               detailUrl,
               promotion
             });
@@ -345,7 +310,6 @@ export async function POST(request: NextRequest) {
       console.log(`\n여러 detailUrl을 가진 상품 ${multiUrlProducts.length}개 발견:\n`);
       multiUrlProducts.forEach((product, index) => {
         console.log(`${index + 1}. ${product.name} (바코드: ${product.barcode})`);
-        console.log(`   - 카테고리: ${product.category}`);
         console.log(`   - 가격: ${product.price}원`);
         console.log(`   - 프로모션: ${product.promotion || '없음'}`);
         console.log(`   - detailUrls (${product.detailUrls.length}개):`);

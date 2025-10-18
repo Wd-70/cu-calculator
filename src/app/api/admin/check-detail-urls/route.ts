@@ -25,26 +25,27 @@ export async function GET(request: NextRequest) {
     // 전체 상품 수
     const totalProducts = await db.countProducts({});
 
-    // detailUrl이 있는 상품 수
+    // detailUrls가 있는 상품 수 (배열이고 비어있지 않은 것)
     const productsWithDetailUrl = await db.countProducts({
-      detailUrl: { $exists: true, $ne: null, $ne: '' }
+      detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } }
     });
 
-    // detailUrl이 없는 상품 수
+    // detailUrls가 없는 상품 수
     const productsWithoutDetailUrl = totalProducts - productsWithDetailUrl;
 
-    // 샘플 상품 몇 개 가져오기 (detailUrl 있는 것)
+    // 샘플 상품 몇 개 가져오기 (detailUrls 있는 것)
     const sampleWithDetailUrl = await db.findProducts(
-      { detailUrl: { $exists: true, $ne: null, $ne: '' } },
+      { detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } } },
       { limit: 3 }
     );
 
-    // 샘플 상품 몇 개 가져오기 (detailUrl 없는 것)
+    // 샘플 상품 몇 개 가져오기 (detailUrls 없는 것)
     const sampleWithoutDetailUrl = await db.findProducts(
       { $or: [
-        { detailUrl: { $exists: false } },
-        { detailUrl: null },
-        { detailUrl: '' }
+        { detailUrls: { $exists: false } },
+        { detailUrls: null },
+        { detailUrls: [] },
+        { detailUrls: { $size: 0 } }
       ]},
       { limit: 3 }
     );
@@ -58,12 +59,12 @@ export async function GET(request: NextRequest) {
         sampleWithDetailUrl: sampleWithDetailUrl.map(p => ({
           name: p.name,
           barcode: p.barcode,
-          detailUrl: p.detailUrl
+          detailUrls: p.detailUrls
         })),
         sampleWithoutDetailUrl: sampleWithoutDetailUrl.map(p => ({
           name: p.name,
           barcode: p.barcode,
-          detailUrl: p.detailUrl
+          detailUrls: p.detailUrls
         }))
       }
     });

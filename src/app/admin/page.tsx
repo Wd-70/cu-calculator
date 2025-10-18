@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getCurrentUserAddress } from '@/lib/userAuth';
 import Toast from '@/components/Toast';
+import ConflictResolutionPanel from '@/components/ConflictResolutionPanel';
 
 interface CrawledProduct {
   name: string;
@@ -26,7 +27,7 @@ export default function AdminPage() {
 
   const [maxProducts, setMaxProducts] = useState(50);
   const [updatingCategories, setUpdatingCategories] = useState(false);
-  const [maxCategoryUpdates, setMaxCategoryUpdates] = useState(10);
+  const [maxCategoryUpdates, setMaxCategoryUpdates] = useState(999999); // 전체 업데이트
   const [checkingDetailUrls, setCheckingDetailUrls] = useState(false);
   const [detailUrlStats, setDetailUrlStats] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -389,9 +390,16 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 카테고리 업데이트 */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">카테고리 정보 업데이트</h2>
+        {/* 실시간 카테고리 업데이트 및 충돌 해결 */}
+        <ConflictResolutionPanel
+          userAddress={userAddress}
+          maxProducts={maxCategoryUpdates}
+          onToast={(message, type) => setToast({ message, type })}
+        />
+
+        {/* 카테고리 업데이트 (기존 방식) - 숨김 처리 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 mt-6 hidden">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">카테고리 정보 업데이트 (기존 방식)</h2>
 
           <div className="flex gap-4 items-end mb-4">
             <div className="flex-1">
