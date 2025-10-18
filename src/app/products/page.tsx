@@ -22,6 +22,9 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [carts, setCarts] = useState<ICart[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [showCartModal, setShowCartModal] = useState(false);
@@ -29,7 +32,10 @@ export default function ProductsPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
-    fetchProducts();
+    // 초기 로드
+    setProducts([]);
+    setHasMore(true);
+    fetchProducts(true);
     loadCarts();
 
     // URL 파라미터에서 검색어 가져오기
@@ -39,17 +45,60 @@ export default function ProductsPage() {
     }
   }, [searchParams]);
 
-  const fetchProducts = async () => {
+  // 무한 스크롤 이벤트 리스너
+  useEffect(() => {
+    const handleScroll = () => {
+      // 페이지 끝에서 300px 이내에 도달하면 로드
+      const scrollThreshold = 300;
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const pageHeight = document.documentElement.scrollHeight;
+
+      if (
+        scrollPosition >= pageHeight - scrollThreshold &&
+        !loading &&
+        !loadingMore &&
+        hasMore
+      ) {
+        fetchProducts(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, loadingMore, hasMore, products.length]);
+
+  const fetchProducts = async (isInitial: boolean = false) => {
+    if (isInitial) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const response = await fetch('/api/products');
+      const offset = isInitial ? 0 : products.length;
+      const limit = 50; // 한 번에 50개씩 로드
+      const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`);
       const data = await response.json();
+
       if (data.success) {
-        setProducts(data.data);
+        if (isInitial) {
+          setProducts(data.data);
+        } else {
+          // 중복 제거: 기존 products와 새로 받은 data를 합친 후 _id 기준으로 중복 제거
+          setProducts(prev => {
+            const existingIds = new Set(prev.map(p => p._id));
+            const newProducts = data.data.filter((p: Product) => !existingIds.has(p._id));
+            return [...prev, ...newProducts];
+          });
+        }
+        setTotal(data.total);
+        setHasMore(data.data.length === limit); // 50개 미만이면 더 이상 없음
       }
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -144,7 +193,12 @@ export default function ProductsPage() {
         {/* 결과 수 */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-gray-600">
-            총 <span className="font-bold text-[#7C3FBF]">{filteredProducts.length}</span>개 상품
+            총 <span className="font-bold text-[#7C3FBF]">{total.toLocaleString()}</span>개 상품
+            {filteredProducts.length !== total && (
+              <span className="text-sm text-gray-500 ml-2">
+                (현재 {filteredProducts.length.toLocaleString()}개 표시)
+              </span>
+            )}
           </p>
         </div>
 
@@ -187,7 +241,7 @@ export default function ProductsPage() {
               >
                 {/* 상품 이미지 */}
                 {product.imageUrl ? (
-                  <div className="w-full h-40 rounded-xl mb-4 overflow-hidden group-hover:scale-105 transition-transform">
+                  <div className="w-full aspect-square rounded-xl mb-4 overflow-hidden bg-gray-100 group-hover:scale-105 transition-transform">
                     <img
                       src={product.imageUrl}
                       alt={product.name}
@@ -198,7 +252,7 @@ export default function ProductsPage() {
                         const parent = e.currentTarget.parentElement;
                         if (parent) {
                           parent.innerHTML = `
-                            <div class="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
+                            <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
                               <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                               </svg>
@@ -209,7 +263,7 @@ export default function ProductsPage() {
                     />
                   </div>
                 ) : (
-                  <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
@@ -258,6 +312,21 @@ export default function ProductsPage() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* 더 로딩 중 표시 */}
+        {loadingMore && (
+          <div className="flex justify-center items-center py-8">
+            <div className="w-8 h-8 border-4 border-[#7C3FBF] border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-gray-600">더 불러오는 중...</span>
+          </div>
+        )}
+
+        {/* 모든 상품 로드 완료 */}
+        {!loading && !loadingMore && !hasMore && products.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">모든 상품을 불러왔습니다 ({total.toLocaleString()}개)</p>
           </div>
         )}
       </main>

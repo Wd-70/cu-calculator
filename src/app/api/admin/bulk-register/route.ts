@@ -44,7 +44,12 @@ export async function POST(request: NextRequest) {
 
     for (const product of products) {
       try {
-        const { barcode, name, price, category, imageUrl, detailUrl } = product;
+        const { barcode, name, price, category, imageUrl, detailUrl, promotion } = product;
+
+        // 디버깅: 첫 번째 상품의 detailUrl 확인
+        if (results.success === 0 && results.failed === 0) {
+          console.log('첫 번째 상품 데이터:', { barcode, name, price, category, imageUrl, detailUrl, promotion });
+        }
 
         // 필수 필드 검증
         if (!barcode || !name || !price) {
@@ -55,13 +60,15 @@ export async function POST(request: NextRequest) {
 
         // 이미 존재하는 상품인지 확인
         const existingProduct = await db.findProductByBarcode(barcode);
-        if (existingProduct) {
-          results.skipped++;
-          continue;
-        }
+        let productToProcess;
 
-        // 상품 등록
-        await db.createProduct({
+        if (existingProduct) {
+          // 기존 상품이 있으면 프로모션 처리만 진행
+          productToProcess = existingProduct;
+          console.log(`  기존 상품 발견: ${name} (프로모션 정보만 업데이트)`);
+        } else {
+          // 새 상품 등록
+          productToProcess = await db.createProduct({
           barcode,
           name,
           price,
@@ -76,7 +83,65 @@ export async function POST(request: NextRequest) {
           reportCount: 0,
         });
 
-        results.success++;
+          // 디버깅: 첫 번째 상품이 DB에 저장된 후 확인
+          if (results.success === 0) {
+            console.log('DB에 저장된 첫 번째 상품:', {
+              barcode: productToProcess.barcode,
+              name: productToProcess.name,
+              detailUrl: productToProcess.detailUrl,
+              promotion: promotion
+            });
+          }
+        }
+
+        // 프로모션 정보가 있으면 할인 규칙에 자동 추가
+        if (promotion) {
+          console.log(`  상품 "${name}"에 프로모션 "${promotion}" 감지`);
+
+          // 현재 날짜 기준으로 유효한 할인 규칙 찾기
+          const now = new Date();
+          const discountRules = await db.findDiscountRules({
+            name: { $regex: promotion, $options: 'i' },
+            isActive: true,
+            validFrom: { $lte: now },
+            validTo: { $gte: now }
+          });
+
+          if (discountRules.length > 0) {
+            // 현재 날짜에 가장 가까운 규칙 선택
+            const discountRule = discountRules.sort((a: any, b: any) => {
+              const aStart = new Date(a.validFrom).getTime();
+              const bStart = new Date(b.validFrom).getTime();
+              const nowTime = now.getTime();
+              return Math.abs(nowTime - bStart) - Math.abs(nowTime - aStart);
+            })[0];
+
+            // 중복 확인 후 추가
+            const productId = productToProcess._id.toString();
+            const isAlreadyIncluded = discountRule.applicableProducts.some(
+              (id: any) => id.toString() === productId
+            );
+
+            if (!isAlreadyIncluded) {
+              discountRule.applicableProducts.push(productToProcess._id);
+              await db.updateDiscountRule(discountRule._id.toString(), {
+                applicableProducts: discountRule.applicableProducts
+              });
+              console.log(`    "${discountRule.name}" 할인 규칙에 추가됨`);
+            } else {
+              console.log(`    이미 "${discountRule.name}" 할인 규칙에 포함되어 있음`);
+            }
+          } else {
+            console.log(`    "${promotion}" 프로모션에 해당하는 유효한 할인 규칙을 찾지 못함`);
+          }
+        }
+
+        // 결과 카운트 (기존 상품은 skipped, 새 상품은 success)
+        if (existingProduct) {
+          results.skipped++;
+        } else {
+          results.success++;
+        }
       } catch (error) {
         results.failed++;
         results.errors.push(`${product.name || product.barcode}: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);

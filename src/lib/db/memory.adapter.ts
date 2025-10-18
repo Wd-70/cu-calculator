@@ -92,6 +92,21 @@ function matchesFilter<T extends Record<string, any>>(
 
     // Handle special operators
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // $exists operator
+      if ('$exists' in value) {
+        const exists = itemValue !== undefined && itemValue !== null;
+        if (value.$exists !== exists) return false;
+        continue;
+      }
+
+      // $ne operator (not equal)
+      if ('$ne' in value) {
+        if (itemValue === value.$ne || String(itemValue) === String(value.$ne)) {
+          return false;
+        }
+        continue;
+      }
+
       // $in operator
       if ('$in' in value) {
         if (!Array.isArray(value.$in)) continue;

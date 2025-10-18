@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // detailUrl이 있는 모든 상품 (최대 maxProducts개)
+      // detailUrl이 있다 = 아직 업데이트되지 않은 상품
       const allProducts = await db.findProducts(
         { detailUrl: { $exists: true, $ne: null, $ne: '' } },
         { limit: maxProducts }
@@ -96,45 +97,122 @@ export async function POST(request: NextRequest) {
           timeout: 30000
         });
 
-        // 페이지 로드 대기
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // 폴링 방식으로 페이지 로드 대기 (카테고리 요소가 나타날 때까지)
+        let categoryLoaded = false;
+        let pollAttempts = 0;
+        const maxPollAttempts = 20; // 최대 10초 (500ms * 20)
 
-        // 태그(카테고리) 추출
-        const categoryTags = await page.evaluate(() => {
-          // 여러 가능한 셀렉터 시도
-          const selectors = [
-            '.prod_keyward a', // 태그 링크
-            '.prod_keyward span',
-            '.tag-list a',
-            '.tag-list span',
-            '.product-tag a',
-            '.product-tag span'
-          ];
+        while (pollAttempts < maxPollAttempts && !categoryLoaded) {
+          await new Promise(resolve => setTimeout(resolve, 500));
 
-          let tags: string[] = [];
+          categoryLoaded = await page.evaluate(() => {
+            const mainCategory = document.querySelector('.prodView .on');
+            return mainCategory !== null;
+          });
 
-          for (const selector of selectors) {
-            const elements = document.querySelectorAll(selector);
-            if (elements.length > 0) {
-              tags = Array.from(elements).map(el => el.textContent?.trim() || '').filter(tag => tag);
-              break;
-            }
+          if (categoryLoaded) {
+            console.log(`  페이지 로드 완료 (${pollAttempts * 500}ms 소요)`);
+            break;
           }
+
+          pollAttempts++;
+        }
+
+        // 카테고리 추출
+        const categoryTags = await page.evaluate(() => {
+          const tags: string[] = [];
+
+          // 대분류: .prodView .on
+          const mainCategory = document.querySelector('.prodView .on');
+          if (mainCategory) {
+            tags.push(mainCategory.textContent?.trim() || '');
+          }
+
+          // 소분류: .prodTag li
+          const subCategories = document.querySelectorAll('.prodTag li');
+          subCategories.forEach(li => {
+            const text = li.textContent?.trim() || '';
+            if (text && !tags.includes(text)) {
+              tags.push(text);
+            }
+          });
 
           return tags;
         });
 
         if (categoryTags.length > 0) {
-          // 첫 번째 태그를 카테고리로 사용
-          const newCategory = categoryTags[0];
-
           console.log(`  Found tags: ${categoryTags.join(', ')}`);
-          console.log(`  Setting category: ${newCategory}`);
 
-          // 데이터베이스 업데이트
-          await db.updateProduct(product._id.toString(), {
-            category: newCategory
-          });
+          // 프로모션 태그와 카테고리 태그 분리
+          const promotionTags = categoryTags.filter(tag => tag.match(/^\d+\+\d+$/)); // "1+1", "2+1" 등
+          const categoryOnlyTags = categoryTags.filter(tag => !tag.match(/^\d+\+\d+$/));
+
+          // 카테고리 설정 (소분류 우선, 없으면 대분류)
+          let newCategory = '';
+          if (categoryOnlyTags.length > 1) {
+            // 마지막 태그가 가장 세부적인 카테고리
+            newCategory = categoryOnlyTags[categoryOnlyTags.length - 1];
+          } else if (categoryOnlyTags.length === 1) {
+            newCategory = categoryOnlyTags[0];
+          }
+
+          if (newCategory) {
+            console.log(`  Setting category: ${newCategory}`);
+            // 카테고리 업데이트 후 detailUrl 제거 (재업데이트 방지)
+            const updated = await db.updateProduct(product._id.toString(), {
+              category: newCategory,
+              detailUrl: null
+            });
+            console.log(`  Updated product detailUrl: ${updated?.detailUrl}`);
+          }
+
+          // 프로모션 태그 처리 (1+1, 2+1 등)
+          for (const promotionTag of promotionTags) {
+            console.log(`  Processing promotion: ${promotionTag}`);
+
+            // 현재 날짜 기준으로 유효한 할인 규칙 찾기
+            const now = new Date();
+            const discountRules = await db.findDiscountRules({
+              name: { $regex: promotionTag, $options: 'i' },
+              isActive: true,
+              validFrom: { $lte: now },
+              validTo: { $gte: now }
+            });
+
+            if (discountRules.length > 0) {
+              // 여러 개의 규칙이 있을 경우:
+              // 1. 현재 날짜가 유효기간 내에 있는 규칙들 중
+              // 2. validFrom이 현재에 가장 가까운 것 선택 (가장 최근에 시작된 것)
+              const discountRule = discountRules.sort((a: any, b: any) => {
+                const aStart = new Date(a.validFrom).getTime();
+                const bStart = new Date(b.validFrom).getTime();
+                const nowTime = now.getTime();
+                // 현재 시간에 더 가까운 것을 우선
+                return Math.abs(nowTime - bStart) - Math.abs(nowTime - aStart);
+              })[0];
+
+              console.log(`    Found valid rule: ${discountRule.name} (${new Date(discountRule.validFrom).toLocaleDateString()} ~ ${new Date(discountRule.validTo).toLocaleDateString()})`);
+
+              // 이미 상품이 포함되어 있는지 확인
+              const productId = product._id.toString();
+              const isAlreadyIncluded = discountRule.applicableProducts.some(
+                (id: any) => id.toString() === productId
+              );
+
+              if (!isAlreadyIncluded) {
+                // 상품을 할인 규칙에 추가
+                discountRule.applicableProducts.push(product._id);
+                await db.updateDiscountRule(discountRule._id.toString(), {
+                  applicableProducts: discountRule.applicableProducts
+                });
+                console.log(`    Added to discount rule: ${discountRule.name}`);
+              } else {
+                console.log(`    Already in discount rule: ${discountRule.name}`);
+              }
+            } else {
+              console.log(`    No valid discount rule found for: ${promotionTag} (현재 날짜 기준)`);
+            }
+          }
 
           results.success++;
         } else {
@@ -142,8 +220,8 @@ export async function POST(request: NextRequest) {
           results.skipped++;
         }
 
-        // 다음 요청 전 대기 (서버 부하 방지)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // 다음 요청 전 최소 대기 (서버 부하 방지) - 폴링으로 이미 대기했으므로 짧게
+        await new Promise(resolve => setTimeout(resolve, 500));
 
       } catch (error) {
         console.error(`Error processing ${product.name}:`, error);

@@ -27,6 +27,8 @@ export default function AdminPage() {
   const [maxProducts, setMaxProducts] = useState(50);
   const [updatingCategories, setUpdatingCategories] = useState(false);
   const [maxCategoryUpdates, setMaxCategoryUpdates] = useState(10);
+  const [checkingDetailUrls, setCheckingDetailUrls] = useState(false);
+  const [detailUrlStats, setDetailUrlStats] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
@@ -228,6 +230,41 @@ export default function AdminPage() {
     }
   };
 
+  const handleCheckDetailUrls = async () => {
+    if (!userAddress) {
+      setToast({ message: '계정이 필요합니다.', type: 'error' });
+      return;
+    }
+
+    try {
+      setCheckingDetailUrls(true);
+
+      const response = await fetch(`/api/admin/check-detail-urls?accountAddress=${userAddress}`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setDetailUrlStats(data.data);
+        setToast({
+          message: '상태를 확인했습니다.',
+          type: 'success'
+        });
+      } else {
+        setToast({
+          message: data.error || '상태 확인에 실패했습니다.',
+          type: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to check detail URLs:', error);
+      setToast({
+        message: '상태 확인 중 오류가 발생했습니다.',
+        type: 'error'
+      });
+    } finally {
+      setCheckingDetailUrls(false);
+    }
+  };
+
   // 로딩 중
   if (checkingAdmin) {
     return (
@@ -356,7 +393,7 @@ export default function AdminPage() {
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">카테고리 정보 업데이트</h2>
 
-          <div className="flex gap-4 items-end">
+          <div className="flex gap-4 items-end mb-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 한 번에 업데이트할 상품 수
@@ -372,13 +409,61 @@ export default function AdminPage() {
             </div>
 
             <button
+              onClick={handleCheckDetailUrls}
+              disabled={checkingDetailUrls || !userAddress}
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {checkingDetailUrls ? '확인 중...' : 'DetailUrl 상태 확인'}
+            </button>
+
+            <button
               onClick={handleUpdateCategories}
               disabled={updatingCategories || !userAddress}
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
-              {updatingCategories ? '업데이트 중...' : '상세 페이지에서 카테고리 업데이트'}
+              {updatingCategories ? '업데이트 중...' : '카테고리 업데이트'}
             </button>
           </div>
+
+          {detailUrlStats && (
+            <div className="mb-4 p-4 bg-blue-50 rounded-xl">
+              <p className="text-sm font-bold text-blue-900 mb-2">DetailUrl 통계</p>
+              <div className="grid grid-cols-3 gap-4 mb-3">
+                <div>
+                  <p className="text-xs text-blue-700">전체 상품</p>
+                  <p className="text-2xl font-bold text-blue-900">{detailUrlStats.totalProducts.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-green-700">DetailUrl 있음</p>
+                  <p className="text-2xl font-bold text-green-900">{detailUrlStats.productsWithDetailUrl.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-red-700">DetailUrl 없음</p>
+                  <p className="text-2xl font-bold text-red-900">{detailUrlStats.productsWithoutDetailUrl.toLocaleString()}</p>
+                </div>
+              </div>
+              {detailUrlStats.sampleWithDetailUrl.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-xs font-semibold text-blue-800 mb-1">DetailUrl 있는 샘플:</p>
+                  {detailUrlStats.sampleWithDetailUrl.map((p: any, i: number) => (
+                    <p key={i} className="text-xs text-blue-700 truncate">
+                      • {p.name} ({p.barcode})
+                    </p>
+                  ))}
+                </div>
+              )}
+              {detailUrlStats.sampleWithoutDetailUrl.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-red-800 mb-1">DetailUrl 없는 샘플:</p>
+                  {detailUrlStats.sampleWithoutDetailUrl.map((p: any, i: number) => (
+                    <p key={i} className="text-xs text-red-700 truncate">
+                      • {p.name} ({p.barcode})
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="mt-4 p-4 bg-orange-50 rounded-xl">
             <p className="text-sm text-orange-800 mb-2">
@@ -440,14 +525,16 @@ export default function AdminPage() {
                   </div>
 
                   {product.imageUrl && (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="w-full h-32 object-cover rounded-lg mb-2"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://via.placeholder.com/150x150?text=No+Image';
-                      }}
-                    />
+                    <div className="w-full aspect-square mb-2 overflow-hidden rounded-lg bg-gray-100">
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/200x200?text=No+Image';
+                        }}
+                      />
+                    </div>
                   )}
 
                   <div className="space-y-1 text-xs">
