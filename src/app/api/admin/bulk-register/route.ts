@@ -44,11 +44,11 @@ export async function POST(request: NextRequest) {
 
     for (const product of products) {
       try {
-        const { barcode, name, price, category, imageUrl, detailUrl, promotion } = product;
+        const { barcode, name, price, category, imageUrl, detailUrls, promotion } = product;
 
-        // 디버깅: 첫 번째 상품의 detailUrl 확인
+        // 디버깅: 첫 번째 상품의 detailUrls 확인
         if (results.success === 0 && results.failed === 0) {
-          console.log('첫 번째 상품 데이터:', { barcode, name, price, category, imageUrl, detailUrl, promotion });
+          console.log('첫 번째 상품 데이터:', { barcode, name, price, category, imageUrl, detailUrls, promotion });
         }
 
         // 필수 필드 검증
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
           category: category || null,
           brand: 'CU',
           imageUrl: imageUrl || null,
-          detailUrl: detailUrl || null,
+          detailUrls: detailUrls || [],
           createdBy,
           modificationCount: 0,
           isVerified: false,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
             console.log('DB에 저장된 첫 번째 상품:', {
               barcode: productToProcess.barcode,
               name: productToProcess.name,
-              detailUrl: productToProcess.detailUrl,
+              detailUrls: productToProcess.detailUrls,
               promotion: promotion
             });
           }

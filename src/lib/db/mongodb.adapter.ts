@@ -75,7 +75,11 @@ export class MongoDBAdapter implements IDatabase {
     id: string,
     data: Partial<IProduct>
   ): Promise<IProduct | null> {
-    const product = await Product.findByIdAndUpdate(id, data, { new: true }).exec();
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true, runValidators: false }
+    ).exec();
     return product ? product.toObject() : null;
   }
 
@@ -127,7 +131,11 @@ export class MongoDBAdapter implements IDatabase {
     id: string,
     data: Partial<IDiscountRule>
   ): Promise<IDiscountRule | null> {
-    const rule = await DiscountRule.findByIdAndUpdate(id, data, { new: true }).exec();
+    const rule = await DiscountRule.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true, runValidators: false }
+    ).exec();
     return rule ? rule.toObject() : null;
   }
 

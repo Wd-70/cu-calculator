@@ -52,26 +52,42 @@ export async function POST(request: NextRequest) {
       const categoryUrl = `https://cu.bgfretail.com/product/product.do?category=product&depth2=4&depth3=${categoryNum}`;
 
       await page.goto(categoryUrl, {
-        waitUntil: 'networkidle0', // 네트워크가 완전히 idle 될 때까지 대기
+        waitUntil: 'domcontentloaded',
         timeout: 60000
       });
 
-      // 페이지 로드 대기
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // 폴링 방식으로 초기 상품 로드 대기
+      let productCount = 0;
+      let pollAttempts = 0;
+      const maxInitialPollAttempts = 30; // 최대 6초 (200ms * 30)
 
-      // 초기 상품 개수 확인
-      let productCount = await page.evaluate(() => {
-        return document.querySelectorAll('.prod_list').length;
-      });
-      console.log(`카테고리 ${categoryNum} - 초기 상품: ${productCount}개`);
+      while (pollAttempts < maxInitialPollAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-      // "더보기" 버튼을 클릭하여 더 많은 상품 로드
+        productCount = await page.evaluate(() => {
+          return document.querySelectorAll('.prod_list').length;
+        });
+
+        // 상품이 로드되었으면 즉시 다음으로
+        if (productCount > 0) {
+          console.log(`카테고리 ${categoryNum} - 초기 상품 로드 완료: ${productCount}개 (${pollAttempts * 200}ms 소요)`);
+          break;
+        }
+
+        pollAttempts++;
+      }
+
+      if (productCount === 0) {
+        console.log(`카테고리 ${categoryNum} - 상품 로드 실패, 다음 카테고리로`);
+        continue;
+      }
+
+      // "더보기" 버튼을 클릭하여 더 많은 상품 로드 (제한 없음)
       let clickAttempts = 0;
-      const maxClickAttempts = 10; // 카테고리당 최대 10번 클릭
       const remainingNeeded = maxProducts - allProducts.length;
 
-      while (clickAttempts < maxClickAttempts) {
-        // 현재 페이지에 로드된 상품이 필요한 개수를 초과하면 중단
+      while (true) {
+        // 목표 상품 수에 도달하면 중단
         if (productCount >= remainingNeeded + 40) { // 여유분 40개
           console.log(`카테고리 ${categoryNum} - 충분한 상품 로드됨 (${productCount}개), 추출로 이동`);
           break;
@@ -98,13 +114,13 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        // AJAX 로딩 대기 (폴링 방식)
+        // AJAX 로딩 대기 (폴링 방식 - 200ms 주기)
         let newProductCount = productCount;
         let pollAttempts = 0;
-        const maxPollAttempts = 20; // 최대 10초 (500ms * 20)
+        const maxPollAttempts = 50; // 최대 10초 (200ms * 50)
 
         while (pollAttempts < maxPollAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 200));
 
           newProductCount = await page.evaluate(() => {
             return document.querySelectorAll('.prod_list').length;
@@ -112,7 +128,7 @@ export async function POST(request: NextRequest) {
 
           // 상품이 로드되었으면 즉시 다음으로
           if (newProductCount > productCount) {
-            console.log(`카테고리 ${categoryNum} - 클릭 ${clickAttempts + 1}: ${productCount}개 → ${newProductCount}개 (${pollAttempts * 500}ms 소요)`);
+            console.log(`카테고리 ${categoryNum} - 클릭 ${clickAttempts + 1}: ${productCount}개 → ${newProductCount}개 (${pollAttempts * 200}ms 소요)`);
             break;
           }
 
@@ -121,7 +137,7 @@ export async function POST(request: NextRequest) {
 
         // 폴링이 끝났는데도 상품이 로드되지 않았으면 중단
         if (newProductCount === productCount) {
-          console.log(`카테고리 ${categoryNum} - 더 이상 로드되지 않음 (${maxPollAttempts * 500}ms 대기)`);
+          console.log(`카테고리 ${categoryNum} - 더 이상 로드되지 않음 (${maxPollAttempts * 200}ms 대기)`);
           break;
         }
 
@@ -129,7 +145,7 @@ export async function POST(request: NextRequest) {
         clickAttempts++;
       }
 
-      console.log(`카테고리 ${categoryNum} - 최종 상품 수: ${productCount}개`);
+      console.log(`카테고리 ${categoryNum} - 최종 상품 수: ${productCount}개 (총 ${clickAttempts}번 클릭)`);
 
       // 현재 카테고리의 상품 데이터 추출
       const categoryProducts = await page.evaluate(() => {
@@ -258,19 +274,89 @@ export async function POST(request: NextRequest) {
         return results;
       });
 
-      // 현재 카테고리 상품을 전체 배열에 추가
-      allProducts.push(...categoryProducts);
-      console.log(`카테고리 ${categoryNum} - ${categoryProducts.length}개 추출, 총 ${allProducts.length}개`);
+      // 현재 카테고리 상품을 전체 배열에 추가 (중복 체크 및 detailUrl 병합)
+      const barcodeToIndexMap = new Map<string, number>();
+      allProducts.forEach((p, index) => {
+        barcodeToIndexMap.set(p.barcode, index);
+      });
+
+      let addedCount = 0;
+      let duplicateCount = 0;
+
+      for (const product of categoryProducts) {
+        const existingIndex = barcodeToIndexMap.get(product.barcode);
+
+        if (existingIndex === undefined) {
+          // 새 상품 추가
+          allProducts.push(product);
+          barcodeToIndexMap.set(product.barcode, allProducts.length - 1);
+          addedCount++;
+        } else {
+          // 중복 상품: detailUrl만 추가
+          const existingProduct = allProducts[existingIndex];
+          if (product.detailUrl && !existingProduct.detailUrl.includes(product.detailUrl)) {
+            // detailUrl이 배열이 아니면 배열로 변환
+            if (typeof existingProduct.detailUrl === 'string') {
+              existingProduct.detailUrl = [existingProduct.detailUrl];
+            }
+            if (!Array.isArray(existingProduct.detailUrl)) {
+              existingProduct.detailUrl = [];
+            }
+            existingProduct.detailUrl.push(product.detailUrl);
+          }
+          duplicateCount++;
+        }
+      }
+
+      console.log(`카테고리 ${categoryNum} - ${categoryProducts.length}개 추출, ${addedCount}개 추가, ${duplicateCount}개 중복 (detailUrl 병합), 총 ${allProducts.length}개`);
     }
 
     await browser.close();
 
-    // 중복 제거 (바코드 기준)
-    const uniqueProducts = Array.from(
-      new Map(allProducts.map(p => [p.barcode, p])).values()
-    ).slice(0, maxProducts);
+    // 최종 처리: detailUrl을 detailUrls 배열로 정리
+    const uniqueProducts = allProducts.map(product => {
+      // detailUrl이 문자열이면 배열로 변환
+      let detailUrls: string[] = [];
 
-    console.log(`\n크롤링 완료: ${uniqueProducts.length}개 (중복 제거 후)`);
+      if (Array.isArray(product.detailUrl)) {
+        detailUrls = product.detailUrl;
+      } else if (typeof product.detailUrl === 'string' && product.detailUrl) {
+        detailUrls = [product.detailUrl];
+      }
+
+      // 중복 제거
+      detailUrls = [...new Set(detailUrls)];
+
+      // detailUrl 필드 제거하고 detailUrls만 사용
+      const { detailUrl, ...productWithoutDetailUrl } = product;
+
+      return {
+        ...productWithoutDetailUrl,
+        detailUrls
+      };
+    }).slice(0, maxProducts);
+
+    // 디버깅: detailUrls가 2개 이상인 상품 찾기
+    const multiUrlProducts = uniqueProducts.filter(p => p.detailUrls && p.detailUrls.length > 1);
+
+    console.log(`\n크롤링 완료: ${uniqueProducts.length}개`);
+
+    if (multiUrlProducts.length > 0) {
+      console.log(`\n여러 detailUrl을 가진 상품 ${multiUrlProducts.length}개 발견:\n`);
+      multiUrlProducts.forEach((product, index) => {
+        console.log(`${index + 1}. ${product.name} (바코드: ${product.barcode})`);
+        console.log(`   - 카테고리: ${product.category}`);
+        console.log(`   - 가격: ${product.price}원`);
+        console.log(`   - 프로모션: ${product.promotion || '없음'}`);
+        console.log(`   - detailUrls (${product.detailUrls.length}개):`);
+        product.detailUrls.forEach((url: string, urlIndex: number) => {
+          console.log(`     [${urlIndex + 1}] ${url}`);
+        });
+        console.log('');
+      });
+    } else {
+      console.log('\n모든 상품이 고유한 detailUrl을 가지고 있습니다.');
+    }
 
     // 샘플 상품 출력 (디버깅용)
     if (uniqueProducts.length > 0) {

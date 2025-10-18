@@ -37,15 +37,15 @@ export async function POST(request: NextRequest) {
       // 특정 바코드만
       for (const barcode of barcodes) {
         const product = await db.findProductByBarcode(barcode);
-        if (product && product.detailUrl) {
+        if (product && product.detailUrls && product.detailUrls.length > 0) {
           productsToUpdate.push(product);
         }
       }
     } else {
-      // detailUrl이 있는 모든 상품 (최대 maxProducts개)
-      // detailUrl이 있다 = 아직 업데이트되지 않은 상품
+      // detailUrls가 있는 모든 상품 (최대 maxProducts개)
+      // detailUrls가 있다 = 아직 업데이트되지 않은 상품
       const allProducts = await db.findProducts(
-        { detailUrl: { $exists: true, $ne: null, $ne: '' } },
+        { detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } } },
         { limit: maxProducts }
       );
       productsToUpdate = allProducts;
@@ -81,147 +81,162 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     };
 
-    // 각 상품의 상세 페이지 방문
+    // 각 상품의 모든 상세 페이지 방문
     for (const product of productsToUpdate) {
       try {
-        if (!product.detailUrl) {
+        if (!product.detailUrls || product.detailUrls.length === 0) {
           results.skipped++;
           continue;
         }
 
-        console.log(`Processing: ${product.name} (${product.barcode})`);
+        console.log(`\nProcessing: ${product.name} (${product.barcode})`);
+        console.log(`  Detail URLs: ${product.detailUrls.length}개`);
 
-        // 상세 페이지 이동
-        await page.goto(product.detailUrl, {
-          waitUntil: 'domcontentloaded',
-          timeout: 30000
-        });
+        // 모든 URL에서 수집한 태그를 저장
+        const allCategoryTags = new Set<string>();
+        const allPromotionTags = new Set<string>();
 
-        // 폴링 방식으로 페이지 로드 대기 (카테고리 요소가 나타날 때까지)
-        let categoryLoaded = false;
-        let pollAttempts = 0;
-        const maxPollAttempts = 20; // 최대 10초 (500ms * 20)
+        // 각 detailUrl 방문
+        for (let urlIndex = 0; urlIndex < product.detailUrls.length; urlIndex++) {
+          const detailUrl = product.detailUrls[urlIndex];
+          console.log(`  [${urlIndex + 1}/${product.detailUrls.length}] Visiting: ${detailUrl}`);
 
-        while (pollAttempts < maxPollAttempts && !categoryLoaded) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // 상세 페이지 이동
+          await page.goto(detailUrl, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000
+          });
 
-          categoryLoaded = await page.evaluate(() => {
+          // 폴링 방식으로 페이지 로드 대기 (카테고리 요소가 나타날 때까지)
+          let categoryLoaded = false;
+          let pollAttempts = 0;
+          const maxPollAttempts = 20; // 최대 10초 (500ms * 20)
+
+          while (pollAttempts < maxPollAttempts && !categoryLoaded) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            categoryLoaded = await page.evaluate(() => {
+              const mainCategory = document.querySelector('.prodView .on');
+              return mainCategory !== null;
+            });
+
+            if (categoryLoaded) {
+              console.log(`    페이지 로드 완료 (${pollAttempts * 500}ms 소요)`);
+              break;
+            }
+
+            pollAttempts++;
+          }
+
+          // 카테고리 추출
+          const categoryTags = await page.evaluate(() => {
+            const tags: string[] = [];
+
+            // 대분류: .prodView .on
             const mainCategory = document.querySelector('.prodView .on');
-            return mainCategory !== null;
-          });
-
-          if (categoryLoaded) {
-            console.log(`  페이지 로드 완료 (${pollAttempts * 500}ms 소요)`);
-            break;
-          }
-
-          pollAttempts++;
-        }
-
-        // 카테고리 추출
-        const categoryTags = await page.evaluate(() => {
-          const tags: string[] = [];
-
-          // 대분류: .prodView .on
-          const mainCategory = document.querySelector('.prodView .on');
-          if (mainCategory) {
-            tags.push(mainCategory.textContent?.trim() || '');
-          }
-
-          // 소분류: .prodTag li
-          const subCategories = document.querySelectorAll('.prodTag li');
-          subCategories.forEach(li => {
-            const text = li.textContent?.trim() || '';
-            if (text && !tags.includes(text)) {
-              tags.push(text);
+            if (mainCategory) {
+              tags.push(mainCategory.textContent?.trim() || '');
             }
-          });
 
-          return tags;
-        });
-
-        if (categoryTags.length > 0) {
-          console.log(`  Found tags: ${categoryTags.join(', ')}`);
-
-          // 프로모션 태그와 카테고리 태그 분리
-          const promotionTags = categoryTags.filter(tag => tag.match(/^\d+\+\d+$/)); // "1+1", "2+1" 등
-          const categoryOnlyTags = categoryTags.filter(tag => !tag.match(/^\d+\+\d+$/));
-
-          // 카테고리 설정 (소분류 우선, 없으면 대분류)
-          let newCategory = '';
-          if (categoryOnlyTags.length > 1) {
-            // 마지막 태그가 가장 세부적인 카테고리
-            newCategory = categoryOnlyTags[categoryOnlyTags.length - 1];
-          } else if (categoryOnlyTags.length === 1) {
-            newCategory = categoryOnlyTags[0];
-          }
-
-          if (newCategory) {
-            console.log(`  Setting category: ${newCategory}`);
-            // 카테고리 업데이트 후 detailUrl 제거 (재업데이트 방지)
-            const updated = await db.updateProduct(product._id.toString(), {
-              category: newCategory,
-              detailUrl: null
-            });
-            console.log(`  Updated product detailUrl: ${updated?.detailUrl}`);
-          }
-
-          // 프로모션 태그 처리 (1+1, 2+1 등)
-          for (const promotionTag of promotionTags) {
-            console.log(`  Processing promotion: ${promotionTag}`);
-
-            // 현재 날짜 기준으로 유효한 할인 규칙 찾기
-            const now = new Date();
-            const discountRules = await db.findDiscountRules({
-              name: { $regex: promotionTag, $options: 'i' },
-              isActive: true,
-              validFrom: { $lte: now },
-              validTo: { $gte: now }
-            });
-
-            if (discountRules.length > 0) {
-              // 여러 개의 규칙이 있을 경우:
-              // 1. 현재 날짜가 유효기간 내에 있는 규칙들 중
-              // 2. validFrom이 현재에 가장 가까운 것 선택 (가장 최근에 시작된 것)
-              const discountRule = discountRules.sort((a: any, b: any) => {
-                const aStart = new Date(a.validFrom).getTime();
-                const bStart = new Date(b.validFrom).getTime();
-                const nowTime = now.getTime();
-                // 현재 시간에 더 가까운 것을 우선
-                return Math.abs(nowTime - bStart) - Math.abs(nowTime - aStart);
-              })[0];
-
-              console.log(`    Found valid rule: ${discountRule.name} (${new Date(discountRule.validFrom).toLocaleDateString()} ~ ${new Date(discountRule.validTo).toLocaleDateString()})`);
-
-              // 이미 상품이 포함되어 있는지 확인
-              const productId = product._id.toString();
-              const isAlreadyIncluded = discountRule.applicableProducts.some(
-                (id: any) => id.toString() === productId
-              );
-
-              if (!isAlreadyIncluded) {
-                // 상품을 할인 규칙에 추가
-                discountRule.applicableProducts.push(product._id);
-                await db.updateDiscountRule(discountRule._id.toString(), {
-                  applicableProducts: discountRule.applicableProducts
-                });
-                console.log(`    Added to discount rule: ${discountRule.name}`);
-              } else {
-                console.log(`    Already in discount rule: ${discountRule.name}`);
+            // 소분류: .prodTag li
+            const subCategories = document.querySelectorAll('.prodTag li');
+            subCategories.forEach(li => {
+              const text = li.textContent?.trim() || '';
+              if (text && !tags.includes(text)) {
+                tags.push(text);
               }
-            } else {
-              console.log(`    No valid discount rule found for: ${promotionTag} (현재 날짜 기준)`);
-            }
+            });
+
+            return tags;
+          });
+
+          if (categoryTags.length > 0) {
+            console.log(`    Found tags: ${categoryTags.join(', ')}`);
+
+            // 프로모션 태그와 카테고리 태그 분리
+            const promotionTags = categoryTags.filter(tag => tag.match(/^\d+\+\d+$/));
+            const categoryOnlyTags = categoryTags.filter(tag => !tag.match(/^\d+\+\d+$/));
+
+            // 모든 태그를 Set에 추가
+            categoryOnlyTags.forEach(tag => allCategoryTags.add(tag));
+            promotionTags.forEach(tag => allPromotionTags.add(tag));
           }
 
-          results.success++;
-        } else {
-          console.log(`  No tags found`);
-          results.skipped++;
+          // 다음 URL 방문 전 짧은 대기
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        // 다음 요청 전 최소 대기 (서버 부하 방지) - 폴링으로 이미 대기했으므로 짧게
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // 모든 URL 방문 완료 후 처리
+        console.log(`  수집된 카테고리 태그: ${Array.from(allCategoryTags).join(', ')}`);
+        console.log(`  수집된 프로모션 태그: ${Array.from(allPromotionTags).join(', ')}`);
+
+        // 카테고리 설정 (가장 세부적인 카테고리 선택)
+        let newCategory = '';
+        if (allCategoryTags.size > 0) {
+          const categoryArray = Array.from(allCategoryTags);
+          // 마지막 태그가 가장 세부적인 카테고리
+          newCategory = categoryArray[categoryArray.length - 1];
+
+          console.log(`  Setting category: ${newCategory}`);
+          // 카테고리 업데이트 후 detailUrls 제거 (재업데이트 방지)
+          await db.updateProduct(product._id.toString(), {
+            category: newCategory,
+            detailUrls: []
+          });
+        }
+
+        // 프로모션 태그 처리 (1+1, 2+1 등)
+        for (const promotionTag of Array.from(allPromotionTags)) {
+          console.log(`  Processing promotion: ${promotionTag}`);
+
+          // 현재 날짜 기준으로 유효한 할인 규칙 찾기
+          const now = new Date();
+          const discountRules = await db.findDiscountRules({
+            name: { $regex: promotionTag, $options: 'i' },
+            isActive: true,
+            validFrom: { $lte: now },
+            validTo: { $gte: now }
+          });
+
+          if (discountRules.length > 0) {
+            // 여러 개의 규칙이 있을 경우:
+            // 1. 현재 날짜가 유효기간 내에 있는 규칙들 중
+            // 2. validFrom이 현재에 가장 가까운 것 선택 (가장 최근에 시작된 것)
+            const discountRule = discountRules.sort((a: any, b: any) => {
+              const aStart = new Date(a.validFrom).getTime();
+              const bStart = new Date(b.validFrom).getTime();
+              const nowTime = now.getTime();
+              // 현재 시간에 더 가까운 것을 우선
+              return Math.abs(nowTime - bStart) - Math.abs(nowTime - aStart);
+            })[0];
+
+            console.log(`    Found valid rule: ${discountRule.name} (${new Date(discountRule.validFrom).toLocaleDateString()} ~ ${new Date(discountRule.validTo).toLocaleDateString()})`);
+
+            // 이미 상품이 포함되어 있는지 확인
+            const productId = product._id.toString();
+            const isAlreadyIncluded = discountRule.applicableProducts.some(
+              (id: any) => id.toString() === productId
+            );
+
+            if (!isAlreadyIncluded) {
+              // 상품을 할인 규칙에 추가
+              discountRule.applicableProducts.push(product._id);
+              await db.updateDiscountRule(discountRule._id.toString(), {
+                applicableProducts: discountRule.applicableProducts
+              });
+              console.log(`    Added to discount rule: ${discountRule.name}`);
+            } else {
+              console.log(`    Already in discount rule: ${discountRule.name}`);
+            }
+          } else {
+            console.log(`    No valid discount rule found for: ${promotionTag} (현재 날짜 기준)`);
+          }
+        }
+
+        results.success++;
+
+        // 다음 상품 처리 전 최소 대기
+        await new Promise(resolve => setTimeout(resolve, 300));
 
       } catch (error) {
         console.error(`Error processing ${product.name}:`, error);

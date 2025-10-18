@@ -9,7 +9,7 @@ export interface IProduct {
   brand?: string;
   imageUrl?: string;
   cuProductCode?: string;
-  detailUrl?: string;
+  detailUrls?: string[]; // 여러 상세페이지 URL (중복 등록된 상품 처리용)
 
   // Metadata
   createdAt: Date;
