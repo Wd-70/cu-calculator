@@ -67,10 +67,7 @@ const DiscountRuleSchema = new Schema<IDiscountRule>(
     },
 
     // 적용 대상
-    applicableProducts: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Product',
-    }],
+    applicableProducts: [String], // 바코드 배열
     applicableCategories: [String],
     applicableBrands: [String],
 

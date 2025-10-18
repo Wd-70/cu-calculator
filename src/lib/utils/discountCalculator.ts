@@ -109,7 +109,7 @@ function calculatePaymentCompoundDiscount(
  */
 function isDiscountApplicableToProduct(
   discount: IDiscountRuleV2,
-  productId: string,
+  productBarcode: string,
   productCategory?: string,
   productBrand?: string
 ): boolean {
@@ -121,10 +121,10 @@ function isDiscountApplicableToProduct(
     return true;
   }
 
-  // 특정 상품 대상
+  // 특정 상품 대상 (바코드로 비교)
   if (
     discount.applicableProducts.length > 0 &&
-    discount.applicableProducts.some((id) => id.toString() === productId)
+    discount.applicableProducts.includes(productBarcode)
   ) {
     return true;
   }
@@ -332,7 +332,7 @@ export function calculateDiscountForItem(
   unitPrice: number, // 단가
   quantity: number,
   discounts: IDiscountRuleV2[],
-  productId: string,
+  productBarcode: string, // 상품 바코드
   productCategory?: string,
   productBrand?: string,
   paymentMethod?: PaymentMethod,
@@ -364,7 +364,7 @@ export function calculateDiscountForItem(
     if (
       !isDiscountApplicableToProduct(
         discount,
-        productId,
+        productBarcode,
         productCategory,
         productBrand
       )
@@ -650,6 +650,7 @@ export function calculateCart(
 
   for (const item of items) {
     const productId = item.productId.toString();
+    const productBarcode = item.productBarcode;
 
     // 이 상품에 대한 할인 선택 찾기
     const selection = discountSelections.find(
@@ -667,7 +668,7 @@ export function calculateCart(
       item.unitPrice,
       item.quantity,
       discounts,
-      productId,
+      productBarcode, // 바코드 사용
       item.productCategory,
       item.productBrand,
       paymentMethod,

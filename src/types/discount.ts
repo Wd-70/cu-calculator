@@ -192,7 +192,7 @@ export interface IDiscountRuleV2 {
   applicationMethod?: DiscountApplicationMethod;
 
   // 적용 대상
-  applicableProducts: Types.ObjectId[]; // 빈 배열 = 전체 상품
+  applicableProducts: string[]; // 바코드 배열 - 빈 배열 = 전체 상품
   applicableCategories: string[]; // 빈 배열 = 전체 카테고리
   applicableBrands?: string[];
 
@@ -280,6 +280,7 @@ export interface CartItemDiscounts {
 export interface CartCalculationOptionsV2 {
   items: Array<{
     productId: Types.ObjectId | string;
+    productBarcode: string; // 바코드 추가
     quantity: number;
     unitPrice: number;
     productCategory?: string;

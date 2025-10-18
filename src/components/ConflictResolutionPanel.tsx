@@ -480,7 +480,7 @@ function ConflictCard({
                   : 'border-gray-300 bg-white hover:border-purple-300'
               }`}
             >
-              <div className="mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <span className={`px-2 py-1 text-xs font-bold rounded ${
                   selectedOptionIndex === index
                     ? 'bg-purple-500 text-white'
@@ -488,6 +488,16 @@ function ConflictCard({
                 }`}>
                   옵션 {index + 1}
                 </span>
+                <a
+                  href={option.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  title="새 탭에서 상세페이지 열기"
+                >
+                  🔗 페이지
+                </a>
               </div>
 
               {option.imageUrl && (
@@ -512,6 +522,24 @@ function ConflictCard({
                   <p className="text-xs text-gray-500">가격</p>
                   <p className="font-bold text-purple-600">{option.price.toLocaleString()}원</p>
                 </div>
+                <div>
+                  <p className="text-xs text-gray-500">카테고리</p>
+                  <p className="text-xs text-gray-700">
+                    {option.categoryTags.map(t => t.name).join(' > ') || '없음'}
+                  </p>
+                </div>
+                {option.promotionTags.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-500">프로모션</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {option.promotionTags.map((tag, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}

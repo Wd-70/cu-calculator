@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
               }
 
               // 추가 안정화 대기
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise(resolve => setTimeout(resolve, 1000));
 
               // 상품 정보 추출
               const pageData = await page.evaluate(() => {
@@ -163,8 +163,10 @@ export async function POST(request: NextRequest) {
                   }
                 }
 
-                // 서브 카테고리 추출 (innerHTML 앞 공백으로 레벨 판단)
-                const subCategories = document.querySelectorAll('.prodTag li');
+                // 서브 카테고리 추출 - .prodInfo 영역 내의 태그만 파싱
+                const prodInfo = document.querySelector('.prodInfo');
+                const subCategories = prodInfo ? prodInfo.querySelectorAll('.prodTag li') : [];
+
                 subCategories.forEach(li => {
                   const text = li.textContent?.trim() || '';
                   if (!text) return;
@@ -186,24 +188,59 @@ export async function POST(request: NextRequest) {
                   }
                 });
 
-                // 상품명
-                const nameElem = document.querySelector('.prodView .prodInfo .name');
-                const name = nameElem?.textContent?.trim() || '';
+                // 상품명 - p.tit 요소에서 추출
+                let name = '';
+                let foundSelector = '';
 
-                // 가격
-                const priceElem = document.querySelector('.prodView .prodInfo .price');
-                const priceText = priceElem?.textContent?.trim() || '0';
-                const price = parseInt(priceText.replace(/[^0-9]/g, '')) || 0;
+                const nameElem = document.querySelector('p.tit');
+                if (nameElem) {
+                  name = nameElem.textContent?.trim() || '';
+                  foundSelector = 'p.tit';
+                }
 
-                // 이미지
-                const imgElem = document.querySelector('.prodView .photo img') as HTMLImageElement;
+                // 가격 - .prodInfo의 dl에서 dt가 "가격"인 요소의 dd에서 추출
+                let price = 0;
+                let foundPriceSelector = '';
+
+                if (prodInfo) {
+                  const dls = Array.from(prodInfo.querySelectorAll('dl'));
+                  for (const dl of dls) {
+                    const dt = dl.querySelector('dt')?.textContent?.trim() || '';
+                    if (dt === '가격') {
+                      const dd = dl.querySelector('dd');
+                      if (dd) {
+                        const priceText = dd.textContent?.trim() || '';
+                        price = parseInt(priceText.replace(/[^0-9]/g, '')) || 0;
+                        foundPriceSelector = 'dl[dt=가격] dd';
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // 이미지 - .prodDetail-w 영역의 img 태그에서 추출
+                const imgElem = document.querySelector('.prodDetail-w img') as HTMLImageElement;
                 let imageUrl = imgElem?.src || '';
                 if (imageUrl.startsWith('//')) {
                   imageUrl = 'https:' + imageUrl;
                 }
 
-                // 프로모션 태그 추출
+                // 프로모션 태그 추출 - .prodDetail-e와 .prodInfo 영역에서 파싱
                 const promotionTags: string[] = [];
+
+                // .prodDetail-e 영역의 프로모션 태그 (주요 프로모션)
+                const prodDetailE = document.querySelector('.prodDetail-e');
+                if (prodDetailE) {
+                  const detailTags = prodDetailE.querySelectorAll('.prodTag li');
+                  detailTags.forEach(li => {
+                    const text = li.textContent?.trim() || '';
+                    if (text.match(/^\d+\+\d+$/)) {
+                      promotionTags.push(text);
+                    }
+                  });
+                }
+
+                // .prodInfo 영역의 프로모션 태그 (추가 프로모션)
                 subCategories.forEach(li => {
                   const text = li.textContent?.trim() || '';
                   if (text.match(/^\d+\+\d+$/)) {
@@ -211,7 +248,15 @@ export async function POST(request: NextRequest) {
                   }
                 });
 
-                return { name, price, imageUrl, categoryTags, promotionTags };
+                return {
+                  name,
+                  price,
+                  imageUrl,
+                  categoryTags,
+                  promotionTags,
+                  foundSelector,
+                  foundPriceSelector
+                };
               });
 
               urlData.push({
@@ -223,10 +268,10 @@ export async function POST(request: NextRequest) {
                 promotionTags: pageData.promotionTags
               });
 
-              // 디버깅: 수집된 카테고리 정보 전송
+              // 디버깅: 수집된 정보 전송
               send({
                 type: 'debug',
-                message: `수집된 카테고리: ${pageData.categoryTags.map(t => `${t.name}(L${t.level})`).join(', ')}`
+                message: `URL ${urlIndex + 1}: 상품명="${pageData.name}", 가격=${pageData.price}원, 카테고리: ${pageData.categoryTags.map(t => `${t.name}(L${t.level})`).join(', ')}`
               });
 
               await new Promise(resolve => setTimeout(resolve, 300));
@@ -247,6 +292,11 @@ export async function POST(request: NextRequest) {
 
               if (hasConflict) {
                 // 충돌 발견! 사용자에게 알림
+                send({
+                  type: 'debug',
+                  message: `충돌 발견! 이미지 URLs: ${urlData.map((d, i) => `옵션${i + 1}: "${d.imageUrl}"`).join(', ')}`
+                });
+
                 send({
                   type: 'conflict',
                   data: {
@@ -290,14 +340,50 @@ export async function POST(request: NextRequest) {
               });
 
               // 프로모션 처리
+              if (allPromotionTags.size > 0) {
+                send({
+                  type: 'debug',
+                  message: `프로모션 태그 발견: ${Array.from(allPromotionTags).join(', ')}`
+                });
+              }
+
               for (const promotionTag of Array.from(allPromotionTags)) {
                 const now = new Date();
-                const discountRules = await db.findDiscountRules({
-                  name: { $regex: promotionTag, $options: 'i' },
-                  isActive: true,
-                  validFrom: { $lte: now },
-                  validTo: { $gte: now }
+
+                // 정규표현식 특수문자 이스케이프
+                const escapedTag = promotionTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                // 단계별 디버깅
+                // 1. 이름으로만 검색
+                const rulesByName = await db.findDiscountRules({
+                  name: { $regex: escapedTag, $options: 'i' }
                 });
+
+                send({
+                  type: 'debug',
+                  message: `"${promotionTag}" 이름 검색: ${rulesByName.length}개 - ${rulesByName.map(r => `${r.name}(active:${r.isActive}, from:${new Date(r.validFrom).toISOString()}, to:${new Date(r.validTo).toISOString()})`).join(', ')}`
+                });
+
+                // 2. 활성 규칙 필터링
+                const activeRules = rulesByName.filter(r => r.isActive);
+                send({
+                  type: 'debug',
+                  message: `활성 규칙: ${activeRules.length}개`
+                });
+
+                // 3. 날짜 필터링
+                const validRules = activeRules.filter(r => {
+                  const validFrom = new Date(r.validFrom);
+                  const validTo = new Date(r.validTo);
+                  return validFrom <= now && validTo >= now;
+                });
+
+                send({
+                  type: 'debug',
+                  message: `날짜 조건 만족: ${validRules.length}개 (현재: ${now.toISOString()})`
+                });
+
+                const discountRules = validRules;
 
                 if (discountRules.length > 0) {
                   const discountRule = discountRules.sort((a: any, b: any) => {
@@ -307,17 +393,29 @@ export async function POST(request: NextRequest) {
                     return Math.abs(nowTime - bStart) - Math.abs(nowTime - aStart);
                   })[0];
 
-                  const productId = product._id.toString();
-                  const isAlreadyIncluded = discountRule.applicableProducts.some(
-                    (id: any) => id.toString() === productId
-                  );
+                  const productBarcode = product.barcode;
+                  const isAlreadyIncluded = discountRule.applicableProducts.includes(productBarcode);
 
                   if (!isAlreadyIncluded) {
-                    discountRule.applicableProducts.push(product._id);
+                    discountRule.applicableProducts.push(productBarcode);
                     await db.updateDiscountRule(discountRule._id.toString(), {
                       applicableProducts: discountRule.applicableProducts
                     });
+                    send({
+                      type: 'debug',
+                      message: `✅ "${discountRule.name}" 할인에 상품 추가됨 (바코드: ${productBarcode})`
+                    });
+                  } else {
+                    send({
+                      type: 'debug',
+                      message: `ℹ️ "${discountRule.name}" 할인에 이미 포함됨 (바코드: ${productBarcode})`
+                    });
                   }
+                } else {
+                  send({
+                    type: 'debug',
+                    message: `⚠️ "${promotionTag}" 할인 규칙을 찾을 수 없음 (활성화된 규칙 없음)`
+                  });
                 }
               }
 

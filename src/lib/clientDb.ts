@@ -44,6 +44,32 @@ export function getMainCart(): ICart | null {
   return carts.find(c => c.isMain) || null;
 }
 
+/**
+ * 메인 카트를 가져오거나, 없으면 자동으로 생성
+ */
+export function getOrCreateMainCart(): ICart {
+  let mainCart = getMainCart();
+
+  if (!mainCart) {
+    // 카트가 하나도 없으면 기본 카트 생성
+    const carts = getCarts();
+    if (carts.length === 0) {
+      mainCart = createCart({
+        name: '내 장바구니',
+        emoji: '🛒',
+        color: 'purple',
+        items: [],
+        isMain: true,
+      });
+    } else {
+      // 카트는 있지만 메인이 없으면 첫 번째를 메인으로 설정
+      mainCart = setMainCart(String(carts[0]._id))!;
+    }
+  }
+
+  return mainCart;
+}
+
 export function createCart(input: CreateCartInput): ICart {
   const carts = getCarts();
 

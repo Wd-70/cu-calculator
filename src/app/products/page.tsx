@@ -6,6 +6,7 @@ import Link from 'next/link';
 import * as clientDb from '@/lib/clientDb';
 import { ICart } from '@/types/cart';
 import Toast from '@/components/Toast';
+import ProductDetailModal from '@/components/ProductDetailModal';
 
 interface CategoryTag {
   name: string;
@@ -33,7 +34,7 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [showCartModal, setShowCartModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -152,11 +153,120 @@ export default function ProductsPage() {
     setCarts(localCarts);
   };
 
-  const handleAddToCart = (product: Product, e: React.MouseEvent) => {
+  // 카드 클릭 시 상세 모달 열기
+  const handleCardClick = (product: Product) => {
+    setSelectedProduct(product);
+    setShowDetailModal(true);
+  };
+
+  // 장바구니에 즉시 추가 (메인 카트에)
+  const handleQuickAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setSelectedProduct(product);
-    setShowCartModal(true);
+
+    try {
+      // 메인 카트를 가져오거나 자동 생성
+      const mainCart = clientDb.getOrCreateMainCart();
+
+      const result = clientDb.addItemToCart(String(mainCart._id), {
+        productId: product._id,
+        barcode: product.barcode,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        category: product.categoryTags?.[0]?.name,
+        brand: product.brand,
+        selectedDiscountIds: [],
+      });
+
+      if (result) {
+        loadCarts();
+        setToast({ message: `"${product.name}" 1개 추가`, type: 'success' });
+      } else {
+        setToast({ message: '장바구니 추가에 실패했습니다.', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      setToast({ message: '장바구니 추가에 실패했습니다.', type: 'error' });
+    }
+  };
+
+  // 장바구니에서 1개 제거
+  const handleRemoveFromCart = (product: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      // 메인 카트를 가져오거나 자동 생성
+      const mainCart = clientDb.getOrCreateMainCart();
+
+      const cartItem = mainCart.items.find(item => item.productId === product._id);
+      if (!cartItem) return;
+
+      if (cartItem.quantity > 1) {
+        // 수량 1 감소
+        const updatedItems = mainCart.items.map(item =>
+          item.productId === product._id
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        );
+        clientDb.updateCart(String(mainCart._id), { items: updatedItems });
+      } else {
+        // 아이템 제거
+        const updatedItems = mainCart.items.filter(item => item.productId !== product._id);
+        clientDb.updateCart(String(mainCart._id), { items: updatedItems });
+      }
+
+      loadCarts();
+      setToast({ message: `"${product.name}" 1개 제거`, type: 'info' });
+    } catch (error) {
+      console.error('Failed to remove from cart:', error);
+      setToast({ message: '장바구니 수정에 실패했습니다.', type: 'error' });
+    }
+  };
+
+  // 상세 모달에서 장바구니에 추가
+  const handleAddFromModal = (quantity: number) => {
+    if (!selectedProduct) return;
+
+    try {
+      // 메인 카트를 가져오거나 자동 생성
+      const mainCart = clientDb.getOrCreateMainCart();
+
+      const result = clientDb.addItemToCart(String(mainCart._id), {
+        productId: selectedProduct._id,
+        barcode: selectedProduct.barcode,
+        name: selectedProduct.name,
+        price: selectedProduct.price,
+        quantity,
+        category: selectedProduct.categoryTags?.[0]?.name,
+        brand: selectedProduct.brand,
+        selectedDiscountIds: [],
+      });
+
+      if (result) {
+        loadCarts();
+        setToast({ message: `"${selectedProduct.name}" ${quantity}개 추가`, type: 'success' });
+      } else {
+        setToast({ message: '장바구니 추가에 실패했습니다.', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      setToast({ message: '장바구니 추가에 실패했습니다.', type: 'error' });
+    }
+  };
+
+  // 장바구니에 담긴 상품의 수량 확인
+  const getCartQuantity = (productId: string): number => {
+    try {
+      const mainCart = clientDb.getMainCart();
+      if (!mainCart) return 0;
+
+      const cartItem = mainCart.items.find(item => item.productId === productId);
+      return cartItem ? cartItem.quantity : 0;
+    } catch (error) {
+      return 0;
+    }
   };
 
   const categories = ['전체', ...allCategories];
@@ -271,94 +381,79 @@ export default function ProductsPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {products.map((product) => {
+              const cartQuantity = getCartQuantity(product._id);
+              return (
               <div
                 key={product._id}
-                className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 group relative"
+                onClick={() => handleCardClick(product)}
+                className="bg-white rounded-xl p-3 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group relative"
               >
                 {/* 상품 이미지 */}
                 {product.imageUrl ? (
-                  <div className="w-full aspect-square rounded-xl mb-4 overflow-hidden bg-gray-100 group-hover:scale-105 transition-transform">
+                  <div className="w-full aspect-square rounded-lg mb-2 overflow-hidden bg-gray-100">
                     <img
                       src={product.imageUrl}
                       alt={product.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // 이미지 로드 실패 시 플레이스홀더로 대체
-                        e.currentTarget.style.display = 'none';
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) {
-                          parent.innerHTML = `
-                            <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
-                              <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                              </svg>
-                            </div>
-                          `;
-                        }
+                        e.currentTarget.src = 'https://via.placeholder.com/200x200?text=No+Image';
                       }}
                     />
                   </div>
                 ) : (
-                  <div className="w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-2 flex items-center justify-center">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
                   </div>
                 )}
 
-                {/* 카테고리 태그들 */}
-                {product.categoryTags && product.categoryTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {product.categoryTags
-                      .sort((a, b) => a.level - b.level)
-                      .map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-block px-2 py-1 bg-purple-100 text-[#7C3FBF] text-xs font-semibold rounded-lg"
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                  </div>
-                )}
-
                 {/* 상품명 */}
-                <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-[#7C3FBF] transition-colors">
+                <h3 className="font-bold text-sm text-gray-900 mb-1 line-clamp-2 group-hover:text-[#7C3FBF] transition-colors min-h-[2.5rem]">
                   {product.name}
                 </h3>
 
-                {/* 브랜드 */}
-                {product.brand && (
-                  <p className="text-sm text-gray-500 mb-3">{product.brand}</p>
-                )}
-
                 {/* 가격 */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {product.price.toLocaleString()}
-                    <span className="text-base font-normal text-gray-600">원</span>
-                  </span>
-                </div>
+                <p className="text-lg font-bold text-gray-900 mb-2">
+                  {product.price.toLocaleString()}
+                  <span className="text-xs font-normal text-gray-600">원</span>
+                </p>
 
-                {/* 바코드 */}
-                <div className="mb-4 pb-4 border-b border-gray-100">
-                  <p className="text-xs text-gray-400 font-mono">{product.barcode}</p>
-                </div>
-
-                {/* 장바구니 추가 버튼 */}
-                <button
-                  onClick={(e) => handleAddToCart(product, e)}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  장바구니 담기
-                </button>
+                {/* 장바구니 버튼 */}
+                {cartQuantity > 0 ? (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => handleRemoveFromCart(product, e)}
+                      className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-bold transition-all text-sm"
+                    >
+                      -
+                    </button>
+                    <div className="flex-1 px-2 py-2 bg-purple-100 text-[#7C3FBF] rounded-lg font-bold text-center text-sm">
+                      {cartQuantity}
+                    </div>
+                    <button
+                      onClick={(e) => handleQuickAddToCart(product, e)}
+                      className="flex-1 px-2 py-2 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-lg font-bold hover:shadow-lg transition-all text-sm"
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => handleQuickAddToCart(product, e)}
+                    className="w-full px-2 py-2 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-1 text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    담기
+                  </button>
+                )}
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
 
@@ -378,21 +473,16 @@ export default function ProductsPage() {
         )}
       </main>
 
-      {/* 장바구니 선택 모달 */}
-      {showCartModal && selectedProduct && (
-        <AddToCartModal
+      {/* 상품 상세 모달 */}
+      {showDetailModal && selectedProduct && (
+        <ProductDetailModal
           product={selectedProduct}
-          carts={carts}
           onClose={() => {
-            setShowCartModal(false);
+            setShowDetailModal(false);
             setSelectedProduct(null);
           }}
-          onSuccess={(productName) => {
-            loadCarts();
-            setShowCartModal(false);
-            setSelectedProduct(null);
-            setToast({ message: `"${productName}"이(가) 장바구니에 추가되었습니다!`, type: 'success' });
-          }}
+          onAddToCart={handleAddFromModal}
+          currentQuantity={getCartQuantity(selectedProduct._id)}
         />
       )}
 
@@ -430,215 +520,6 @@ export default function ProductsPage() {
           </div>
         </div>
       </nav>
-    </div>
-  );
-}
-
-// 장바구니 추가 모달
-function AddToCartModal({
-  product,
-  carts,
-  onClose,
-  onSuccess,
-}: {
-  product: Product;
-  carts: ICart[];
-  onClose: () => void;
-  onSuccess: (productName: string) => void;
-}) {
-  const [selectedCartId, setSelectedCartId] = useState<string>('');
-  const [quantity, setQuantity] = useState(1);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    // 메인 카트가 있으면 자동 선택
-    const mainCart = carts.find(c => c.isMain);
-    if (mainCart) {
-      setSelectedCartId(String(mainCart._id));
-    } else if (carts.length > 0) {
-      setSelectedCartId(String(carts[0]._id));
-    }
-  }, [carts]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedCartId) {
-      alert('장바구니를 선택해주세요.');
-      return;
-    }
-
-    if (quantity < 1) {
-      alert('수량은 1개 이상이어야 합니다.');
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const result = clientDb.addItemToCart(selectedCartId, {
-        productId: product._id,
-        barcode: product.barcode,
-        name: product.name,
-        price: product.price,
-        quantity,
-        category: product.categoryTags?.[0]?.name, // 첫 번째 카테고리 태그 사용
-        brand: product.brand,
-        selectedDiscountIds: [],
-      });
-
-      if (result) {
-        onSuccess(product.name);
-      } else {
-        alert('장바구니 추가에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-      alert('장바구니 추가에 실패했습니다.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (carts.length === 0) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl max-w-md w-full p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">장바구니가 없습니다</h2>
-          <p className="text-gray-600 mb-6">
-            먼저 장바구니를 만들어주세요.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-            >
-              닫기
-            </button>
-            <Link
-              href="/carts"
-              className="flex-1 px-6 py-3 bg-[#7C3FBF] text-white rounded-xl font-semibold hover:bg-[#6B2FAF] transition-colors text-center"
-            >
-              장바구니 만들기
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full">
-        <form onSubmit={handleSubmit}>
-          {/* 모달 헤더 */}
-          <div className="border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">장바구니에 추가</h2>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* 모달 본문 */}
-          <div className="p-6 space-y-4">
-            {/* 상품 정보 */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="font-bold text-gray-900 mb-1">{product.name}</h3>
-              <p className="text-lg font-bold text-[#7C3FBF]">
-                {product.price.toLocaleString()}원
-              </p>
-            </div>
-
-            {/* 장바구니 선택 */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                장바구니 선택
-              </label>
-              <select
-                value={selectedCartId}
-                onChange={(e) => setSelectedCartId(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
-                required
-              >
-                {carts.map((cart) => (
-                  <option key={String(cart._id)} value={String(cart._id)}>
-                    {cart.emoji} {cart.name || '이름 없는 카트'}
-                    {cart.isMain ? ' ⭐' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 수량 선택 */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                수량
-              </label>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition-colors"
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
-                  min="1"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition-colors"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            {/* 합계 */}
-            <div className="bg-purple-50 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-700">합계</span>
-                <span className="text-2xl font-bold text-[#7C3FBF]">
-                  {(product.price * quantity).toLocaleString()}원
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 모달 푸터 */}
-          <div className="border-t border-gray-200 px-6 py-4 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-              disabled={saving}
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-6 py-3 bg-[#7C3FBF] text-white rounded-xl font-semibold hover:bg-[#6B2FAF] transition-colors disabled:opacity-50"
-              disabled={saving}
-            >
-              {saving ? '추가 중...' : '추가하기'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }

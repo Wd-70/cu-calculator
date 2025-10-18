@@ -59,8 +59,12 @@ export async function POST(request: NextRequest) {
     // 프로모션 처리
     for (const promotionTag of promotionTags) {
       const now = new Date();
+
+      // 정규표현식 특수문자 이스케이프
+      const escapedTag = promotionTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
       const discountRules = await db.findDiscountRules({
-        name: { $regex: promotionTag, $options: 'i' },
+        name: { $regex: escapedTag, $options: 'i' },
         isActive: true,
         validFrom: { $lte: now },
         validTo: { $gte: now }
@@ -74,12 +78,11 @@ export async function POST(request: NextRequest) {
           return Math.abs(nowTime - bStart) - Math.abs(nowTime - aStart);
         })[0];
 
-        const isAlreadyIncluded = discountRule.applicableProducts.some(
-          (id: any) => id.toString() === productId
-        );
+        const productBarcode = updated.barcode;
+        const isAlreadyIncluded = discountRule.applicableProducts.includes(productBarcode);
 
         if (!isAlreadyIncluded) {
-          discountRule.applicableProducts.push(updated._id);
+          discountRule.applicableProducts.push(productBarcode);
           await db.updateDiscountRule(discountRule._id.toString(), {
             applicableProducts: discountRule.applicableProducts
           });
