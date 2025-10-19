@@ -175,7 +175,9 @@ export default function ProductsPage() {
         price: product.price,
         quantity: 1,
         category: product.categoryTags?.[0]?.name,
+        categoryTags: product.categoryTags,
         brand: product.brand,
+        imageUrl: product.imageUrl,
         selectedDiscountIds: [],
       });
 
@@ -240,7 +242,9 @@ export default function ProductsPage() {
         price: selectedProduct.price,
         quantity,
         category: selectedProduct.categoryTags?.[0]?.name,
+        categoryTags: selectedProduct.categoryTags,
         brand: selectedProduct.brand,
+        imageUrl: selectedProduct.imageUrl,
         selectedDiscountIds: [],
       });
 

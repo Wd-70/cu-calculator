@@ -37,15 +37,30 @@ export interface CartCalculation {
 // 멀티 카트 시스템 타입
 // ============================================================================
 
-// 저장용 카트 아이템
+// 저장용 카트 아이템 (하이브리드 방식)
 export interface ICartItem {
   productId: Types.ObjectId | string;
   barcode: string;
+
+  // 스냅샷 필수 정보 (담았을 당시)
   name: string;
-  price: number;
+  price: number;           // 담았을 당시 가격
   quantity: number;
+
+  // 캐시된 정보 (자동 업데이트 가능)
+  imageUrl?: string;
+  categoryTags?: Array<{ name: string; level: number }>;
   category?: string;
   brand?: string;
+
+  // 메타데이터
+  addedAt?: Date;          // 장바구니에 추가된 시간
+  lastSyncedAt?: Date;     // 상품 정보 마지막 동기화 시간
+
+  // 가격 변경 감지
+  latestPrice?: number;    // 서버에서 확인한 최신 가격 (price와 다르면 알림)
+  priceCheckedAt?: Date;   // 가격 마지막 확인 시간
+
   selectedDiscountIds: (Types.ObjectId | string)[];
 }
 
@@ -115,6 +130,8 @@ export interface AddCartItemInput {
   name: string;
   price: number;
   quantity: number;
+  imageUrl?: string;
+  categoryTags?: Array<{ name: string; level: number }>;
   category?: string;
   brand?: string;
   selectedDiscountIds?: (Types.ObjectId | string)[];

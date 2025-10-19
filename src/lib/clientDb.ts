@@ -143,15 +143,29 @@ export function addItemToCart(cartId: string, item: ICartItem): ICart | null {
   const cart = getCart(cartId);
   if (!cart) return null;
 
+  const now = new Date();
+
   // 동일한 상품이 이미 있는지 확인
   const existingItemIndex = cart.items.findIndex(i => i.barcode === item.barcode);
 
   if (existingItemIndex !== -1) {
     // 이미 존재하면 수량 업데이트
     cart.items[existingItemIndex].quantity += item.quantity;
+    // 가격, 이미지 등 최신 정보로 업데이트
+    cart.items[existingItemIndex].latestPrice = item.price;
+    cart.items[existingItemIndex].imageUrl = item.imageUrl || cart.items[existingItemIndex].imageUrl;
+    cart.items[existingItemIndex].categoryTags = item.categoryTags || cart.items[existingItemIndex].categoryTags;
+    cart.items[existingItemIndex].category = item.category || cart.items[existingItemIndex].category;
+    cart.items[existingItemIndex].lastSyncedAt = now;
   } else {
-    // 새 아이템 추가
-    cart.items.push(item);
+    // 새 아이템 추가 - 타임스탬프 추가
+    cart.items.push({
+      ...item,
+      addedAt: now,
+      lastSyncedAt: now,
+      latestPrice: item.price, // 처음 추가 시에는 동일
+      priceCheckedAt: now,
+    });
   }
 
   return updateCart(cartId, { items: cart.items });

@@ -2,12 +2,14 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import Barcode from 'react-barcode';
 import * as clientDb from '@/lib/clientDb';
 import { ICart, ICartItem, CART_COLORS } from '@/types/cart';
 import { IDiscountRule, DISCOUNT_CATEGORY_NAMES } from '@/types/discount';
 import { IPreset } from '@/types/preset';
 import { PaymentMethod, PAYMENT_METHOD_NAMES } from '@/types/payment';
 import Toast from '@/components/Toast';
+import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 import { calculateCartOnClient } from '@/lib/clientCalculator';
 
 interface DiscountStep {
@@ -49,10 +51,87 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | undefined>(undefined);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [couponUsageLimits, setCouponUsageLimits] = useState<Record<string, number>>({});
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [showBarcode, setShowBarcode] = useState(true);
+  const [priceChanges, setPriceChanges] = useState<Record<string, { oldPrice: number; newPrice: number }>>({});
+  const [scannerModalOpen, setScannerModalOpen] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [id]);
+
+  // 장바구니 아이템의 상품 정보 동기화 (백그라운드)
+  useEffect(() => {
+    if (!cart || cart.items.length === 0) return;
+
+    const syncProductInfo = async () => {
+      const now = new Date();
+      const changes: Record<string, { oldPrice: number; newPrice: number }> = {};
+      let hasUpdates = false;
+
+      for (const item of cart.items) {
+        // 5분 이내에 동기화했으면 스킵
+        if (item.lastSyncedAt) {
+          const lastSync = new Date(item.lastSyncedAt);
+          const minutesSinceSync = (now.getTime() - lastSync.getTime()) / (1000 * 60);
+          if (minutesSinceSync < 5) continue;
+        }
+
+        try {
+          // 바코드로 최신 상품 정보 가져오기
+          const response = await fetch(`/api/products?barcode=${item.barcode}&limit=1`);
+          const data = await response.json();
+
+          if (data.success && data.data && data.data.length > 0) {
+            const latestProduct = data.data[0];
+
+            // 가격 변경 감지
+            if (latestProduct.price !== item.price) {
+              changes[item.barcode] = {
+                oldPrice: item.price,
+                newPrice: latestProduct.price,
+              };
+            }
+
+            // 이미지, 카테고리 등 자동 업데이트 (가격 제외)
+            const updatedItem = {
+              ...item,
+              imageUrl: latestProduct.imageUrl || item.imageUrl,
+              categoryTags: latestProduct.categoryTags || item.categoryTags,
+              category: latestProduct.categoryTags?.[0]?.name || item.category,
+              latestPrice: latestProduct.price,
+              priceCheckedAt: now,
+              lastSyncedAt: now,
+            };
+
+            // 로컬 업데이트
+            clientDb.updateCartItem(id, item.barcode, updatedItem);
+            hasUpdates = true;
+          }
+        } catch (error) {
+          console.error(`Failed to sync product ${item.barcode}:`, error);
+        }
+      }
+
+      // 가격 변경 사항이 있으면 상태 업데이트
+      if (Object.keys(changes).length > 0) {
+        setPriceChanges(changes);
+      }
+
+      // 업데이트가 있었으면 장바구니 다시 로드
+      if (hasUpdates) {
+        const updatedCart = clientDb.getCart(id);
+        if (updatedCart) {
+          setCart(updatedCart);
+        }
+      }
+    };
+
+    // 백그라운드에서 비동기 실행
+    syncProductInfo();
+  }, [cart?.items.length, id]); // items.length 변경 시에만 재실행
 
   const loadData = async () => {
     try {
@@ -187,6 +266,83 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
     return step ? step.amount : 0;
   };
 
+  // 스와이프 핸들러
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd || selectedItemIndex === null) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && selectedItemIndex < cart!.items.length - 1) {
+      setSelectedItemIndex(selectedItemIndex + 1);
+    }
+    if (isRightSwipe && selectedItemIndex > 0) {
+      setSelectedItemIndex(selectedItemIndex - 1);
+    }
+  };
+
+  const handlePrevItem = () => {
+    if (selectedItemIndex !== null && selectedItemIndex > 0) {
+      setSelectedItemIndex(selectedItemIndex - 1);
+    }
+  };
+
+  const handleNextItem = () => {
+    if (selectedItemIndex !== null && cart && selectedItemIndex < cart.items.length - 1) {
+      setSelectedItemIndex(selectedItemIndex + 1);
+    }
+  };
+
+  // 바코드 스캔 핸들러 (연속 스캔용)
+  const handleBarcodeScan = async (barcode: string): Promise<boolean> => {
+    try {
+      // 바코드로 상품 검색
+      const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
+      const data = await response.json();
+
+      if (!data.success || !data.data || data.data.length === 0) {
+        setToast({ message: `상품을 찾을 수 없습니다 (${barcode})`, type: 'error' });
+        return false;
+      }
+
+      const product = data.data[0];
+
+      // 장바구니에 상품 추가
+      const updatedCart = clientDb.addItemToCart(id, {
+        barcode: product.barcode,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        imageUrl: product.imageUrl,
+        category: product.categoryTags?.[0]?.name || '',
+        categoryTags: product.categoryTags,
+      });
+
+      if (updatedCart) {
+        setCart(updatedCart);
+        // 성공 피드백은 소리나 진동으로만 (토스트는 너무 많이 뜸)
+        return true;
+      } else {
+        setToast({ message: '장바구니에 추가할 수 없습니다', type: 'error' });
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      setToast({ message: '상품 추가 중 오류가 발생했습니다', type: 'error' });
+      return false;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -240,17 +396,99 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                 )}
               </div>
             </div>
-            <Link
-              href="/products"
-              className="px-4 py-2 bg-[#7C3FBF] text-white rounded-lg font-semibold hover:bg-[#6B2FAF] transition-colors"
-            >
-              상품 추가
-            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setScannerModalOpen(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+                스캔
+              </button>
+              <Link
+                href="/products"
+                className="px-4 py-2 bg-[#7C3FBF] text-white rounded-lg font-semibold hover:bg-[#6B2FAF] transition-colors"
+              >
+                상품 추가
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-4xl">
+        {/* 가격 변경 알림 */}
+        {Object.keys(priceChanges).length > 0 && (
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-2xl p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-orange-900 mb-2">가격이 변경된 상품이 있습니다</h3>
+                <div className="space-y-2 mb-4">
+                  {Object.entries(priceChanges).map(([barcode, change]) => {
+                    const item = cart?.items.find(i => i.barcode === barcode);
+                    if (!item) return null;
+                    return (
+                      <div key={barcode} className="flex items-center justify-between bg-white rounded-lg p-3">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{item.name}</p>
+                          <p className="text-sm text-gray-600">
+                            <span className="line-through">{change.oldPrice.toLocaleString()}원</span>
+                            {' → '}
+                            <span className="font-bold text-orange-600">{change.newPrice.toLocaleString()}원</span>
+                            {change.newPrice > change.oldPrice ? (
+                              <span className="ml-2 text-red-600">▲ {(change.newPrice - change.oldPrice).toLocaleString()}원</span>
+                            ) : (
+                              <span className="ml-2 text-green-600">▼ {(change.oldPrice - change.newPrice).toLocaleString()}원</span>
+                            )}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // 가격 업데이트 적용
+                            if (!cart) return;
+                            const updatedItem = cart.items.find(i => i.barcode === barcode);
+                            if (updatedItem && updatedItem.latestPrice) {
+                              clientDb.updateCartItem(id, barcode, {
+                                price: updatedItem.latestPrice,
+                              });
+                              const updatedCart = clientDb.getCart(id);
+                              if (updatedCart) {
+                                setCart(updatedCart);
+                              }
+                              // 알림에서 제거
+                              setPriceChanges(prev => {
+                                const newChanges = { ...prev };
+                                delete newChanges[barcode];
+                                return newChanges;
+                              });
+                              setToast({ message: '가격이 업데이트되었습니다.', type: 'success' });
+                            }
+                          }}
+                          className="ml-3 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors whitespace-nowrap"
+                        >
+                          가격 업데이트
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setPriceChanges({})}
+                  className="text-sm text-orange-700 hover:text-orange-900 underline"
+                >
+                  모두 무시하고 원래 가격 유지
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 상품 목록 */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">담긴 상품</h2>
@@ -268,12 +506,12 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           ) : (
             <div className="space-y-3">
-              {cart.items.map((item) => (
-                <div key={item.barcode} className="border border-gray-200 rounded-xl p-4 relative">
+              {cart.items.map((item, index) => (
+                <div key={item.barcode} className="border border-gray-200 rounded-xl p-4 relative hover:shadow-md transition-shadow">
                   {/* 삭제 버튼 */}
                   <button
                     onClick={() => handleRemoveItem(item.barcode)}
-                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-10"
                     title="삭제"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,7 +519,24 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                     </svg>
                   </button>
 
-                  <div className="flex items-start gap-4 pr-8">
+                  <div
+                    className="flex items-start gap-4 pr-8 cursor-pointer"
+                    onClick={() => setSelectedItemIndex(index)}
+                  >
+                    {/* 상품 이미지 */}
+                    {item.imageUrl && (
+                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/64x64?text=No+Image';
+                          }}
+                        />
+                      </div>
+                    )}
+
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 mb-1">{item.name}</h3>
                       <p className="text-sm text-gray-500 mb-2">{item.price.toLocaleString()}원</p>
@@ -293,7 +548,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                     </div>
 
                     {/* 수량 조절 */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleUpdateQuantity(item.barcode, item.quantity - 1)}
                         className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
@@ -582,6 +837,221 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
           </>
         )}
       </main>
+
+      {/* 상품 상세 모달 */}
+      {selectedItemIndex !== null && cart.items[selectedItemIndex] && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedItemIndex(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* 닫기 버튼 */}
+            <button
+              onClick={() => setSelectedItemIndex(null)}
+              className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10"
+            >
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* 이전/다음 버튼 */}
+            {selectedItemIndex > 0 && (
+              <button
+                onClick={handlePrevItem}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white shadow-lg rounded-full hover:bg-gray-50 transition-colors z-10"
+              >
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            {selectedItemIndex < cart.items.length - 1 && (
+              <button
+                onClick={handleNextItem}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white shadow-lg rounded-full hover:bg-gray-50 transition-colors z-10"
+              >
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+
+            <div className="p-6">
+              {/* 이미지/바코드 전환 영역 */}
+              <div
+                onClick={() => setShowBarcode(!showBarcode)}
+                className="w-full aspect-square mb-6 overflow-hidden rounded-xl bg-gray-100 cursor-pointer relative group"
+              >
+                {showBarcode ? (
+                  // 바코드 표시
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-4">바코드를 스캔하세요</p>
+                    <Barcode
+                      value={cart.items[selectedItemIndex].barcode}
+                      width={2}
+                      height={80}
+                      fontSize={16}
+                      background="#f9fafb"
+                    />
+                    <p className="text-xs text-gray-500 mt-4">탭하여 상품 이미지 보기</p>
+                  </div>
+                ) : (
+                  // 상품 이미지 표시
+                  <div className="w-full h-full relative">
+                    {cart.items[selectedItemIndex].imageUrl ? (
+                      <img
+                        src={cart.items[selectedItemIndex].imageUrl}
+                        alt={cart.items[selectedItemIndex].name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/400x400?text=No+Image';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                        <svg className="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                      <p className="text-xs text-white text-center">탭하여 바코드 보기</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 전환 인디케이터 */}
+                <div className="absolute top-3 right-3 flex gap-1">
+                  <div className={`w-2 h-2 rounded-full transition-colors ${showBarcode ? 'bg-purple-600' : 'bg-white/50'}`} />
+                  <div className={`w-2 h-2 rounded-full transition-colors ${!showBarcode ? 'bg-purple-600' : 'bg-white/50'}`} />
+                </div>
+              </div>
+
+              {/* 상품 정보 */}
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {cart.items[selectedItemIndex].name}
+                  </h2>
+                  <p className="text-xl font-bold text-purple-600">
+                    {cart.items[selectedItemIndex].price.toLocaleString()}원
+                  </p>
+                </div>
+
+                {/* 바코드 번호 */}
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="text-sm text-gray-600 mb-1">바코드 번호</p>
+                  <p className="font-mono font-bold text-gray-900">
+                    {cart.items[selectedItemIndex].barcode}
+                  </p>
+                </div>
+
+                {/* 카테고리 */}
+                {cart.items[selectedItemIndex].category && (
+                  <div className="p-4 bg-purple-50 rounded-xl">
+                    <p className="text-sm text-gray-600 mb-1">카테고리</p>
+                    <p className="font-semibold text-purple-700">
+                      {cart.items[selectedItemIndex].category}
+                    </p>
+                  </div>
+                )}
+
+                {/* 카테고리 태그 */}
+                {cart.items[selectedItemIndex].categoryTags && cart.items[selectedItemIndex].categoryTags!.length > 0 && (
+                  <div className="p-4 bg-blue-50 rounded-xl">
+                    <p className="text-sm text-gray-600 mb-2">카테고리 태그</p>
+                    <div className="flex flex-wrap gap-2">
+                      {cart.items[selectedItemIndex].categoryTags!.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-medium"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 수량 조절 */}
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
+                  <p className="text-sm text-gray-600 mb-3">수량</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleUpdateQuantity(cart.items[selectedItemIndex].barcode, cart.items[selectedItemIndex].quantity - 1)}
+                        className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg font-bold text-xl transition-colors shadow-sm"
+                      >
+                        -
+                      </button>
+                      <span className="w-16 text-center font-bold text-2xl">
+                        {cart.items[selectedItemIndex].quantity}
+                      </span>
+                      <button
+                        onClick={() => handleUpdateQuantity(cart.items[selectedItemIndex].barcode, cart.items[selectedItemIndex].quantity + 1)}
+                        className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg font-bold text-xl transition-colors shadow-sm"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">소계</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {(cart.items[selectedItemIndex].price * cart.items[selectedItemIndex].quantity).toLocaleString()}원
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 삭제 버튼 */}
+                <button
+                  onClick={() => {
+                    handleRemoveItem(cart.items[selectedItemIndex].barcode);
+                    setSelectedItemIndex(null);
+                  }}
+                  className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors"
+                >
+                  장바구니에서 삭제
+                </button>
+              </div>
+
+              {/* 인디케이터 */}
+              <div className="flex justify-center gap-2 mt-6">
+                {cart.items.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      idx === selectedItemIndex
+                        ? 'bg-purple-600 w-6'
+                        : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* 스와이프 안내 */}
+              <p className="text-center text-sm text-gray-500 mt-4">
+                좌우로 스와이프하여 다른 상품 보기
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 바코드 스캐너 모달 */}
+      <BarcodeScannerModal
+        isOpen={scannerModalOpen}
+        onClose={() => setScannerModalOpen(false)}
+        onScan={handleBarcodeScan}
+        cartId={id}
+      />
 
       {/* 토스트 */}
       {toast && (
