@@ -147,7 +147,7 @@ export default function DiscountsPage() {
                   onClick={() => setSelectedCategory(key)}
                   className={`px-6 py-3 rounded-full font-semibold transition-all whitespace-nowrap ${
                     selectedCategory === key
-                      ? `${categoryColors[key].badge} ${categoryColors[key].text} shadow-lg`
+                      ? `${(categoryColors[key] || { badge: 'bg-gray-100', text: 'text-gray-700' }).badge} ${(categoryColors[key] || { badge: 'bg-gray-100', text: 'text-gray-700' }).text} shadow-lg`
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -185,8 +185,8 @@ export default function DiscountsPage() {
         {!loading && filteredDiscounts.length > 0 && (
           <div className="space-y-12">
             {Object.entries(groupedDiscounts).map(([category, categoryDiscounts]) => {
-              const colors = categoryColors[category];
-              const categoryName = DISCOUNT_CATEGORY_NAMES[category as keyof typeof DISCOUNT_CATEGORY_NAMES];
+              const colors = categoryColors[category] || { bg: 'bg-gray-50', text: 'text-gray-700', badge: 'bg-gray-100' };
+              const categoryName = DISCOUNT_CATEGORY_NAMES[category as keyof typeof DISCOUNT_CATEGORY_NAMES] || category;
 
               return (
                 <div key={category}>

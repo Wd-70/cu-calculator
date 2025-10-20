@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@zxing/library": "^0.21.3",
+    "ethers": "^6.15.0",
     "html5-qrcode": "^2.3.8",
     "mongoose": "^8.19.1",
     "next": "15.5.5",

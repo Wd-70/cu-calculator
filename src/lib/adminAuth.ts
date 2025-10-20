@@ -42,6 +42,7 @@ export function isAdmin(accountAddress: string | null | undefined): boolean {
 /**
  * 클라이언트 측에서 사용할 관리자 확인 함수
  * (환경 변수를 클라이언트에서 직접 읽을 수 없으므로 API를 통해 확인해야 함)
+ * 서명을 통해 계정 소유권을 증명합니다.
  */
 export async function checkIsAdminClient(accountAddress: string | null | undefined): Promise<boolean> {
   if (!accountAddress) {
@@ -49,12 +50,22 @@ export async function checkIsAdminClient(accountAddress: string | null | undefin
   }
 
   try {
+    // 동적 임포트로 클라이언트 전용 함수 불러오기
+    const { signWithTimestamp } = await import('@/lib/userAuth');
+
+    // 서명 생성
+    const { signature, timestamp } = await signWithTimestamp({ action: 'check_admin' });
+
     const response = await fetch('/api/admin/check', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ accountAddress }),
+      body: JSON.stringify({
+        accountAddress,
+        signature,
+        timestamp,
+      }),
     });
 
     const data = await response.json();

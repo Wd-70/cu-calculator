@@ -380,35 +380,73 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/carts" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="container mx-auto px-4 py-3 md:py-4">
+          <div className="flex items-center justify-between gap-3">
+            {/* 좌측: 뒤로가기 + 카트 정보 */}
+            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+              <Link href="/carts" className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
-              {cart.emoji && <span className="text-3xl">{cart.emoji}</span>}
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">{cart.name || '이름 없는 카트'}</h1>
+              {cart.emoji && <span className="text-2xl md:text-3xl flex-shrink-0">{cart.emoji}</span>}
+              <div className="min-w-0">
+                <h1 className="text-base md:text-xl font-bold text-gray-900 truncate">
+                  {cart.name || '이름 없는 카트'}
+                </h1>
                 {cart.isMain && (
-                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">⭐ 메인</span>
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded inline-block">⭐ 메인</span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* 우측: 액션 버튼들 */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* 모바일: 아이콘만 표시 */}
               <button
                 onClick={() => setScannerModalOpen(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
+                className="md:hidden p-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+                title="바코드 스캔"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="7" width="1.5" height="10" fill="currentColor" />
+                  <rect x="6" y="7" width="1" height="10" fill="currentColor" />
+                  <rect x="8.5" y="7" width="2" height="10" fill="currentColor" />
+                  <rect x="12" y="7" width="1" height="10" fill="currentColor" />
+                  <rect x="14.5" y="7" width="1.5" height="10" fill="currentColor" />
+                  <rect x="17.5" y="7" width="1" height="10" fill="currentColor" />
+                  <rect x="19.5" y="7" width="1.5" height="10" fill="currentColor" />
+                </svg>
+              </button>
+              <Link
+                href="/products"
+                className="md:hidden p-2.5 bg-[#7C3FBF] text-white rounded-lg hover:bg-[#6B2FAF] transition-colors flex items-center justify-center"
+                title="상품 추가"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </Link>
+
+              {/* PC: 텍스트 포함 */}
+              <button
+                onClick={() => setScannerModalOpen(true)}
+                className="hidden md:flex px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors items-center gap-2"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="7" width="1.5" height="10" fill="currentColor" />
+                  <rect x="6" y="7" width="1" height="10" fill="currentColor" />
+                  <rect x="8.5" y="7" width="2" height="10" fill="currentColor" />
+                  <rect x="12" y="7" width="1" height="10" fill="currentColor" />
+                  <rect x="14.5" y="7" width="1.5" height="10" fill="currentColor" />
+                  <rect x="17.5" y="7" width="1" height="10" fill="currentColor" />
+                  <rect x="19.5" y="7" width="1.5" height="10" fill="currentColor" />
                 </svg>
                 스캔
               </button>
               <Link
                 href="/products"
-                className="px-4 py-2 bg-[#7C3FBF] text-white rounded-lg font-semibold hover:bg-[#6B2FAF] transition-colors"
+                className="hidden md:flex px-4 py-2 bg-[#7C3FBF] text-white rounded-lg font-semibold hover:bg-[#6B2FAF] transition-colors items-center"
               >
                 상품 추가
               </Link>
@@ -507,66 +545,127 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
           ) : (
             <div className="space-y-3">
               {cart.items.map((item, index) => (
-                <div key={item.barcode} className="border border-gray-200 rounded-xl p-4 relative hover:shadow-md transition-shadow">
+                <div key={item.barcode} className="border border-gray-200 rounded-xl p-3 md:p-4 relative hover:shadow-md transition-shadow">
                   {/* 삭제 버튼 */}
                   <button
                     onClick={() => handleRemoveItem(item.barcode)}
-                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-10"
+                    className="absolute top-2 right-2 md:top-3 md:right-3 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-10"
                     title="삭제"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
 
                   <div
-                    className="flex items-start gap-4 pr-8 cursor-pointer"
+                    className="cursor-pointer"
                     onClick={() => setSelectedItemIndex(index)}
                   >
-                    {/* 상품 이미지 */}
-                    {item.imageUrl && (
-                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/64x64?text=No+Image';
-                          }}
-                        />
+                    {/* 모바일: 2단 레이아웃 / PC: 가로 한 줄 레이아웃 */}
+
+                    {/* 모바일 레이아웃 (md 미만) */}
+                    <div className="md:hidden">
+                      {/* 상단: 이미지 + 상품명 + 카테고리 */}
+                      <div className="flex items-center gap-3 pr-7 mb-2">
+                        {item.imageUrl && (
+                          <div className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://via.placeholder.com/56x56?text=No+Image';
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-gray-900 text-sm mb-1 truncate">{item.name}</h3>
+                          {item.category && (
+                            <span className="inline-block px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+                              {item.category}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 mb-1">{item.name}</h3>
-                      <p className="text-sm text-gray-500 mb-2">{item.price.toLocaleString()}원</p>
-                      {item.category && (
-                        <span className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                          {item.category}
-                        </span>
+                      {/* 하단: 가격 + 수량 조절 + 소계 */}
+                      <div className="flex items-center justify-between gap-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="text-sm text-gray-600 flex-shrink-0">
+                          {item.price.toLocaleString()}원
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleUpdateQuantity(item.barcode, item.quantity - 1)}
+                            className="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors text-sm"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
+                          <button
+                            onClick={() => handleUpdateQuantity(item.barcode, item.quantity + 1)}
+                            className="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors text-sm"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs text-gray-500">소계</p>
+                          <p className="font-bold text-gray-900 text-sm">{(item.price * item.quantity).toLocaleString()}원</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PC 레이아웃 (md 이상) - 기존 스타일 */}
+                    <div className="hidden md:flex items-start gap-4 pr-8">
+                      {/* 상품 이미지 */}
+                      {item.imageUrl && (
+                        <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/64x64?text=No+Image';
+                            }}
+                          />
+                        </div>
                       )}
-                    </div>
 
-                    {/* 수량 조절 */}
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleUpdateQuantity(item.barcode, item.quantity - 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
-                      >
-                        -
-                      </button>
-                      <span className="w-10 text-center font-bold">{item.quantity}</span>
-                      <button
-                        onClick={() => handleUpdateQuantity(item.barcode, item.quantity + 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 mb-1">{item.name}</h3>
+                        <p className="text-sm text-gray-500 mb-2">{item.price.toLocaleString()}원</p>
+                        {item.category && (
+                          <span className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+                            {item.category}
+                          </span>
+                        )}
+                      </div>
 
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">소계</p>
-                      <p className="font-bold text-gray-900">{(item.price * item.quantity).toLocaleString()}원</p>
+                      {/* 수량 조절 */}
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleUpdateQuantity(item.barcode, item.quantity - 1)}
+                          className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
+                        >
+                          -
+                        </button>
+                        <span className="w-10 text-center font-bold">{item.quantity}</span>
+                        <button
+                          onClick={() => handleUpdateQuantity(item.barcode, item.quantity + 1)}
+                          className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">소계</p>
+                        <p className="font-bold text-gray-900">{(item.price * item.quantity).toLocaleString()}원</p>
+                      </div>
                     </div>
                   </div>
                 </div>

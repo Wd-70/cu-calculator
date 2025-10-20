@@ -112,8 +112,8 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
     latestBarcodeRef.current = '';
     waitingForBarcodeRef.current = true;
 
-    // 타임아웃 설정 (5초 동안 바코드를 감지하지 못하면 실패)
-    const timeout = 5000;
+    // 타임아웃 설정 (10초 동안 바코드를 감지하지 못하면 실패)
+    const timeout = 10000;
     const startTime = Date.now();
 
     // 바코드가 감지될 때까지 대기
