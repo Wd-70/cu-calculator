@@ -118,6 +118,23 @@ const DiscountRuleSchema = new Schema<IDiscountRule>(
       type: Boolean,
       default: true,
     },
+
+    // 위키형 시스템: 생성자 및 수정 이력
+    createdBy: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    lastModifiedBy: {
+      type: String,
+      required: true,
+    },
+    modificationHistory: [{
+      modifiedBy: String,
+      modifiedAt: Date,
+      changes: Schema.Types.Mixed,
+      comment: String,
+    }],
   },
   {
     timestamps: true,

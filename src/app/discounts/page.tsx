@@ -3,15 +3,32 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { IDiscountRule, DISCOUNT_CATEGORY_NAMES } from '@/types/discount';
+import DiscountJsonModal from '@/components/DiscountJsonModal';
+import { getCurrentUserAddress } from '@/lib/userAuth';
+import { checkIsAdminClient } from '@/lib/adminAuth';
 
 export default function DiscountsPage() {
   const [discounts, setDiscounts] = useState<IDiscountRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
+  const [editingDiscount, setEditingDiscount] = useState<IDiscountRule | null>(null);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchDiscounts();
+    checkUserStatus();
   }, []);
+
+  const checkUserStatus = async () => {
+    const address = getCurrentUserAddress();
+    setUserAddress(address);
+    if (address) {
+      const adminStatus = await checkIsAdminClient(address);
+      setIsAdmin(adminStatus);
+    }
+  };
 
   const fetchDiscounts = async () => {
     try {
@@ -98,12 +115,25 @@ export default function DiscountsPage() {
                 <p className="text-gray-500 text-xs">진행 중인 모든 할인</p>
               </div>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-              ← 홈으로
-            </Link>
+            <div className="flex items-center gap-3">
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setEditingDiscount(null);
+                    setIsJsonModalOpen(true);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all shadow-md"
+                >
+                  🔧 JSON 편집
+                </button>
+              )}
+              <Link
+                href="/"
+                className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              >
+                ← 홈으로
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -205,10 +235,26 @@ export default function DiscountsPage() {
                     {categoryDiscounts.map((discount) => (
                       <div
                         key={String(discount._id)}
-                        className={`${colors.bg} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1`}
+                        className={`${colors.bg} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 relative`}
                       >
+                        {/* JSON 편집 버튼 (관리자만) */}
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setEditingDiscount(discount);
+                              setIsJsonModalOpen(true);
+                            }}
+                            className="absolute top-4 right-4 w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg shadow-md flex items-center justify-center text-white hover:shadow-lg transition-all"
+                            title="JSON 편집 (관리자)"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                          </button>
+                        )}
+
                         {/* 할인 타이틀 */}
-                        <div className="mb-4">
+                        <div className="mb-4 pr-8">
                           <h3 className="text-xl font-bold text-gray-900 mb-2">
                             {discount.name}
                           </h3>
@@ -344,6 +390,20 @@ export default function DiscountsPage() {
           <p>© 2025 CU 할인계산기. Made with 💜 for smart shoppers.</p>
         </div>
       </footer>
+
+      {/* JSON 편집 모달 (관리자 전용) */}
+      <DiscountJsonModal
+        isOpen={isJsonModalOpen}
+        onClose={() => {
+          setIsJsonModalOpen(false);
+          setEditingDiscount(null);
+        }}
+        discount={editingDiscount}
+        allDiscounts={discounts}
+        onSave={() => {
+          fetchDiscounts();
+        }}
+      />
     </div>
   );
 }

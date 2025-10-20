@@ -73,15 +73,46 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/discounts
- * Create a new discount rule (admin only in production)
+ * Create a new discount rule (모든 사용자, 서명 필요)
  */
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
+    const { discountData, signature, timestamp, address } = body;
+
+    // 1. 서명 검증
+    if (!signature || !timestamp || !address) {
+      return NextResponse.json(
+        { success: false, error: '서명이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
+    // 동적 임포트로 서명 검증 함수 불러오기
+    const { verifyWithTimestamp } = await import('@/lib/userAuth');
+
+    const isValidSignature = verifyWithTimestamp(
+      { action: 'create_discount', ...discountData },
+      signature,
+      timestamp,
+      address
+    );
+
+    if (!isValidSignature) {
+      return NextResponse.json(
+        { success: false, error: '유효하지 않은 서명입니다.' },
+        { status: 401 }
+      );
+    }
+
+    // 2. DB 연결 및 할인 규칙 생성
     await db.connect();
 
-    const body = await request.json();
-
-    const discount = await db.createDiscountRule(body);
+    const discount = await db.createDiscountRule({
+      ...discountData,
+      createdBy: address,
+      lastModifiedBy: address,
+    });
 
     return NextResponse.json(
       {
