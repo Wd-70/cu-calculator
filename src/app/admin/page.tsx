@@ -46,12 +46,22 @@ export default function AdminPage() {
 
   const checkAdminStatus = async (address: string) => {
     try {
+      // 동적 임포트로 서명 함수 불러오기
+      const { signWithTimestamp } = await import('@/lib/userAuth');
+
+      // 서명 생성
+      const { signature, timestamp } = await signWithTimestamp({ action: 'check_admin' });
+
       const response = await fetch('/api/admin/check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ accountAddress: address }),
+        body: JSON.stringify({
+          accountAddress: address,
+          signature,
+          timestamp,
+        }),
       });
 
       const data = await response.json();
