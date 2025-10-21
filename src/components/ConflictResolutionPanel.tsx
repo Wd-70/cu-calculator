@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Barcode from 'react-barcode';
 
 interface CategoryTag {
   name: string;
@@ -106,17 +107,26 @@ export default function ConflictResolutionPanel({
         throw new Error('스트림을 읽을 수 없습니다');
       }
 
+      let buffer = ''; // 불완전한 라인을 저장할 버퍼
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        // 버퍼에 새 chunk 추가
+        buffer += decoder.decode(value, { stream: true });
+
+        // 완전한 라인들만 분리 (마지막 불완전한 라인은 버퍼에 남김)
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // 마지막 불완전한 라인은 버퍼에 보관
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.trim() && line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr) continue; // 빈 문자열 스킵
+
+              const data = JSON.parse(jsonStr);
 
               switch (data.type) {
                 case 'init':
@@ -173,7 +183,14 @@ export default function ConflictResolutionPanel({
                   break;
               }
             } catch (e) {
-              console.error('Failed to parse SSE data:', e, line);
+              // JSON 파싱 에러 - 상세 로그 출력
+              console.error('Failed to parse SSE data:', {
+                error: e,
+                line: line,
+                jsonStr: line.slice(6).trim(),
+                lineLength: line.length
+              });
+              // 사용자에게는 표시하지 않음 (불완전한 chunk는 정상적인 현상)
             }
           }
         }
@@ -453,6 +470,18 @@ function ConflictCard({
       {/* 현재 상품 정보 */}
       <div className="mb-6">
         <h4 className="font-bold text-lg text-gray-900 mb-2">{conflict.currentName}</h4>
+
+        {/* 바코드 */}
+        <div className="my-4 flex justify-center bg-white rounded-lg p-4">
+          <Barcode
+            value={conflict.barcode}
+            width={2}
+            height={60}
+            fontSize={14}
+            background="#ffffff"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
           <p>바코드: {conflict.barcode}</p>
           <p>현재 가격: {conflict.currentPrice.toLocaleString()}원</p>
