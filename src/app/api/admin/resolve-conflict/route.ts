@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { isAdmin } from '@/lib/adminAuth';
+import connectDB from '@/lib/mongodb';
+import Promotion from '@/lib/models/Promotion';
+import PromotionIndex from '@/lib/models/PromotionIndex';
 
 /**
  * POST /api/admin/resolve-conflict
@@ -31,6 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     await db.connect();
+    await connectDB();
 
     const { name, price, imageUrl, categoryTags, promotionTags } = selectedData;
 
@@ -56,38 +60,104 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 프로모션 처리
+    // 프로모션 처리 - Promotion 컬렉션에 생성
     for (const promotionTag of promotionTags) {
       const now = new Date();
 
-      // 정규표현식 특수문자 이스케이프
-      const escapedTag = promotionTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // 프로모션 타입 파싱 (예: "2+1" -> buyQuantity: 2, getQuantity: 1)
+      const match = promotionTag.match(/^(\d+)\+(\d+)$/);
+      if (!match) {
+        console.warn(`잘못된 프로모션 형식: ${promotionTag}`);
+        continue;
+      }
 
-      const discountRules = await db.findDiscountRules({
-        name: { $regex: escapedTag, $options: 'i' },
+      const buyQuantity = parseInt(match[1]);
+      const getQuantity = parseInt(match[2]);
+
+      // 이미 존재하는 프로모션 확인
+      const existingPromotions = await Promotion.find({
+        promotionType: promotionTag as any,
+        status: 'active',
         isActive: true,
         validFrom: { $lte: now },
-        validTo: { $gte: now }
+        validTo: { $gte: now },
+        applicableProducts: updated.barcode
       });
 
-      if (discountRules.length > 0) {
-        const discountRule = discountRules.sort((a: any, b: any) => {
-          const aStart = new Date(a.validFrom).getTime();
-          const bStart = new Date(b.validFrom).getTime();
-          const nowTime = now.getTime();
-          return Math.abs(nowTime - bStart) - Math.abs(nowTime - aStart);
-        })[0];
-
-        const productBarcode = updated.barcode;
-        const isAlreadyIncluded = discountRule.applicableProducts.includes(productBarcode);
-
-        if (!isAlreadyIncluded) {
-          discountRule.applicableProducts.push(productBarcode);
-          await db.updateDiscountRule(discountRule._id.toString(), {
-            applicableProducts: discountRule.applicableProducts
-          });
-        }
+      if (existingPromotions.length > 0) {
+        console.log(`프로모션이 이미 존재함: ${existingPromotions[0].name}`);
+        continue;
       }
+
+      // 비슷한 프로모션 찾기 (기간 동기화용)
+      const similarPromotions = await Promotion.find({
+        promotionType: promotionTag as any,
+        status: 'active',
+        isActive: true,
+        isCrawled: true,
+        needsVerification: true,
+        'applicableProducts.0': { $exists: true },
+        validFrom: { $lte: now },
+        validTo: { $gte: now }
+      }).limit(1);
+
+      // 기본 기간: 현재 달의 첫 날부터 마지막 날까지
+      let validFrom = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      let validTo = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      // 비슷한 프로모션이 있으면 동일한 기간 사용
+      if (similarPromotions.length > 0) {
+        validFrom = similarPromotions[0].validFrom;
+        validTo = similarPromotions[0].validTo;
+      }
+
+      // 새 프로모션 생성
+      const newPromotion = await Promotion.create({
+        name: `${updated.name} ${promotionTag}`,
+        description: `${updated.name} 상품의 ${promotionTag} 프로모션 (크롤링 자동생성)`,
+        promotionType: promotionTag as any,
+        buyQuantity,
+        getQuantity,
+        applicableType: 'products',
+        applicableProducts: [updated.barcode],
+        giftSelectionType: 'same',
+        giftConstraints: {
+          mustBeSameProduct: true
+        },
+        validFrom,
+        validTo,
+        status: 'active',
+        isActive: true,
+        priority: 0,
+        createdBy: accountAddress,
+        lastModifiedBy: accountAddress,
+        modificationHistory: [{
+          modifiedBy: accountAddress,
+          modifiedAt: now,
+          changes: { type: 'conflict_resolution' },
+          comment: '충돌 해결 중 프로모션 생성'
+        }],
+        verificationStatus: 'unverified',
+        verificationCount: 0,
+        disputeCount: 0,
+        verifiedBy: [],
+        disputedBy: [],
+        isCrawled: true,
+        crawledAt: now,
+        needsVerification: true
+      });
+
+      // PromotionIndex 업데이트
+      await PromotionIndex.updateOne(
+        { barcode: updated.barcode },
+        {
+          $addToSet: { promotionIds: newPromotion._id },
+          $set: { lastUpdated: now }
+        },
+        { upsert: true }
+      );
+
+      console.log(`✅ 프로모션 생성됨: ${newPromotion.name}`);
     }
 
     return NextResponse.json({

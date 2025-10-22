@@ -40,6 +40,14 @@ export function isAdmin(accountAddress: string | null | undefined): boolean {
 }
 
 /**
+ * 서버 측에서 사용할 관리자 확인 함수
+ * 환경 변수에 직접 접근할 수 있으므로 동기적으로 확인 가능
+ */
+export function checkIsAdminServer(accountAddress: string | null | undefined): boolean {
+  return isAdmin(accountAddress);
+}
+
+/**
  * 클라이언트 측에서 사용할 관리자 확인 함수
  * (환경 변수를 클라이언트에서 직접 읽을 수 없으므로 API를 통해 확인해야 함)
  * 서명을 통해 계정 소유권을 증명합니다.

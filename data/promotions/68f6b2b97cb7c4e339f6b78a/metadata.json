@@ -1,0 +1,48 @@
+{
+  "promotionId": "68f6b2b97cb7c4e339f6b78a",
+  "promotionName": "풀무원)정통도가니탕 2+1",
+  "currentData": {
+    "name": "풀무원)정통도가니탕 2+1",
+    "promotionType": "2+1",
+    "applicableProducts": [
+      "8801114164402"
+    ],
+    "giftSelectionType": "same",
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z"
+  },
+  "photos": [
+    {
+      "filename": "photo_2025-10-22T08-34-33-123Z.jpg",
+      "uploadedAt": "2025-10-22T08:34:34.976Z",
+      "status": "uploaded"
+    }
+  ],
+  "photoCollected": true,
+  "conversionStatus": "completed",
+  "convertedAt": "2025-10-22T14:32:30.564Z",
+  "batchId": "batch_2025-10-22_23-15-00",
+  "convertedData": {
+    "name": "2510풀무원국탕3종2+1",
+    "description": "풀무원 나주식수육곰탕/사골양지설렁탕/정통도가니탕 2+1 행사",
+    "promotionType": "2+1",
+    "buyQuantity": 2,
+    "getQuantity": 1,
+    "applicableType": "products",
+    "applicableProducts": [
+      "8801114153819",
+      "8801114160909",
+      "8801114164402"
+    ],
+    "giftSelectionType": "cross",
+    "giftProducts": [
+      "8801114153819",
+      "8801114160909",
+      "8801114164402"
+    ],
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z",
+    "status": "active",
+    "isActive": true
+  }
+}

@@ -401,10 +401,11 @@ export async function POST(request: NextRequest) {
                   validTo: { $gte: now }
                 }).limit(1);
 
-                let validFrom = now;
-                let validTo = new Date(now);
-                validTo.setDate(validTo.getDate() + 30);
+                // 기본 기간: 현재 달의 첫 날부터 마지막 날까지
+                let validFrom = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+                let validTo = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
+                // 비슷한 프로모션이 있으면 동일한 기간 사용
                 if (similarPromotions.length > 0) {
                   validFrom = similarPromotions[0].validFrom;
                   validTo = similarPromotions[0].validTo;

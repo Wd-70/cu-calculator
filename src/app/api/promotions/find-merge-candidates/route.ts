@@ -7,18 +7,31 @@ export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
+    const { searchParams } = new URL(request.url);
+    const searchQuery = searchParams.get('search');
+
+    const matchStage: any = {
+      isCrawled: true,
+      isActive: true,
+      status: 'active',
+      giftSelectionType: 'same',
+      'giftConstraints.mustBeSameProduct': true,
+      applicableProducts: { $size: 1 } // 단일 상품만
+    };
+
+    // 검색어가 있으면 이름 또는 바코드로 필터링
+    if (searchQuery) {
+      matchStage.$or = [
+        { name: { $regex: searchQuery, $options: 'i' } },
+        { applicableProducts: { $regex: searchQuery, $options: 'i' } }
+      ];
+    }
+
     // 크롤링으로 생성된 개별 상품 프로모션 중
     // 동일한 프로모션 타입(1+1, 2+1)을 가진 것들을 그룹화
     const candidates = await Promotion.aggregate([
       {
-        $match: {
-          isCrawled: true,
-          isActive: true,
-          status: 'active',
-          giftSelectionType: 'same',
-          'giftConstraints.mustBeSameProduct': true,
-          applicableProducts: { $size: 1 } // 단일 상품만
-        }
+        $match: matchStage
       },
       {
         $group: {

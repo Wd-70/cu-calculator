@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# promotion photos
+data/promotions/*/photo_*.jpg
+data/promotions/*/photo_*.jpeg
+data/promotions/*/photo_*.png
+data/promotions/conversion-batches/*.json
+!data/PROMOTION_CONVERSION_GUIDE.md

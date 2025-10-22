@@ -1,0 +1,44 @@
+{
+  "promotionId": "68f8e52655c87ca347482506",
+  "promotionName": "일화)맥콜P500ml 2+1",
+  "currentData": {
+    "name": "일화)맥콜P500ml 2+1",
+    "promotionType": "2+1",
+    "applicableProducts": [
+      "8801223100261"
+    ],
+    "giftSelectionType": "same",
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z"
+  },
+  "photos": [
+    {
+      "filename": "photo_2025-10-22T14-12-03-351Z.jpg",
+      "uploadedAt": "2025-10-22T14:12:05.413Z",
+      "status": "uploaded"
+    }
+  ],
+  "photoCollected": true,
+  "conversionStatus": "completed",
+  "convertedAt": "2025-10-22T14:32:32.252Z",
+  "batchId": "batch_2025-10-22_23-15-00",
+  "convertedData": {
+    "name": "2510일화맥콜P500ml2+1",
+    "description": "일화 맥콜P500ml 2+1 행사",
+    "promotionType": "2+1",
+    "buyQuantity": 2,
+    "getQuantity": 1,
+    "applicableType": "products",
+    "applicableProducts": [
+      "8801223100261"
+    ],
+    "giftSelectionType": "same",
+    "giftProducts": [
+      "8801223100261"
+    ],
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z",
+    "status": "active",
+    "isActive": true
+  }
+}

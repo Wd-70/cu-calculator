@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import Promotion from '@/lib/models/Promotion';
 import PromotionIndex from '@/lib/models/PromotionIndex';
 import { verifyWithTimestamp } from '@/lib/userAuth';
+import { existsSync } from 'fs';
+import path from 'path';
 
 // GET: 프로모션 목록 조회
 export async function GET(request: NextRequest) {
@@ -15,6 +17,9 @@ export async function GET(request: NextRequest) {
     const barcode = searchParams.get('barcode');
     const category = searchParams.get('category');
     const brand = searchParams.get('brand');
+    const name = searchParams.get('name');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
     const filter: any = {};
 
@@ -26,6 +31,15 @@ export async function GET(request: NextRequest) {
     // 검증 상태 필터
     if (verificationStatus) {
       filter.verificationStatus = verificationStatus;
+    }
+
+    // 이름으로 검색 (부분 일치)
+    if (name) {
+      filter.$or = [
+        { name: { $regex: name, $options: 'i' } },
+        { description: { $regex: name, $options: 'i' } },
+        { applicableProducts: { $regex: name, $options: 'i' } },
+      ];
     }
 
     // 바코드로 조회 (역인덱스 사용)
@@ -63,13 +77,45 @@ export async function GET(request: NextRequest) {
       filter.validTo = { $gte: now };
     }
 
+    // 총 개수 조회
+    const total = await Promotion.countDocuments(filter);
+
+    // 페이지네이션 적용
     const promotions = await Promotion.find(filter)
       .sort({ priority: -1, verificationCount: -1, createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
       .lean();
+
+    // 각 프로모션의 사진 수집 상태 확인
+    const promotionsWithPhotoStatus = promotions.map((promotion: any) => {
+      const promotionDir = path.join(process.cwd(), 'data', 'promotions', promotion._id.toString());
+      const metadataPath = path.join(promotionDir, 'metadata.json');
+      const hasPhotos = existsSync(metadataPath);
+
+      let photoCount = 0;
+      if (hasPhotos) {
+        try {
+          const { readFileSync } = require('fs');
+          const metadata = JSON.parse(readFileSync(metadataPath, 'utf-8'));
+          photoCount = metadata.photos?.length || 0;
+        } catch (error) {
+          // 메타데이터 읽기 실패 시 무시
+        }
+      }
+
+      return {
+        ...promotion,
+        photoCollected: hasPhotos,
+        photoCount: photoCount,
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      promotions,
+      promotions: promotionsWithPhotoStatus,
+      total,
+      hasMore: offset + promotions.length < total,
     });
   } catch (error) {
     console.error('Error fetching promotions:', error);

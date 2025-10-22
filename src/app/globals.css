@@ -118,3 +118,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--cu-purple);
 }
+
+/* 모바일 Safe Area 지원 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* 터치 조작 최적화 */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}

@@ -12,6 +12,13 @@ export default function TestPage() {
   const [accountAddress, setAccountAddress] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  const [commandsJson, setCommandsJson] = useState('');
+  const [executing, setExecuting] = useState(false);
+  const [commandResults, setCommandResults] = useState<any>(null);
+  const [backups, setBackups] = useState<any[]>([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [backupName, setBackupName] = useState('');
+  const [backupDescription, setBackupDescription] = useState('');
 
   useEffect(() => {
     checkAdminStatus();
@@ -194,6 +201,213 @@ export default function TestPage() {
   const getPromotions = () => apiCall('프로모션 목록', '/api/promotions');
   const clearResults = () => setResults([]);
 
+  // MongoDB 명령 실행
+  const handleExecuteCommands = async () => {
+    if (!accountAddress) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!commandsJson.trim()) {
+      alert('명령을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const commands = JSON.parse(commandsJson);
+
+      setExecuting(true);
+      setCommandResults(null);
+
+      const response = await fetch('/api/test/mongodb-exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress: accountAddress,
+          commands: Array.isArray(commands) ? commands : [commands],
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCommandResults(data);
+        addResult('MongoDB 명령 실행', data);
+      } else {
+        alert('❌ 실행 실패: ' + data.error);
+      }
+    } catch (error: any) {
+      console.error('Execution error:', error);
+      if (error instanceof SyntaxError) {
+        alert('❌ JSON 형식이 올바르지 않습니다.');
+      } else {
+        alert('❌ 실행 중 오류가 발생했습니다: ' + error.message);
+      }
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const loadExample = (exampleName: string) => {
+    const examples: Record<string, any> = {
+      find: {
+        type: 'find',
+        model: 'Promotion',
+        filter: { status: 'active' },
+        options: { limit: 10 }
+      },
+      findOne: {
+        type: 'findOne',
+        model: 'Product',
+        filter: { barcode: '8801062617098' }
+      },
+      updateOne: {
+        type: 'updateOne',
+        model: 'Promotion',
+        filter: { name: '2510아이스3000원2+1' },
+        update: { $set: { priority: 100 } }
+      },
+      countDocuments: {
+        type: 'countDocuments',
+        model: 'Promotion',
+        filter: { status: 'active' }
+      }
+    };
+    const example = examples[exampleName];
+    if (example) {
+      setCommandsJson(JSON.stringify([example], null, 2));
+    }
+  };
+
+  // DB 백업/복원 함수들
+  const loadBackups = async () => {
+    if (!accountAddress) return;
+
+    setLoadingBackups(true);
+    try {
+      const response = await fetch('/api/test/db-backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress,
+          action: 'list',
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setBackups(data.backups);
+      }
+    } catch (error) {
+      console.error('백업 목록 로드 실패:', error);
+      alert('백업 목록 로드 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
+  const createBackup = async () => {
+    if (!accountAddress) return;
+
+    if (!confirm('현재 DB 전체를 백업하시겠습니까?')) return;
+
+    setLoadingBackups(true);
+    try {
+      const response = await fetch('/api/test/db-backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress,
+          action: 'create',
+          backupName: backupName.trim() || undefined,
+          description: backupDescription.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`✅ 백업 생성 완료!\n\n백업 ID: ${data.backupId}\n총 문서: ${data.metadata.totalDocuments}개`);
+        setBackupName('');
+        setBackupDescription('');
+        await loadBackups();
+      } else {
+        alert('❌ 백업 실패: ' + data.error);
+      }
+    } catch (error) {
+      console.error('백업 생성 실패:', error);
+      alert('백업 생성 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
+  const restoreBackup = async (backupId: string) => {
+    if (!accountAddress) return;
+
+    if (!confirm(`⚠️ 경고!\n\n백업 "${backupId}"을(를) 복원하면 현재 DB의 모든 데이터가 삭제됩니다!\n\n정말로 복원하시겠습니까?`)) {
+      return;
+    }
+
+    setLoadingBackups(true);
+    try {
+      const response = await fetch('/api/test/db-backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress,
+          action: 'restore',
+          backupName: backupId,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`✅ 복원 완료!\n\n복원된 컬렉션: ${data.restoredCollections.join(', ')}\n총 문서: ${data.restoredDocuments}개`);
+      } else {
+        alert('❌ 복원 실패: ' + data.error);
+      }
+    } catch (error) {
+      console.error('백업 복원 실패:', error);
+      alert('백업 복원 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
+  const deleteBackup = async (backupId: string) => {
+    if (!accountAddress) return;
+
+    if (!confirm(`백업 "${backupId}"을(를) 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다!`)) {
+      return;
+    }
+
+    setLoadingBackups(true);
+    try {
+      const response = await fetch('/api/test/db-backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress,
+          action: 'delete',
+          backupName: backupId,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('✅ 백업이 삭제되었습니다.');
+        await loadBackups();
+      } else {
+        alert('❌ 삭제 실패: ' + data.error);
+      }
+    } catch (error) {
+      console.error('백업 삭제 실패:', error);
+      alert('백업 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
   // 로딩 중
   if (isCheckingAdmin) {
     return (
@@ -364,6 +578,141 @@ export default function TestPage() {
                 >
                   🎁 프로모션 목록
                 </button>
+              </div>
+            </div>
+
+            {/* DB 백업/복원 */}
+            <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-red-300">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">💾 DB 백업/복원</h2>
+
+              {/* 백업 생성 */}
+              <div className="mb-4 space-y-2">
+                <input
+                  type="text"
+                  value={backupName}
+                  onChange={(e) => setBackupName(e.target.value)}
+                  placeholder="백업 이름 (선택사항)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+                <input
+                  type="text"
+                  value={backupDescription}
+                  onChange={(e) => setBackupDescription(e.target.value)}
+                  placeholder="설명 (선택사항)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+                <button
+                  onClick={createBackup}
+                  disabled={loadingBackups}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:bg-gray-300 text-white rounded-lg font-semibold transition-all shadow-md"
+                >
+                  {loadingBackups ? '처리 중...' : '💾 새 백업 생성'}
+                </button>
+              </div>
+
+              {/* 백업 목록 */}
+              <button
+                onClick={loadBackups}
+                disabled={loadingBackups}
+                className="w-full mb-3 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-semibold transition-all"
+              >
+                {loadingBackups ? '로딩 중...' : '📋 백업 목록 새로고침'}
+              </button>
+
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {backups.length === 0 ? (
+                  <p className="text-center text-gray-500 text-sm py-4">백업이 없습니다.</p>
+                ) : (
+                  backups.map((backup) => (
+                    <div
+                      key={backup.id}
+                      className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm text-gray-900">{backup.id}</p>
+                          {backup.description && (
+                            <p className="text-xs text-gray-600 mt-1">{backup.description}</p>
+                          )}
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(backup.createdAt).toLocaleString('ko-KR')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            문서: {backup.totalDocuments}개 | 컬렉션: {backup.collections.join(', ')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => restoreBackup(backup.id)}
+                          disabled={loadingBackups}
+                          className="flex-1 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white text-xs rounded font-medium transition-colors"
+                        >
+                          ⬅️ 복원
+                        </button>
+                        <button
+                          onClick={() => deleteBackup(backup.id)}
+                          disabled={loadingBackups}
+                          className="px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white text-xs rounded font-medium transition-colors"
+                        >
+                          🗑️ 삭제
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-3 text-xs text-gray-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                <strong className="text-red-800">⚠️ 주의:</strong> 복원 시 현재 DB의 모든 데이터가 삭제됩니다!
+              </div>
+            </div>
+
+            {/* MongoDB 명령 실행기 */}
+            <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-purple-300">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">🔧 MongoDB 명령 실행</h2>
+
+              {/* 예제 버튼들 */}
+              <div className="mb-3">
+                <p className="text-xs text-gray-600 mb-2">예제:</p>
+                <div className="flex flex-wrap gap-2">
+                  {['find', 'findOne', 'updateOne', 'countDocuments'].map((ex) => (
+                    <button
+                      key={ex}
+                      onClick={() => loadExample(ex)}
+                      className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+                    >
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <textarea
+                value={commandsJson}
+                onChange={(e) => setCommandsJson(e.target.value)}
+                placeholder={`[
+  {
+    "type": "find",
+    "model": "Promotion",
+    "filter": { "status": "active" },
+    "options": { "limit": 10 }
+  }
+]`}
+                className="w-full h-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-xs resize-none"
+              />
+
+              <button
+                onClick={handleExecuteCommands}
+                disabled={executing || !commandsJson.trim()}
+                className="w-full mt-3 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 disabled:bg-gray-300 text-white rounded-lg font-semibold transition-all shadow-md"
+              >
+                {executing ? '⏳ 실행 중...' : '🚀 명령 실행'}
+              </button>
+
+              <div className="mt-3 text-xs text-gray-600 bg-purple-50 p-3 rounded-lg border border-purple-200">
+                <strong>사용 가능한 모델:</strong> Promotion, PromotionIndex, Product<br />
+                <strong>명령 타입:</strong> find, findOne, insertOne/Many, updateOne/Many, deleteOne/Many, aggregate, countDocuments, distinct
               </div>
             </div>
 

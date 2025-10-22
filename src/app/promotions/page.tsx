@@ -6,6 +6,9 @@ import { signWithTimestamp, getCurrentUserAddress } from '@/lib/userAuth';
 import { checkIsAdminClient } from '@/lib/adminAuth';
 import Toast from '@/components/Toast';
 import PromotionJsonModal from '@/components/PromotionJsonModal';
+import PromotionDetailModal from '@/components/PromotionDetailModal';
+import PromotionMergeModal from '@/components/PromotionMergeModal';
+import PhotoConversionModal from '@/components/PhotoConversionModal';
 
 interface ToastState {
   show: boolean;
@@ -33,6 +36,9 @@ interface MergeCandidate {
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<IPromotion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
@@ -49,17 +55,16 @@ export default function PromotionsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [debouncedMergeSearchQuery, setDebouncedMergeSearchQuery] = useState('');
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [selectedPromotionForModal, setSelectedPromotionForModal] = useState<IPromotion | null>(null);
+  const [showPhotoConversionModal, setShowPhotoConversionModal] = useState(false);
 
-  useEffect(() => {
-    loadPromotions();
-    checkAdminStatus();
-  }, [statusFilter, verificationFilter]);
-
-  // 프로모션 목록 검색어 디바운싱 (500ms)
+  // 프로모션 목록 검색어 디바운싱 (300ms) - 서버 검색
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 500);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -73,36 +78,6 @@ export default function PromotionsPage() {
     return () => clearTimeout(timer);
   }, [mergeSearchQuery]);
 
-  // 프로모션 목록 필터링 (useMemo로 최적화)
-  const filteredPromotions = useMemo(() => {
-    if (!debouncedSearchQuery) return promotions;
-    const query = debouncedSearchQuery.toLowerCase();
-    return promotions.filter((promotion) => {
-      // 이름 검색
-      if (promotion.name.toLowerCase().includes(query)) return true;
-      // 설명 검색
-      if (promotion.description?.toLowerCase().includes(query)) return true;
-      // 바코드 검색
-      if (promotion.applicableProducts?.some((barcode: string) =>
-        barcode.toLowerCase().includes(query)
-      )) return true;
-      return false;
-    });
-  }, [promotions, debouncedSearchQuery]);
-
-  // 병합 후보 필터링 (useMemo로 최적화)
-  const filteredMergeCandidates = useMemo(() => {
-    if (!debouncedMergeSearchQuery) return mergeCandidates;
-    const query = debouncedMergeSearchQuery.toLowerCase();
-    return mergeCandidates.filter((candidate) =>
-      candidate.promotions.some(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.barcode.toLowerCase().includes(query)
-      )
-    );
-  }, [mergeCandidates, debouncedMergeSearchQuery]);
-
   const checkAdminStatus = async () => {
     const address = getCurrentUserAddress();
     setUserAddress(address);
@@ -112,26 +87,53 @@ export default function PromotionsPage() {
     }
   };
 
-  const loadPromotions = async () => {
-    setLoading(true);
+  const loadPromotions = useCallback(async (isInitial: boolean = false) => {
+    if (isInitial) {
+      setLoading(true);
+      setPromotions([]);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const params = new URLSearchParams();
+      const offset = isInitial ? 0 : promotions.length;
+      const limit = 50;
+
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (verificationFilter !== 'all') params.append('verificationStatus', verificationFilter);
+      if (debouncedSearchQuery) params.append('name', debouncedSearchQuery);
 
       const response = await fetch(`/api/promotions?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
-        setPromotions(data.promotions);
+        if (isInitial) {
+          setPromotions(data.promotions);
+        } else {
+          // 중복 제거
+          setPromotions(prev => {
+            const existingIds = new Set(prev.map((p: IPromotion) => p._id.toString()));
+            const newPromotions = data.promotions.filter((p: IPromotion) => !existingIds.has(p._id.toString()));
+            return [...prev, ...newPromotions];
+          });
+        }
+        setTotal(data.total);
+        setHasMore(data.hasMore);
       }
     } catch (error) {
       console.error('Error loading promotions:', error);
       setToast({ show: true, message: '프로모션 로드 중 오류가 발생했습니다.', type: 'error' });
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [statusFilter, verificationFilter, debouncedSearchQuery, promotions.length]);
 
   const handleVerify = async (promotionId: string, adminVerify: boolean = false) => {
     if (!userAddress) {
@@ -215,16 +217,71 @@ export default function PromotionsPage() {
     }
   };
 
-  const loadMergeCandidates = async () => {
+  const handleIndividualMerge = async (targetPromotionIds: string[], newProducts: string[], giftProducts?: string[]) => {
+    if (!selectedPromotionForModal || !userAddress) {
+      setToast({ show: true, message: '계정을 먼저 생성해주세요.', type: 'error' });
+      return;
+    }
+
+    try {
+      const { signature, timestamp } = await signWithTimestamp({
+        action: 'merge_individual_promotion',
+        sourcePromotionId: selectedPromotionForModal._id.toString(),
+        targetPromotionIds,
+        newProducts,
+        giftProducts,
+      });
+
+      const response = await fetch(`/api/promotions/${selectedPromotionForModal._id}/merge-individual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetPromotionIds,
+          newProducts,
+          giftProducts,
+          signature,
+          timestamp,
+          address: userAddress,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const giftMessage = giftProducts && giftProducts.length > 0
+          ? ` + ${giftProducts.length}개 증정 상품 (교차 증정으로 전환됨)`
+          : '';
+        setToast({
+          show: true,
+          message: `✅ 병합이 완료되었습니다! ${targetPromotionIds.length}개 프로모션 + ${newProducts.length}개 구매 상품${giftMessage}`,
+          type: 'success',
+        });
+        setShowMergeModal(false);
+        setSelectedPromotionForModal(null);
+        loadPromotions(true);
+      } else {
+        setToast({ show: true, message: data.error, type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error merging promotion:', error);
+      setToast({ show: true, message: '병합 중 오류가 발생했습니다.', type: 'error' });
+    }
+  };
+
+  const loadMergeCandidates = useCallback(async () => {
     setLoadingMergeCandidates(true);
     try {
-      const response = await fetch('/api/promotions/find-merge-candidates');
+      const params = new URLSearchParams();
+      if (debouncedMergeSearchQuery) {
+        params.append('search', debouncedMergeSearchQuery);
+      }
+
+      const response = await fetch(`/api/promotions/find-merge-candidates?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
         setMergeCandidates(data.candidates);
         setShowMergeCandidates(true);
-        setMergeSearchQuery(''); // 검색어 초기화
       } else {
         setToast({ show: true, message: '병합 후보 로드 실패', type: 'error' });
       }
@@ -234,7 +291,49 @@ export default function PromotionsPage() {
     } finally {
       setLoadingMergeCandidates(false);
     }
-  };
+  }, [debouncedMergeSearchQuery]);
+
+  // 초기 로드 및 필터 변경 시 프로모션 로드
+  useEffect(() => {
+    checkAdminStatus();
+  }, []);
+
+  useEffect(() => {
+    loadPromotions(true);
+  }, [statusFilter, verificationFilter]);
+
+  // 디바운스된 검색어가 변경되면 재로드
+  useEffect(() => {
+    loadPromotions(true);
+  }, [debouncedSearchQuery]);
+
+  // 무한 스크롤 이벤트 리스너
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollThreshold = 300;
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const pageHeight = document.documentElement.scrollHeight;
+
+      if (
+        scrollPosition >= pageHeight - scrollThreshold &&
+        !loading &&
+        !loadingMore &&
+        hasMore
+      ) {
+        loadPromotions(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, loadingMore, hasMore, loadPromotions]);
+
+  // 디바운스된 병합 검색어가 변경되면 재로드
+  useEffect(() => {
+    if (showMergeCandidates) {
+      loadMergeCandidates();
+    }
+  }, [debouncedMergeSearchQuery, showMergeCandidates, loadMergeCandidates]);
 
   const handleMergePromotions = async () => {
     if (selectedForMerge.length < 2) {
@@ -397,6 +496,43 @@ export default function PromotionsPage() {
         />
       )}
 
+      {showDetailModal && selectedPromotionForModal && (
+        <PromotionDetailModal
+          promotion={selectedPromotionForModal}
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedPromotionForModal(null);
+          }}
+          onMerge={(promotionId) => {
+            setShowDetailModal(false);
+            setShowMergeModal(true);
+          }}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      {showMergeModal && selectedPromotionForModal && (
+        <PromotionMergeModal
+          sourcePromotion={selectedPromotionForModal}
+          isOpen={showMergeModal}
+          onClose={() => {
+            setShowMergeModal(false);
+            setSelectedPromotionForModal(null);
+          }}
+          onMerge={handleIndividualMerge}
+          userAddress={userAddress}
+        />
+      )}
+
+      {showPhotoConversionModal && (
+        <PhotoConversionModal
+          isOpen={showPhotoConversionModal}
+          onClose={() => setShowPhotoConversionModal(false)}
+          userAddress={userAddress}
+        />
+      )}
+
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-8 px-4">
         <div className="max-w-7xl mx-auto">
           {/* 헤더 */}
@@ -491,12 +627,20 @@ export default function PromotionsPage() {
                 </select>
               </div>
               {isAdmin && (
-                <button
-                  onClick={loadMergeCandidates}
-                  className="px-6 py-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-pink-600 transition-all shadow-md"
-                >
-                  🔀 병합 후보 찾기
-                </button>
+                <>
+                  <button
+                    onClick={loadMergeCandidates}
+                    className="px-6 py-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-pink-600 transition-all shadow-md"
+                  >
+                    🔀 병합 후보 찾기
+                  </button>
+                  <button
+                    onClick={() => setShowPhotoConversionModal(true)}
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md"
+                  >
+                    📷 사진 데이터 변환
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -507,7 +651,7 @@ export default function PromotionsPage() {
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
               <p className="mt-4 text-gray-600">로딩 중...</p>
             </div>
-          ) : filteredPromotions.length === 0 ? (
+          ) : promotions.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
                 <p className="text-gray-500 text-lg">
                   {debouncedSearchQuery
@@ -526,21 +670,29 @@ export default function PromotionsPage() {
               </div>
             ) : (
               <div className="grid gap-6">
-                {debouncedSearchQuery && (
+                {total > 0 && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-blue-800 text-sm">
-                      <strong>{filteredPromotions.length}개</strong>의 프로모션을 찾았습니다.
+                      {debouncedSearchQuery ? (
+                        <>
+                          <strong>{total}개</strong>의 프로모션을 찾았습니다. (현재 <strong>{promotions.length}개</strong> 로드됨)
+                        </>
+                      ) : (
+                        <>
+                          전체 <strong>{total}개</strong>의 프로모션 중 <strong>{promotions.length}개</strong> 로드됨
+                        </>
+                      )}
                     </p>
                   </div>
                 )}
-                {filteredPromotions.map((promotion) => (
+                {promotions.map((promotion) => (
                 <div
                   key={promotion._id.toString()}
                   className="bg-white rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <h3 className="text-xl font-bold text-gray-900">
                           {promotion.name}
                         </h3>
@@ -549,6 +701,11 @@ export default function PromotionsPage() {
                         <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
                           {promotion.promotionType}
                         </span>
+                        {isAdmin && (promotion as any).photoCollected && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold flex items-center gap-1">
+                            📷 사진 {(promotion as any).photoCount}장
+                          </span>
+                        )}
                       </div>
                       <p className="text-gray-600">{promotion.description}</p>
                     </div>
@@ -572,8 +729,8 @@ export default function PromotionsPage() {
                     <div>
                       <span className="text-gray-500">유효 기간:</span>
                       <span className="ml-2 font-medium">
-                        {new Date(promotion.validFrom).toLocaleDateString()} ~{' '}
-                        {new Date(promotion.validTo).toLocaleDateString()}
+                        {new Date(promotion.validFrom).toLocaleDateString('ko-KR')} ~{' '}
+                        {new Date(promotion.validTo).toLocaleDateString('ko-KR')}
                       </span>
                     </div>
                     <div>
@@ -589,7 +746,27 @@ export default function PromotionsPage() {
                   </div>
 
                   {/* 액션 버튼 */}
-                  <div className="flex gap-2 pt-4 border-t border-gray-200">
+                  <div className="flex gap-2 pt-4 border-t border-gray-200 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setSelectedPromotionForModal(promotion);
+                        setShowDetailModal(true);
+                      }}
+                      className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium"
+                    >
+                      📋 상세 보기
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setSelectedPromotionForModal(promotion);
+                          setShowMergeModal(true);
+                        }}
+                        className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium"
+                      >
+                        🔀 병합
+                      </button>
+                    )}
                     {userAddress && !promotion.verifiedBy?.includes(userAddress) && (
                       <button
                         onClick={() => handleVerify(promotion._id.toString())}
@@ -632,6 +809,21 @@ export default function PromotionsPage() {
                   </div>
                 </div>
               ))}
+
+              {/* 더 불러오기 인디케이터 */}
+              {loadingMore && (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
+                  <p className="mt-2 text-gray-600 text-sm">더 불러오는 중...</p>
+                </div>
+              )}
+
+              {/* 더 이상 없음 메시지 */}
+              {!hasMore && promotions.length > 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm">모든 프로모션을 불러왔습니다.</p>
+                </div>
+              )}
               </div>
             )
           }
@@ -699,14 +891,20 @@ export default function PromotionsPage() {
                   <p className="text-gray-500 text-lg">병합 가능한 프로모션 그룹이 없습니다.</p>
                   <p className="text-gray-400 text-sm mt-2">크롤링으로 생성된 개별 프로모션이 2개 이상 있어야 합니다.</p>
                 </div>
-              ) : filteredMergeCandidates.length === 0 ? (
+              ) : mergeCandidates.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">검색 결과가 없습니다.</p>
-                  <p className="text-gray-400 text-sm mt-2">&quot;{debouncedMergeSearchQuery}&quot;와 일치하는 병합 후보가 없습니다.</p>
+                  <p className="text-gray-500 text-lg">
+                    {debouncedMergeSearchQuery ? '검색 결과가 없습니다.' : '병합 가능한 프로모션 그룹이 없습니다.'}
+                  </p>
+                  {debouncedMergeSearchQuery ? (
+                    <p className="text-gray-400 text-sm mt-2">&quot;{debouncedMergeSearchQuery}&quot;와 일치하는 병합 후보가 없습니다.</p>
+                  ) : (
+                    <p className="text-gray-400 text-sm mt-2">크롤링으로 생성된 개별 프로모션이 2개 이상 있어야 합니다.</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {filteredMergeCandidates.map((candidate, idx) => (
+                  {mergeCandidates.map((candidate, idx) => (
                     <MergeCandidateGroup
                       key={idx}
                       candidate={candidate}
@@ -860,8 +1058,8 @@ function MergeCandidateGroup({
             {candidate._id.promotionType}
           </span>
           <span className="text-sm text-gray-600">
-            {new Date(candidate._id.validFrom).toLocaleDateString()} ~{' '}
-            {new Date(candidate._id.validTo).toLocaleDateString()}
+            {new Date(candidate._id.validFrom).toLocaleDateString('ko-KR')} ~{' '}
+            {new Date(candidate._id.validTo).toLocaleDateString('ko-KR')}
           </span>
           <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
             {candidate.count}개 발견

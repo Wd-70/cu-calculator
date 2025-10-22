@@ -1,0 +1,63 @@
+{
+  "promotionId": "68f6f1e97cb7c4e339f6ec6e",
+  "promotionName": "동그린)마카다미아브리틀 2+1",
+  "currentData": {
+    "name": "동그린)마카다미아브리틀 2+1",
+    "promotionType": "2+1",
+    "applicableProducts": [
+      "8807203003003"
+    ],
+    "giftSelectionType": "same",
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z"
+  },
+  "photos": [
+    {
+      "filename": "photo_2025-10-22T08-32-27-748Z.jpg",
+      "uploadedAt": "2025-10-22T08:32:29.275Z",
+      "status": "uploaded"
+    }
+  ],
+  "photoCollected": true,
+  "conversionStatus": "completed",
+  "convertedAt": "2025-10-22T14:32:32.070Z",
+  "batchId": "batch_2025-10-22_23-15-00",
+  "convertedData": {
+    "name": "2510아이스3000원30종2+1",
+    "description": "아이스 3,000원 30종 2+1 행사",
+    "promotionType": "2+1",
+    "buyQuantity": 2,
+    "getQuantity": 1,
+    "applicableType": "products",
+    "applicableProducts": [
+      "8807203003003",
+      "8801062001774",
+      "8801062001989",
+      "8801062002504",
+      "8801062861729",
+      "8801062874729",
+      "8801118256936",
+      "8801206004548",
+      "8801206004555",
+      "8801206004562",
+      "8801206004609"
+    ],
+    "giftSelectionType": "cross",
+    "giftProducts": [
+      "8801062001774",
+      "8801062001989",
+      "8801062002504",
+      "8801062861729",
+      "8801062874729",
+      "8801118256936",
+      "8801206004548",
+      "8801206004555",
+      "8801206004562",
+      "8801206004609"
+    ],
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z",
+    "status": "active",
+    "isActive": true
+  }
+}

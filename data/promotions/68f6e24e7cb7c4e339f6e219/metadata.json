@@ -1,0 +1,46 @@
+{
+  "promotionId": "68f6e24e7cb7c4e339f6e219",
+  "promotionName": "메디힐)히알루스킨패드2P 2+1",
+  "currentData": {
+    "name": "메디힐)히알루스킨패드2P 2+1",
+    "promotionType": "2+1",
+    "applicableProducts": [
+      "8809936742419"
+    ],
+    "giftSelectionType": "same",
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z"
+  },
+  "photos": [
+    {
+      "filename": "photo_2025-10-22T08-35-30-110Z.jpg",
+      "uploadedAt": "2025-10-22T08:35:31.154Z",
+      "status": "uploaded"
+    }
+  ],
+  "photoCollected": true,
+  "conversionStatus": "completed",
+  "convertedAt": "2025-10-22T14:32:30.769Z",
+  "batchId": "batch_2025-10-22_23-15-00",
+  "convertedData": {
+    "name": "2510메디힐스킨패드2P2종2+1",
+    "description": "메디힐 티트리/히알루스킨패드2P 2+1 행사",
+    "promotionType": "2+1",
+    "buyQuantity": 2,
+    "getQuantity": 1,
+    "applicableType": "products",
+    "applicableProducts": [
+      "8809936742396",
+      "8809936742419"
+    ],
+    "giftSelectionType": "cross",
+    "giftProducts": [
+      "8809936742396",
+      "8809936742419"
+    ],
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z",
+    "status": "active",
+    "isActive": true
+  }
+}
