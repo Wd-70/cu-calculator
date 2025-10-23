@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 3. 새 프로모션 생성
-    const newPromotion = await Promotion.create({
+    const createData: any = {
       ...mergedData,
       mergedFrom: promotionIds,
       mergedAt: new Date(),
@@ -108,7 +108,16 @@ export async function POST(request: NextRequest) {
           comment: comment || '프로모션 병합',
         },
       ],
-    });
+    };
+
+    // 병합 시 mustBeSameProduct 제약 제거 (2개 이상 상품이 병합되면 교차 증정 가능)
+    if (createData.applicableProducts && createData.applicableProducts.length > 1) {
+      if (createData.giftConstraints?.mustBeSameProduct) {
+        createData.giftConstraints.mustBeSameProduct = false;
+      }
+    }
+
+    const newPromotion = await Promotion.create(createData);
 
     // 4. PromotionIndex 업데이트
     for (const barcode of allBarcodes) {

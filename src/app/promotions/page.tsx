@@ -491,7 +491,19 @@ export default function PromotionsPage() {
             setSelectedPromotion(null);
           }}
           promotion={selectedPromotion}
-          onSave={loadPromotions}
+          onSave={(updatedPromotion) => {
+            if (updatedPromotion) {
+              // 수정된 프로모션만 업데이트
+              setPromotions((prev) =>
+                prev.map((p) =>
+                  p._id.toString() === updatedPromotion._id.toString() ? updatedPromotion : p
+                )
+              );
+            } else {
+              // 새로 생성된 경우 전체 다시 로드
+              loadPromotions();
+            }
+          }}
           allPromotions={promotions}
         />
       )}

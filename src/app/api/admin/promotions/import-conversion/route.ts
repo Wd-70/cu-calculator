@@ -135,47 +135,16 @@ export async function POST(request: NextRequest) {
         promotion.applicableProducts = mergedProducts;
         promotion.giftSelectionType = promotionUpdate.giftSelectionType;
 
-        // 상품명 저장 (POS 화면 데이터에서 추출)
-        if (extractedData.posScreenData?.giftProducts) {
-          const productNameMap = new Map<string, string>();
-
-          // POS 화면에서 추출한 상품명 매핑
-          extractedData.posScreenData.giftProducts.forEach((item: any) => {
-            if (item.barcode && item.name) {
-              productNameMap.set(item.barcode, item.name);
-            }
-          });
-
-          // 메인 상품도 추가
-          if (extractedData.posScreenData.productBarcode && extractedData.posScreenData.productName) {
-            productNameMap.set(
-              extractedData.posScreenData.productBarcode,
-              extractedData.posScreenData.productName
-            );
-          }
-
-          // 바코드 순서에 맞춰 상품명 배열 생성
-          promotion.applicableProductNames = mergedProducts.map(
-            barcode => productNameMap.get(barcode) || barcode
-          );
-        }
-
         if (promotionUpdate.giftProducts && promotionUpdate.giftProducts.length > 0) {
           promotion.giftProducts = promotionUpdate.giftProducts;
+        }
 
-          // 증정 상품명도 저장
-          if (extractedData.posScreenData?.giftProducts) {
-            const giftNameMap = new Map<string, string>();
-            extractedData.posScreenData.giftProducts.forEach((item: any) => {
-              if (item.barcode && item.name) {
-                giftNameMap.set(item.barcode, item.name);
-              }
-            });
-
-            promotion.giftProductNames = promotionUpdate.giftProducts.map(
-              barcode => giftNameMap.get(barcode) || barcode
-            );
+        // 병합 시 mustBeSameProduct 제약 제거 (2개 이상 상품이 있으면 교차 증정 가능)
+        if (mergedProducts.length > 1 && promotion.giftConstraints?.mustBeSameProduct) {
+          if (!promotion.giftConstraints) {
+            promotion.giftConstraints = {};
           }
+          promotion.giftConstraints.mustBeSameProduct = false;
         }
 
         promotion.validFrom = new Date(promotionUpdate.validFrom);

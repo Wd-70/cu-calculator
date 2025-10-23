@@ -9,7 +9,7 @@ interface PromotionJsonModalProps {
   isOpen: boolean;
   onClose: () => void;
   promotion?: IPromotion | null;
-  onSave: () => void;
+  onSave: (updatedPromotion?: IPromotion) => void;
   allPromotions?: IPromotion[];
 }
 
@@ -145,6 +145,7 @@ export default function PromotionJsonModal({
 
       const { signature, timestamp } = await signWithTimestamp({
         action: selectedPromotion ? 'update_promotion' : 'create_promotion',
+        id: selectedPromotion?._id,
         ...promotionData,
       });
 
@@ -178,7 +179,8 @@ export default function PromotionJsonModal({
             : '✅ 프로모션이 생성되었습니다!',
           type: 'success',
         });
-        onSave();
+        // 업데이트된 프로모션 데이터 전달
+        onSave(data.promotion);
         setTimeout(() => {
           onClose();
         }, 500);

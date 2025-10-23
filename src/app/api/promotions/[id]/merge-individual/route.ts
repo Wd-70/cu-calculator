@@ -7,11 +7,12 @@ import { verifyWithTimestamp } from '@/lib/userAuth';
 // POST: 개별 프로모션 병합 (다른 프로모션들을 현재 프로모션에 병합하거나 새 바코드 추가)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
+    const { id } = await params;
     const { targetPromotionIds, newProducts, giftProducts, signature, timestamp, address } =
       await request.json();
 
@@ -26,7 +27,7 @@ export async function POST(
     const isValid = verifyWithTimestamp(
       {
         action: 'merge_individual_promotion',
-        sourcePromotionId: params.id,
+        sourcePromotionId: id,
         targetPromotionIds,
         newProducts,
         giftProducts,
@@ -44,7 +45,7 @@ export async function POST(
     }
 
     // 소스 프로모션 조회
-    const sourcePromotion = await Promotion.findById(params.id);
+    const sourcePromotion = await Promotion.findById(id);
     if (!sourcePromotion) {
       return NextResponse.json(
         { success: false, error: '프로모션을 찾을 수 없습니다.' },
@@ -121,8 +122,13 @@ export async function POST(
       updateData.giftProducts = uniqueGiftBarcodes;
     }
 
+    // 병합 시 mustBeSameProduct 제약 제거 (2개 이상 상품이 있으면 교차 증정 가능)
+    if (uniqueBarcodes.length > 1 && sourcePromotion.giftConstraints?.mustBeSameProduct) {
+      updateData['giftConstraints.mustBeSameProduct'] = false;
+    }
+
     await Promotion.updateOne(
-      { _id: params.id },
+      { _id: id },
       {
         $set: updateData,
         $push: {
@@ -180,7 +186,7 @@ export async function POST(
     }
 
     // 6. 업데이트된 프로모션 조회
-    const updatedPromotion = await Promotion.findById(params.id);
+    const updatedPromotion = await Promotion.findById(id);
 
     return NextResponse.json({
       success: true,

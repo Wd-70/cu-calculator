@@ -8,12 +8,13 @@ import { isAdmin } from '@/lib/adminAuth';
 // GET: 특정 프로모션 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
-    const promotion = await Promotion.findById(params.id).lean();
+    const { id } = await params;
+    const promotion = await Promotion.findById(id).lean();
 
     if (!promotion) {
       return NextResponse.json(
@@ -38,11 +39,12 @@ export async function GET(
 // PUT: 프로모션 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
+    const { id } = await params;
     const { promotionData, signature, timestamp, address, comment } = await request.json();
 
     // 서명 검증
@@ -54,7 +56,7 @@ export async function PUT(
     }
 
     const isValid = verifyWithTimestamp(
-      { action: 'update_promotion', id: params.id, ...promotionData },
+      { action: 'update_promotion', id, ...promotionData },
       signature,
       timestamp,
       address
@@ -68,7 +70,7 @@ export async function PUT(
     }
 
     // 기존 프로모션 조회
-    const existingPromotion = await Promotion.findById(params.id);
+    const existingPromotion = await Promotion.findById(id);
 
     if (!existingPromotion) {
       return NextResponse.json(
@@ -77,13 +79,12 @@ export async function PUT(
       );
     }
 
-    // 권한 확인: 생성자 또는 관리자만 수정 가능
-    const isCreator = existingPromotion.createdBy === address;
+    // 권한 확인: 관리자만 JSON 편집 가능
     const isAdminUser = isAdmin(address);
 
-    if (!isCreator && !isAdminUser) {
+    if (!isAdminUser) {
       return NextResponse.json(
-        { success: false, error: '수정 권한이 없습니다. 생성자 또는 관리자만 수정할 수 있습니다.' },
+        { success: false, error: '관리자 권한이 필요합니다.' },
         { status: 403 }
       );
     }
@@ -96,7 +97,7 @@ export async function PUT(
 
     // 프로모션 업데이트
     const updatedPromotion = await Promotion.findByIdAndUpdate(
-      params.id,
+      id,
       {
         ...promotionData,
         lastModifiedBy: address,
@@ -122,7 +123,7 @@ export async function PUT(
       await PromotionIndex.updateOne(
         { barcode },
         {
-          $pull: { promotionIds: params.id },
+          $pull: { promotionIds: id },
           $set: { lastUpdated: new Date() },
         }
       );
@@ -134,7 +135,7 @@ export async function PUT(
       await PromotionIndex.updateOne(
         { barcode },
         {
-          $addToSet: { promotionIds: params.id },
+          $addToSet: { promotionIds: id },
           $set: { lastUpdated: new Date() },
         },
         { upsert: true }
@@ -157,11 +158,12 @@ export async function PUT(
 // DELETE: 프로모션 삭제 (관리자만)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
+    const { id } = await params;
     const { signature, timestamp, address } = await request.json();
 
     // 서명 검증
@@ -173,7 +175,7 @@ export async function DELETE(
     }
 
     const isValid = verifyWithTimestamp(
-      { action: 'delete_promotion', id: params.id },
+      { action: 'delete_promotion', id },
       signature,
       timestamp,
       address
@@ -197,7 +199,7 @@ export async function DELETE(
     }
 
     // 프로모션 조회
-    const promotion = await Promotion.findById(params.id);
+    const promotion = await Promotion.findById(id);
 
     if (!promotion) {
       return NextResponse.json(
@@ -209,16 +211,16 @@ export async function DELETE(
     // PromotionIndex에서 제거
     if (promotion.applicableProducts && promotion.applicableProducts.length > 0) {
       await PromotionIndex.updateMany(
-        { promotionIds: params.id },
+        { promotionIds: id },
         {
-          $pull: { promotionIds: params.id },
+          $pull: { promotionIds: id },
           $set: { lastUpdated: new Date() },
         }
       );
     }
 
     // 프로모션 삭제 (또는 비활성화)
-    await Promotion.findByIdAndDelete(params.id);
+    await Promotion.findByIdAndDelete(id);
 
     return NextResponse.json({
       success: true,

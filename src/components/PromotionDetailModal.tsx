@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Barcode from 'react-barcode';
 import { IPromotion } from '@/lib/models/Promotion';
 import CameraCapture from './CameraCapture';
@@ -25,11 +25,42 @@ export default function PromotionDetailModal({
   const [showCamera, setShowCamera] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [productNames, setProductNames] = useState<{ [barcode: string]: string }>({});
 
   if (!isOpen) return null;
 
   const barcodes = promotion.applicableProducts || [];
   const currentBarcode = barcodes[currentBarcodeIndex];
+
+  // 바코드로 상품명 조회
+  useEffect(() => {
+    const fetchProductNames = async () => {
+      if (barcodes.length === 0) return;
+
+      try {
+        const response = await fetch('/api/products/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barcodes }),
+        });
+
+        const data = await response.json();
+        if (data.success && data.products) {
+          const nameMap: { [barcode: string]: string } = {};
+          data.products.forEach((product: any) => {
+            if (product.barcode && product.name) {
+              nameMap[product.barcode] = product.name;
+            }
+          });
+          setProductNames(nameMap);
+        }
+      } catch (error) {
+        console.error('Failed to fetch product names:', error);
+      }
+    };
+
+    fetchProductNames();
+  }, [barcodes]);
 
   const handlePrevious = () => {
     setCurrentBarcodeIndex((prev) => (prev > 0 ? prev - 1 : barcodes.length - 1));
@@ -88,8 +119,14 @@ export default function PromotionDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* 헤더 */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl z-10">
           <div className="flex items-start justify-between">
@@ -193,8 +230,8 @@ export default function PromotionDetailModal({
                       className="w-full px-3 py-2 bg-white rounded-lg text-sm hover:bg-purple-50 hover:text-purple-700 transition-colors text-left"
                     >
                       <div className="font-mono text-gray-600 text-xs mb-1">{barcode}</div>
-                      {promotion.applicableProductNames && promotion.applicableProductNames[index] && (
-                        <div className="font-medium text-gray-900">{promotion.applicableProductNames[index]}</div>
+                      {productNames[barcode] && (
+                        <div className="font-medium text-gray-900">{productNames[barcode]}</div>
                       )}
                     </button>
                   ))}
@@ -243,18 +280,22 @@ export default function PromotionDetailModal({
           </div>
 
           {/* 증정 제약 조건 */}
-          {promotion.giftConstraints && Object.keys(promotion.giftConstraints).length > 0 && (
+          {promotion.giftConstraints && (
+            promotion.giftConstraints.maxGiftPrice ||
+            promotion.giftConstraints.mustBeCheaperThanPurchased ||
+            promotion.giftConstraints.mustBeSameProduct
+          ) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm font-semibold text-yellow-800 mb-2">증정 제약 조건</p>
               <ul className="text-sm text-yellow-700 space-y-1">
                 {promotion.giftConstraints.mustBeSameProduct && (
-                  <li>• 동일 상품만 증정 가능</li>
+                  <li>• 구매한 상품과 동일한 상품만 증정</li>
                 )}
-                {promotion.giftConstraints.canChooseDifferent && (
-                  <li>• 다른 상품 선택 가능</li>
+                {promotion.giftConstraints.maxGiftPrice && (
+                  <li>• 증정품 최대 가격: {promotion.giftConstraints.maxGiftPrice.toLocaleString()}원</li>
                 )}
-                {promotion.giftConstraints.maxUniqueProducts && (
-                  <li>• 최대 {promotion.giftConstraints.maxUniqueProducts}종 선택 가능</li>
+                {promotion.giftConstraints.mustBeCheaperThanPurchased && (
+                  <li>• 증정품은 구매 상품보다 저렴해야 함</li>
                 )}
               </ul>
             </div>

@@ -30,8 +30,11 @@ interface IPromotion {
 
   // 증정 방식
   giftSelectionType: 'same' | 'cross';
-  // 'same': 구매 상품 목록(applicableXXX)에서 증정품 선택 (일반적인 1+1)
-  // 'cross': 별도의 증정 가능 목록에서 선택 (교차증정)
+  // 'same': 구매 상품 목록(applicableXXX)에서 증정품 선택
+  //         - 같은 그룹 내에서 교차 증정 가능 (예: A, B, C 중 2개 구매 → A, B, C 중 1개 증정)
+  //         - 일반적인 1+1, 2+1은 대부분 이 방식
+  // 'cross': 별도의 증정 가능 목록(giftXXX)에서 선택
+  //         - 구매한 상품과 다른 상품을 증정 (예: 음료 구매 → 과자 증정)
 
   // 교차증정인 경우에만 사용
   giftProducts?: string[];      // 증정 가능 바코드 배열
@@ -101,7 +104,7 @@ interface IPromotion {
 }
 ```
 
-#### 예시 2: 상품군 내에서 1+1 (가장 흔한 케이스) ⭐
+#### 예시 2: 상품군 내에서 교차 증정 가능한 1+1 (가장 흔한 케이스) ⭐
 ```json
 {
   "name": "코카콜라 제품 1+1",
@@ -115,11 +118,13 @@ interface IPromotion {
     "8801234567892"   // 코카라이트 500ml
   ],
   "giftSelectionType": "same"
-  // applicableProducts 중에서 아무거나 구매 → 같은 목록에서 아무거나 증정
+  // 같은 그룹(applicableProducts) 내에서 교차 증정 가능
+  // 예: 코카콜라 1개 구매 → 코카제로 증정 가능
+  // 예: 코카제로 1개 구매 → 코카콜라 증정 가능
 }
 ```
 
-#### 예시 3: 교차증정 - A 구매 → B 증정
+#### 예시 3: 교차증정 - A 구매 → B 증정 (구매 상품과 증정 상품이 다름)
 ```json
 {
   "name": "칸초 구매시 새우깡 증정",
@@ -130,10 +135,12 @@ interface IPromotion {
   "applicableProducts": ["칸초바코드"],
   "giftSelectionType": "cross",
   "giftProducts": ["새우깡바코드"]
+  // 'cross' = 구매 가능 상품(칸초)과 증정 가능 상품(새우깡)이 서로 다름
+  // applicableProducts에서 구매 → giftProducts에서 증정
 }
 ```
 
-#### 예시 4: 교차증정 - 음료 2개 구매 시 과자 1개
+#### 예시 4: 교차증정 - 음료 2개 구매 시 과자 1개 (카테고리 간 교차)
 ```json
 {
   "name": "음료 2+1 과자 증정",
@@ -148,10 +155,12 @@ interface IPromotion {
     "maxGiftPrice": 3000,
     "mustBeCheaperThanPurchased": true
   }
+  // 'cross' = 음료 카테고리에서 구매 → 과자 카테고리에서 증정
+  // 서로 다른 카테고리이므로 'cross' 사용
 }
 ```
 
-#### 예시 5: 브랜드 내 1+1
+#### 예시 5: 브랜드 내 1+1 (같은 브랜드 내에서 교차 증정)
 ```json
 {
   "name": "롯데 제품 1+1",
@@ -160,10 +169,12 @@ interface IPromotion {
   "getQuantity": 1,
   "applicableType": "brands",
   "applicableBrands": ["롯데"],
-  "giftSelectionType": "same",  // 롯데 제품끼리 서로 증정
+  "giftSelectionType": "same",
   "giftConstraints": {
     "maxGiftPrice": 2000
   }
+  // 'same' = 롯데 브랜드 제품끼리 서로 교차 증정 가능
+  // 같은 브랜드 내에서 선택하므로 'same' 사용
 }
 ```
 

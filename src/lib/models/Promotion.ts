@@ -19,14 +19,12 @@ export interface IPromotion extends Document {
   // 적용 대상 (구매 가능 상품)
   applicableType: ApplicableType;
   applicableProducts?: string[];
-  applicableProductNames?: string[]; // 상품명 배열 (바코드와 동일한 순서)
   applicableCategories?: string[];
   applicableBrands?: string[];
 
   // 증정 방식
   giftSelectionType: GiftSelectionType;
   giftProducts?: string[];
-  giftProductNames?: string[]; // 증정 상품명 배열 (바코드와 동일한 순서)
   giftCategories?: string[];
   giftBrands?: string[];
 
@@ -126,10 +124,6 @@ const PromotionSchema = new Schema<IPromotion>(
       type: [String],
       default: undefined,
     },
-    applicableProductNames: {
-      type: [String],
-      default: undefined,
-    },
     applicableCategories: {
       type: [String],
       default: undefined,
@@ -147,10 +141,6 @@ const PromotionSchema = new Schema<IPromotion>(
       default: 'same',
     },
     giftProducts: {
-      type: [String],
-      default: undefined,
-    },
-    giftProductNames: {
       type: [String],
       default: undefined,
     },
