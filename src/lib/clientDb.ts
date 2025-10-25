@@ -227,6 +227,10 @@ export function createPreset(input: CreatePresetInput): IPreset {
     color: input.color,
     discountIds: input.discountIds || [],
     paymentMethod: input.paymentMethod,
+    paymentMethods: input.paymentMethods || [],
+    subscriptions: input.subscriptions || [],
+    hasQRScanner: input.hasQRScanner || false,
+    usageCount: 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -262,6 +266,151 @@ export function deletePreset(id: string): boolean {
 
   localStorage.setItem(STORAGE_KEYS.PRESETS, JSON.stringify(filtered));
   return true;
+}
+
+// ============================================================================
+// Preset - Payment Methods
+// ============================================================================
+
+export function addPaymentMethodToPreset(
+  presetId: string,
+  paymentMethod: import('@/types/preset').PaymentMethodInfo
+): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  const paymentMethods = preset.paymentMethods || [];
+
+  // 이미 같은 method가 있으면 업데이트
+  const existingIndex = paymentMethods.findIndex(pm => pm.method === paymentMethod.method);
+  if (existingIndex !== -1) {
+    paymentMethods[existingIndex] = paymentMethod;
+  } else {
+    paymentMethods.push(paymentMethod);
+  }
+
+  return updatePreset(presetId, { paymentMethods });
+}
+
+export function removePaymentMethodFromPreset(
+  presetId: string,
+  paymentMethodId: string
+): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  const paymentMethods = (preset.paymentMethods || []).filter(pm => pm.method !== paymentMethodId);
+  return updatePreset(presetId, { paymentMethods });
+}
+
+export function setDefaultPaymentMethod(
+  presetId: string,
+  paymentMethodId: string
+): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  const paymentMethods = (preset.paymentMethods || []).map(pm => ({
+    ...pm,
+    isDefault: pm.method === paymentMethodId
+  }));
+
+  return updatePreset(presetId, { paymentMethods });
+}
+
+// ============================================================================
+// Preset - Subscriptions
+// ============================================================================
+
+export function addSubscriptionToPreset(
+  presetId: string,
+  subscription: import('@/types/preset').UserSubscription
+): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  const subscriptions = preset.subscriptions || [];
+
+  // 이미 같은 할인 ID가 있으면 업데이트
+  const existingIndex = subscriptions.findIndex(
+    s => String(s.discountId) === String(subscription.discountId)
+  );
+
+  if (existingIndex !== -1) {
+    subscriptions[existingIndex] = subscription;
+  } else {
+    subscriptions.push(subscription);
+  }
+
+  return updatePreset(presetId, { subscriptions });
+}
+
+export function removeSubscriptionFromPreset(
+  presetId: string,
+  discountId: string
+): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  const subscriptions = (preset.subscriptions || []).filter(
+    s => String(s.discountId) !== discountId
+  );
+
+  return updatePreset(presetId, { subscriptions });
+}
+
+export function updateSubscriptionUsage(
+  presetId: string,
+  discountId: string,
+  usageDecrement: { daily?: number; total?: number }
+): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  const subscriptions = (preset.subscriptions || []).map(sub => {
+    if (String(sub.discountId) === discountId) {
+      const updated = { ...sub };
+
+      if (usageDecrement.daily && sub.dailyUsageRemaining !== undefined) {
+        updated.dailyUsageRemaining = Math.max(0, sub.dailyUsageRemaining - usageDecrement.daily);
+      }
+
+      if (usageDecrement.total && sub.totalUsageRemaining !== undefined) {
+        updated.totalUsageRemaining = Math.max(0, sub.totalUsageRemaining - usageDecrement.total);
+      }
+
+      return updated;
+    }
+    return sub;
+  });
+
+  return updatePreset(presetId, { subscriptions });
+}
+
+export function resetDailyUsage(presetId: string): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  const subscriptions = (preset.subscriptions || []).map(sub => ({
+    ...sub,
+    dailyUsageRemaining: sub.dailyUsageLimit
+  }));
+
+  return updatePreset(presetId, { subscriptions });
+}
+
+// ============================================================================
+// Preset - Usage Tracking
+// ============================================================================
+
+export function incrementPresetUsage(presetId: string): IPreset | null {
+  const preset = getPreset(presetId);
+  if (!preset) return null;
+
+  return updatePreset(presetId, {
+    usageCount: (preset.usageCount || 0) + 1,
+    lastUsedAt: new Date()
+  });
 }
 
 // ============================================================================
