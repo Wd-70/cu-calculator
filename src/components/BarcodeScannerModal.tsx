@@ -236,19 +236,27 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
     }
   };
 
-  // 모달이 열릴 때 카메라 시작
+  // 모달이 열릴 때 카메라 시작 및 스크롤 방지
   useEffect(() => {
     if (isOpen) {
+      // 스크롤 방지
+      document.body.style.overflow = 'hidden';
+
       startCamera();
       setLastScannedProduct(null);
       latestBarcodeRef.current = '';
       setScanFeedback(null);
     } else {
+      // 스크롤 복원
+      document.body.style.overflow = '';
+
       stopCamera();
     }
 
     return () => {
       if (isOpen) {
+        // 스크롤 복원
+        document.body.style.overflow = '';
         stopCamera();
       }
     };

@@ -13,12 +13,14 @@ import CartItemList from '@/components/cart/CartItemList';
 import DiscountResult from '@/components/cart/DiscountResult';
 import AlternativeCombinations from '@/components/cart/AlternativeCombinations';
 
-export default function CartPage() {
+export default function CartsPage() {
   // 상태 관리
-  const [cart, setCart] = useState<ICart | null>(null);
+  const [carts, setCarts] = useState<ICart[]>([]);
+  const [selectedCartId, setSelectedCartId] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<IPreset | null>(null);
   const [availableDiscounts, setAvailableDiscounts] = useState<IDiscountRule[]>([]);
   const [isLoadingDiscounts, setIsLoadingDiscounts] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // 할인 계산 결과
   const [isCalculating, setIsCalculating] = useState(false);
@@ -29,14 +31,20 @@ export default function CartPage() {
   // 초기 로드
   useEffect(() => {
     clientDb.initializeClientStorage();
-    loadCart();
+    loadCarts();
     loadDiscounts();
   }, []);
 
-  // 장바구니 로드 (메인 카트 자동 생성)
-  const loadCart = () => {
-    const mainCart = clientDb.getOrCreateMainCart();
-    setCart(mainCart);
+  // 카트 로드
+  const loadCarts = () => {
+    const loadedCarts = clientDb.getCarts();
+    setCarts(loadedCarts);
+
+    // 메인 카트 자동 선택
+    if (!selectedCartId && loadedCarts.length > 0) {
+      const mainCart = loadedCarts.find(c => c.isMain) || loadedCarts[0];
+      setSelectedCartId(String(mainCart._id));
+    }
   };
 
   // 할인 규칙 로드
@@ -67,43 +75,42 @@ export default function CartPage() {
     }
   };
 
-  // 장바구니 저장
-  const saveCart = (updatedCart: ICart) => {
-    const saved = clientDb.updateCart(String(updatedCart._id), {
-      items: updatedCart.items,
-    });
-    if (saved) {
-      setCart(saved);
-    }
-  };
+  // 선택된 카트 가져오기
+  const selectedCart = carts.find(c => String(c._id) === selectedCartId) || null;
 
-  // 상품 추가
+  // 상품 추가 (메인 카트에)
   const handleAddItem = (item: ICartItem) => {
-    if (!cart) return;
+    const mainCart = carts.find(c => c.isMain);
+    if (!mainCart) {
+      alert('메인 카트가 없습니다. 카트를 생성해주세요.');
+      return;
+    }
 
-    const updated = clientDb.addItemToCart(String(cart._id), item);
+    const updated = clientDb.addItemToCart(String(mainCart._id), item);
     if (updated) {
-      setCart(updated);
+      loadCarts();
+      // 메인 카트를 선택
+      setSelectedCartId(String(mainCart._id));
     }
   };
 
   // 수량 변경
   const handleUpdateQuantity = (barcode: string, quantity: number) => {
-    if (!cart) return;
+    if (!selectedCartId) return;
 
-    const updated = clientDb.updateCartItem(String(cart._id), barcode, { quantity });
+    const updated = clientDb.updateCartItem(selectedCartId, barcode, { quantity });
     if (updated) {
-      setCart(updated);
+      loadCarts();
     }
   };
 
   // 상품 제거
   const handleRemoveItem = (barcode: string) => {
-    if (!cart) return;
+    if (!selectedCartId) return;
 
-    const updated = clientDb.removeItemFromCart(String(cart._id), barcode);
+    const updated = clientDb.removeItemFromCart(selectedCartId, barcode);
     if (updated) {
-      setCart(updated);
+      loadCarts();
     }
   };
 
@@ -112,9 +119,52 @@ export default function CartPage() {
     setSelectedPreset(preset);
   };
 
+  // 카트 생성
+  const handleCreateCart = () => {
+    const name = prompt('카트 이름을 입력하세요:', '새 장바구니');
+    if (!name) return;
+
+    const newCart = clientDb.createCart({
+      name,
+      emoji: '🛒',
+      color: 'purple',
+      items: [],
+      isMain: carts.length === 0, // 첫 카트는 자동으로 메인
+    });
+
+    if (newCart) {
+      loadCarts();
+      setSelectedCartId(String(newCart._id));
+    }
+  };
+
+  // 카트 삭제
+  const handleDeleteCart = (cartId: string) => {
+    const cart = carts.find(c => String(c._id) === cartId);
+    if (!cart) return;
+
+    if (!confirm(`"${cart.name || '장바구니'}"를 삭제하시겠습니까?`)) return;
+
+    const success = clientDb.deleteCart(cartId);
+    if (success) {
+      loadCarts();
+      if (selectedCartId === cartId) {
+        setSelectedCartId(null);
+      }
+    }
+  };
+
+  // 메인 카트 설정
+  const handleSetMainCart = (cartId: string) => {
+    const updated = clientDb.setMainCart(cartId);
+    if (updated) {
+      loadCarts();
+    }
+  };
+
   // 할인 계산
   const calculateDiscount = useCallback(() => {
-    if (!cart || !selectedPreset || cart.items.length === 0) {
+    if (!selectedCart || !selectedPreset || selectedCart.items.length === 0) {
       setOptimalCombination(null);
       setAlternatives([]);
       return;
@@ -123,7 +173,7 @@ export default function CartPage() {
     setIsCalculating(true);
     try {
       const result = findOptimalDiscountCombination(
-        cart.items,
+        selectedCart.items,
         availableDiscounts,
         selectedPreset,
         {
@@ -141,17 +191,17 @@ export default function CartPage() {
     } finally {
       setIsCalculating(false);
     }
-  }, [cart, selectedPreset, availableDiscounts]);
+  }, [selectedCart, selectedPreset, availableDiscounts]);
 
   // 장바구니나 프리셋 변경 시 자동 재계산
   useEffect(() => {
-    if (cart && selectedPreset && cart.items.length > 0) {
+    if (selectedCart && selectedPreset && selectedCart.items.length > 0) {
       calculateDiscount();
     } else {
       setOptimalCombination(null);
       setAlternatives([]);
     }
-  }, [cart?.items.length, selectedPreset, calculateDiscount]);
+  }, [selectedCart?.items.length, selectedPreset, calculateDiscount]);
 
   // 적용된 할인 정보 변환
   const getAppliedDiscounts = () => {
@@ -162,24 +212,13 @@ export default function CartPage() {
       return {
         discountId: id,
         discountName: discount?.name || 'Unknown',
-        discountAmount: 0, // 개별 할인액은 계산 필요 (추후 개선)
+        discountAmount: 0,
         category: discount?.category || 'coupon',
       };
     });
   };
 
-  if (!cart) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">⏳</div>
-          <div className="text-gray-600">장바구니를 불러오는 중...</div>
-        </div>
-      </div>
-    );
-  }
-
-  const totalOriginalPrice = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalOriginalPrice = selectedCart?.items.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -196,7 +235,7 @@ export default function CartPage() {
               </Link>
               <div>
                 <h1 className="text-gray-900 font-bold text-xl">스마트 장바구니</h1>
-                <p className="text-gray-500 text-xs">최적의 할인 조합을 자동으로 찾아드려요</p>
+                <p className="text-gray-500 text-xs">여러 경우의 수를 저장하고 비교해보세요</p>
               </div>
             </div>
 
@@ -220,28 +259,142 @@ export default function CartPage() {
 
       {/* 메인 컨텐츠 */}
       <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 왼쪽: 장바구니 관리 */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* 프리셋 선택 */}
-            <PresetSelector
-              selectedPresetId={selectedPreset ? String(selectedPreset._id) : null}
-              onPresetChange={handlePresetChange}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* 왼쪽: 카트 목록 */}
+          <div className="lg:col-span-3">
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">내 장바구니</h3>
+                <button
+                  onClick={handleCreateCart}
+                  className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                  title="새 카트 만들기"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
 
-            {/* 상품 추가 */}
-            <ProductSearch onAddItem={handleAddItem} />
+              {carts.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  <div className="text-4xl mb-2">🛒</div>
+                  <p className="text-sm mb-3">카트가 없습니다</p>
+                  <button
+                    onClick={handleCreateCart}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                  >
+                    첫 카트 만들기
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {carts.map((cart) => (
+                    <div
+                      key={String(cart._id)}
+                      className={`p-4 transition-colors ${
+                        selectedCartId === String(cart._id) ? 'bg-purple-50' : ''
+                      }`}
+                    >
+                      <button
+                        onClick={() => setSelectedCartId(String(cart._id))}
+                        className="w-full text-left hover:opacity-80 transition-opacity"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl flex-shrink-0">{cart.emoji || '🛒'}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">
+                              {cart.name || '장바구니'}
+                              {cart.isMain && (
+                                <span className="ml-2 text-xs text-purple-600">⭐ 메인</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {cart.items.length}개 상품
+                            </div>
+                          </div>
+                          {selectedCartId === String(cart._id) && (
+                            <svg className="w-5 h-5 text-purple-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
 
-            {/* 장바구니 아이템 목록 */}
-            <CartItemList
-              items={cart.items}
-              onUpdateQuantity={handleUpdateQuantity}
-              onRemoveItem={handleRemoveItem}
-            />
+                      {/* 카트 액션 */}
+                      {selectedCartId === String(cart._id) && (
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                          {!cart.isMain && (
+                            <button
+                              onClick={() => handleSetMainCart(String(cart._id))}
+                              className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                            >
+                              메인으로 설정
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteCart(String(cart._id))}
+                            className="ml-auto text-xs text-red-600 hover:text-red-700 font-medium"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 메인 카트 안내 */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+              <div className="font-medium mb-1">💡 메인 카트</div>
+              <p>상품 검색에서 추가한 상품은 메인 카트에 자동으로 담깁니다.</p>
+            </div>
+          </div>
+
+          {/* 중앙: 장바구니 관리 */}
+          <div className="lg:col-span-6 space-y-6">
+            {selectedCart ? (
+              <>
+                {/* 프리셋 선택 */}
+                <PresetSelector
+                  selectedPresetId={selectedPreset ? String(selectedPreset._id) : null}
+                  onPresetChange={handlePresetChange}
+                />
+
+                {/* 상품 추가 (메인 카트에만 표시) */}
+                {selectedCart.isMain && (
+                  <ProductSearch
+                    onAddItem={handleAddItem}
+                    cartId={String(selectedCart._id)}
+                  />
+                )}
+
+                {/* 장바구니 아이템 목록 */}
+                <CartItemList
+                  items={selectedCart.items}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  onRemoveItem={handleRemoveItem}
+                />
+              </>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                <div className="text-6xl mb-4">🛒</div>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">카트를 선택해주세요</h3>
+                <p className="text-sm text-gray-500 mb-4">왼쪽에서 카트를 선택하거나 새로 만들어보세요</p>
+                <button
+                  onClick={handleCreateCart}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                >
+                  새 카트 만들기
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 오른쪽: 할인 계산 결과 */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             {/* 할인 계산 결과 */}
             <DiscountResult
               isCalculating={isCalculating}
@@ -267,10 +420,10 @@ export default function CartPage() {
                 <div className="flex-1 text-sm text-blue-800">
                   <h4 className="font-semibold mb-2">사용 가이드</h4>
                   <ul className="space-y-1.5 text-xs">
+                    <li>• 여러 카트를 만들어 다양한 경우를 비교하세요</li>
                     <li>• 프리셋에 결제수단과 구독을 등록하세요</li>
                     <li>• 상품을 추가하면 자동으로 최적 할인을 계산해요</li>
                     <li>• 프로모션(1+1, 2+1) 할인도 자동 적용돼요</li>
-                    <li>• 대안 조합에서 다른 할인 방법을 확인하세요</li>
                   </ul>
                 </div>
               </div>

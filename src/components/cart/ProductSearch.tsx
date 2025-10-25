@@ -3,16 +3,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { IProduct } from '@/types/product';
 import { ICartItem } from '@/types/cart';
+import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 
 interface ProductSearchProps {
   onAddItem: (item: ICartItem) => void;
+  cartId: string;
 }
 
-export default function ProductSearch({ onAddItem }: ProductSearchProps) {
+export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps) {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<IProduct[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -96,40 +99,68 @@ export default function ProductSearch({ onAddItem }: ProductSearchProps) {
     }
   };
 
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">상품 추가</h3>
+  // 바코드 스캐너에서 스캔 시 처리
+  const handleScan = async (barcode: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/products/barcode/${barcode}`);
+      if (response.ok) {
+        const product = await response.json();
+        handleAddProduct(product);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('바코드 스캔 처리 실패:', error);
+      return false;
+    }
+  };
 
-      <div className="relative">
-        <div className="relative">
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && query.match(/^\d{13}$/)) {
-                // 13자리 숫자면 바코드로 간주
-                handleBarcodeSearch(query);
-              }
-            }}
-            placeholder="상품명 또는 바코드 입력..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+  return (
+    <>
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-700">상품 추가</h3>
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          {isSearching && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+            </svg>
+            스캔
+          </button>
         </div>
+
+        <div className="relative">
+          <div className="relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && query.match(/^\d{13}$/)) {
+                  // 13자리 숫자면 바코드로 간주
+                  handleBarcodeSearch(query);
+                }
+              }}
+              placeholder="상품명 또는 바코드 입력..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
 
         {isOpen && searchResults.length > 0 && (
           <>
@@ -183,9 +214,18 @@ export default function ProductSearch({ onAddItem }: ProductSearchProps) {
         )}
       </div>
 
-      <div className="mt-3 text-xs text-gray-500">
-        💡 13자리 바코드를 입력하고 Enter를 누르면 바로 추가됩니다.
+        <div className="mt-3 text-xs text-gray-500">
+          💡 13자리 바코드를 입력하고 Enter를 누르면 바로 추가됩니다.
+        </div>
       </div>
-    </div>
+
+      {/* 바코드 스캐너 모달 */}
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleScan}
+        cartId={cartId}
+      />
+    </>
   );
 }
