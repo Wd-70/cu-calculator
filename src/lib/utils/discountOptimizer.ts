@@ -7,7 +7,7 @@ import { IDiscountRule, DiscountCategory, DISCOUNT_CATEGORY_ORDER } from '@/type
 import { IPreset } from '@/types/preset';
 import { ICartItem } from '@/types/cart';
 import { checkDiscountEligibility, filterEligibleDiscounts } from './discountEligibility';
-import { calculateCartDiscountV2 } from '../discountCalculator';
+import { calculateCart } from './discountCalculator';
 
 /**
  * 할인 조합 결과
@@ -97,27 +97,40 @@ export function isValidCombination(discounts: IDiscountRule[]): boolean {
 /**
  * 할인 조합의 총 할인액 계산
  */
-async function calculateCombinationDiscount(
+function calculateCombinationDiscount(
   cartItems: ICartItem[],
   discounts: IDiscountRule[],
   preset: IPreset
-): Promise<{
+): {
   totalDiscount: number;
   totalDiscountRate: number;
   finalPrice: number;
   originalPrice: number;
   warnings?: string[];
-}> {
+} {
+  // productId가 없는 아이템 필터링
+  const validCartItems = cartItems.filter(item => item.productId);
+
+  if (validCartItems.length === 0) {
+    return {
+      totalDiscount: 0,
+      totalDiscountRate: 0,
+      finalPrice: 0,
+      originalPrice: 0,
+      warnings: ['유효한 상품이 없습니다.'],
+    };
+  }
+
   // 장바구니 아이템별로 할인 매핑
-  const discountSelections = cartItems.map((item) => ({
+  const discountSelections = validCartItems.map((item) => ({
     productId: item.productId,
     productBarcode: item.barcode,
     selectedDiscounts: discounts,
   }));
 
-  // 할인 계산 (v2 계산기 사용)
+  // 할인 계산
   const calculationOptions = {
-    items: cartItems.map((item) => ({
+    items: validCartItems.map((item) => ({
       productId: item.productId,
       productBarcode: item.barcode,
       quantity: item.quantity,
@@ -130,7 +143,7 @@ async function calculateCombinationDiscount(
     currentDate: new Date(),
   };
 
-  const result = await calculateCartDiscountV2(calculationOptions);
+  const result = calculateCart(calculationOptions);
 
   return {
     totalDiscount: result.totalDiscount,
@@ -207,15 +220,15 @@ function sortDiscountsByCategory(discounts: IDiscountRule[]): IDiscountRule[] {
 /**
  * 최적 할인 조합 찾기
  */
-export async function findOptimalDiscountCombination(
+export function findOptimalDiscountCombination(
   cartItems: ICartItem[],
   availableDiscounts: IDiscountRule[],
   preset: IPreset,
   options?: OptimizerOptions
-): Promise<{
+): {
   optimal: DiscountCombination | null;
   alternatives: DiscountCombination[];
-}> {
+} {
   const maxCombinations = options?.maxCombinations || 100;
   const includeAlternatives = options?.includeAlternatives !== false;
   const maxAlternatives = options?.maxAlternatives || 5;
@@ -265,7 +278,7 @@ export async function findOptimalDiscountCombination(
       // 카테고리 순서에 따라 정렬
       const sortedDiscounts = sortDiscountsByCategory(combination);
 
-      const calculation = await calculateCombinationDiscount(
+      const calculation = calculateCombinationDiscount(
         cartItems,
         sortedDiscounts,
         preset
@@ -315,11 +328,11 @@ export async function findOptimalDiscountCombination(
  * 상품별 최적 할인 찾기
  * (각 상품마다 독립적으로 최적 할인 조합을 찾음)
  */
-export async function findOptimalDiscountsPerProduct(
+export function findOptimalDiscountsPerProduct(
   cartItems: ICartItem[],
   availableDiscounts: IDiscountRule[],
   preset: IPreset
-): Promise<Map<string, IDiscountRule[]>> {
+): Map<string, IDiscountRule[]> {
   const productDiscountMap = new Map<string, IDiscountRule[]>();
 
   for (const item of cartItems) {
@@ -341,7 +354,7 @@ export async function findOptimalDiscountsPerProduct(
     for (const combination of validCombinations) {
       try {
         const sortedDiscounts = sortDiscountsByCategory(combination);
-        const calculation = await calculateCombinationDiscount(
+        const calculation = calculateCombinationDiscount(
           [item],
           sortedDiscounts,
           preset

@@ -63,6 +63,7 @@ export interface IPreset {
   emoji?: string; // 예: "🏃", "🍱"
   description?: string;
   color?: string; // 프리셋 색상
+  isDefault?: boolean; // 기본 프리셋 여부
 
   // ===== 확장: 사용자 결제수단 목록 =====
   paymentMethods?: PaymentMethodInfo[]; // 사용 가능한 결제수단들
@@ -106,6 +107,7 @@ export interface UpdatePresetInput {
   emoji?: string;
   description?: string;
   color?: string;
+  isDefault?: boolean;
   discountIds?: (Types.ObjectId | string)[];
   paymentMethod?: PaymentMethod;
   paymentMethods?: PaymentMethodInfo[];

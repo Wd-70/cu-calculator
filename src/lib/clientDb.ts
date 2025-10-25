@@ -215,6 +215,11 @@ export function getPreset(id: string): IPreset | null {
   return presets.find(p => String(p._id) === id) || null;
 }
 
+export function getDefaultPreset(): IPreset | null {
+  const presets = getPresets();
+  return presets.find(p => p.isDefault) || null;
+}
+
 export function createPreset(input: CreatePresetInput): IPreset {
   const presets = getPresets();
 
