@@ -83,10 +83,14 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
 
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/products/barcode/${barcode}`);
+      const response = await fetch(`/api/products?barcode=${barcode}`);
       if (response.ok) {
-        const product = await response.json();
-        handleAddProduct(product);
+        const data = await response.json();
+        if (data.success && data.data && data.data.length > 0) {
+          handleAddProduct(data.data[0]);
+        } else {
+          alert('바코드를 찾을 수 없습니다.');
+        }
       } else {
         alert('바코드를 찾을 수 없습니다.');
       }
@@ -101,11 +105,13 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
   // 바코드 스캐너에서 스캔 시 처리
   const handleScan = async (barcode: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/products/barcode/${barcode}`);
+      const response = await fetch(`/api/products?barcode=${barcode}`);
       if (response.ok) {
-        const product = await response.json();
-        handleAddProduct(product);
-        return true;
+        const data = await response.json();
+        if (data.success && data.data && data.data.length > 0) {
+          handleAddProduct(data.data[0]);
+          return true;
+        }
       }
       return false;
     } catch (error) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { IDiscountRule, DISCOUNT_CATEGORY_NAMES } from '@/types/discount';
 import DiscountJsonModal from '@/components/DiscountJsonModal';
+import DiscountDetailModal from '@/components/DiscountDetailModal';
 import { getCurrentUserAddress } from '@/lib/userAuth';
 import { checkIsAdminClient } from '@/lib/adminAuth';
 
@@ -12,7 +13,9 @@ export default function DiscountsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<IDiscountRule | null>(null);
+  const [selectedDiscount, setSelectedDiscount] = useState<IDiscountRule | null>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -235,12 +238,17 @@ export default function DiscountsPage() {
                     {categoryDiscounts.map((discount) => (
                       <div
                         key={String(discount._id)}
-                        className={`${colors.bg} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 relative`}
+                        className={`${colors.bg} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 relative cursor-pointer`}
+                        onClick={() => {
+                          setSelectedDiscount(discount);
+                          setIsDetailModalOpen(true);
+                        }}
                       >
                         {/* JSON 편집 버튼 (관리자만) */}
                         {isAdmin && (
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEditingDiscount(discount);
                               setIsJsonModalOpen(true);
                             }}
@@ -403,6 +411,22 @@ export default function DiscountsPage() {
         onSave={() => {
           fetchDiscounts();
         }}
+      />
+
+      {/* 할인 상세 모달 */}
+      <DiscountDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedDiscount(null);
+        }}
+        discount={selectedDiscount}
+        onSave={() => {
+          fetchDiscounts();
+          setIsDetailModalOpen(false);
+          setSelectedDiscount(null);
+        }}
+        isAdmin={isAdmin}
       />
     </div>
   );
