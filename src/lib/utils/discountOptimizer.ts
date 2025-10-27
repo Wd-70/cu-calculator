@@ -20,6 +20,12 @@ export interface DiscountCombination {
   originalPrice: number; // 원가
   isOptimal: boolean; // 최적 조합 여부
   warnings?: string[]; // 경고 메시지
+  discountBreakdown?: Array<{ // 각 할인별 금액 상세
+    discountId: string;
+    discountName: string;
+    category: string;
+    amount: number;
+  }>;
 }
 
 /**
@@ -76,6 +82,28 @@ export function checkDiscountConflict(
     return true;
   }
 
+  // 통신사 할인의 restrictedProviders 체크
+  if (discount1.config.category === 'telecom' && discount2.config.category === 'telecom') {
+    const telecomConfig1 = discount1.config as { provider: string; restrictedProviders?: string[] };
+    const telecomConfig2 = discount2.config as { provider: string; restrictedProviders?: string[] };
+
+    // discount1이 discount2의 provider를 금지하는 경우
+    if (
+      telecomConfig1.restrictedProviders &&
+      telecomConfig1.restrictedProviders.includes(telecomConfig2.provider)
+    ) {
+      return true;
+    }
+
+    // discount2가 discount1의 provider를 금지하는 경우
+    if (
+      telecomConfig2.restrictedProviders &&
+      telecomConfig2.restrictedProviders.includes(telecomConfig1.provider)
+    ) {
+      return true;
+    }
+  }
+
   // 충돌 없음
   return false;
 }
@@ -107,6 +135,12 @@ function calculateCombinationDiscount(
   finalPrice: number;
   originalPrice: number;
   warnings?: string[];
+  discountBreakdown?: Array<{
+    discountId: string;
+    discountName: string;
+    category: string;
+    amount: number;
+  }>;
 } {
   // productId가 없는 아이템 필터링
   const validCartItems = cartItems.filter(item => item.productId);
@@ -145,12 +179,40 @@ function calculateCombinationDiscount(
 
   const result = calculateCart(calculationOptions);
 
+  // 각 할인별 금액 집계
+  const discountAmountMap = new Map<string, { name: string; category: string; amount: number }>();
+
+  result.items.forEach((item) => {
+    item.calculation.steps.forEach((step) => {
+      const discountId = String(step.discountId);
+      const existing = discountAmountMap.get(discountId);
+
+      if (existing) {
+        existing.amount += step.discountAmount;
+      } else {
+        discountAmountMap.set(discountId, {
+          name: step.discountName,
+          category: step.category,
+          amount: step.discountAmount,
+        });
+      }
+    });
+  });
+
+  const discountBreakdown = Array.from(discountAmountMap.entries()).map(([id, data]) => ({
+    discountId: id,
+    discountName: data.name,
+    category: data.category,
+    amount: data.amount,
+  }));
+
   return {
     totalDiscount: result.totalDiscount,
     totalDiscountRate: result.totalDiscountRate,
     finalPrice: result.totalFinalPrice,
     originalPrice: result.totalOriginalPrice,
     warnings: result.warnings,
+    discountBreakdown,
   };
 }
 
@@ -292,6 +354,7 @@ export function findOptimalDiscountCombination(
         originalPrice: calculation.originalPrice,
         isOptimal: false, // 나중에 설정
         warnings: calculation.warnings,
+        discountBreakdown: calculation.discountBreakdown,
       });
     } catch (error) {
       console.error('Error calculating combination:', error);
@@ -306,17 +369,48 @@ export function findOptimalDiscountCombination(
     };
   }
 
-  // 5. 결과 정렬 (할인액 기준 내림차순)
-  results.sort((a, b) => b.totalDiscount - a.totalDiscount);
+  // 5. 의미 있는 조합만 필터링
+  // - 실제로 할인이 적용되는 조합만 포함
+  // - discountBreakdown에서 모든 할인의 amount가 0인 조합 제외
+  const meaningfulResults = results.filter((result) => {
+    if (!result.discountBreakdown || result.discountBreakdown.length === 0) {
+      return result.totalDiscount > 0;
+    }
+    // 최소 하나 이상의 할인이 실제로 적용되었는지 확인
+    return result.discountBreakdown.some((breakdown) => breakdown.amount > 0);
+  });
 
-  // 6. 최적 조합 선정
-  const optimal = results[0];
+  if (meaningfulResults.length === 0) {
+    return {
+      optimal: null,
+      alternatives: [],
+    };
+  }
+
+  // 6. 결과 정렬 (할인액 기준 내림차순)
+  meaningfulResults.sort((a, b) => b.totalDiscount - a.totalDiscount);
+
+  // 7. 최적 조합 선정
+  const optimal = meaningfulResults[0];
   optimal.isOptimal = true;
 
-  // 7. 대안 조합 추출
-  const alternatives = includeAlternatives
-    ? results.slice(1, maxAlternatives + 1)
-    : [];
+  // 8. 대안 조합 추출 (중복 제거)
+  let alternatives: DiscountCombination[] = [];
+
+  if (includeAlternatives && meaningfulResults.length > 1) {
+    const seenDiscounts = new Set<number>();
+    seenDiscounts.add(optimal.totalDiscount);
+
+    for (let i = 1; i < meaningfulResults.length && alternatives.length < maxAlternatives; i++) {
+      const candidate = meaningfulResults[i];
+
+      // 동일한 할인액을 가진 조합은 건너뛰기 (중복 제거)
+      if (!seenDiscounts.has(candidate.totalDiscount)) {
+        alternatives.push(candidate);
+        seenDiscounts.add(candidate.totalDiscount);
+      }
+    }
+  }
 
   return {
     optimal,

@@ -289,8 +289,16 @@ function PresetCard({
                   woori: '우리',
                   kb: 'KB국민',
                   hyundai: '현대',
+                  nh: 'NH농협',
+                  ibk: 'IBK기업은행',
+                  suhyup: '수협',
                 };
                 details.push(issuerNames[pm.cardIssuer] || pm.cardIssuer);
+              }
+
+              // BC카드 여부 (카드사가 BC가 아닌데 BC카드를 사용하는 경우)
+              if (pm.isBCCard && pm.cardIssuer !== 'bc') {
+                details.push('BC카드');
               }
 
               // 카드 종류 (기본 신용카드가 아닌 경우만)
@@ -766,7 +774,19 @@ function PaymentMethodsTab({
                     {PAYMENT_METHOD_NAMES[pm.method]}
                     {pm.channel && pm.channel === 'card' && ' · 카드'}
                     {pm.channel && pm.channel === 'money' && ' · 머니/포인트'}
-                    {pm.cardIssuer && ` · ${pm.cardIssuer === 'shinhan' ? '신한' : pm.cardIssuer === 'bc' ? 'BC' : pm.cardIssuer === 'samsung' ? '삼성' : pm.cardIssuer === 'hana' ? '하나' : pm.cardIssuer === 'woori' ? '우리' : pm.cardIssuer === 'kb' ? 'KB국민' : '현대'}`}
+                    {pm.cardIssuer && ` · ${
+                      pm.cardIssuer === 'shinhan' ? '신한' :
+                      pm.cardIssuer === 'bc' ? 'BC' :
+                      pm.cardIssuer === 'samsung' ? '삼성' :
+                      pm.cardIssuer === 'hana' ? '하나' :
+                      pm.cardIssuer === 'woori' ? '우리' :
+                      pm.cardIssuer === 'kb' ? 'KB국민' :
+                      pm.cardIssuer === 'hyundai' ? '현대' :
+                      pm.cardIssuer === 'nh' ? 'NH농협' :
+                      pm.cardIssuer === 'ibk' ? 'IBK기업은행' :
+                      pm.cardIssuer === 'suhyup' ? '수협' : pm.cardIssuer
+                    }`}
+                    {pm.isBCCard && pm.cardIssuer !== 'bc' && ' · BC카드'}
                     {pm.cardType && pm.cardType !== 'personal_credit' && ` · ${pm.cardType === 'personal_check' ? '개인체크' : pm.cardType === 'corporate' ? '법인' : pm.cardType === 'prepaid' ? '선불' : '기프트'}`}
                   </div>
                 </div>
@@ -819,9 +839,10 @@ function AddPaymentMethodModal({
   const [channel, setChannel] = useState<string>('');
   const [cardIssuer, setCardIssuer] = useState<string>('');
   const [cardType, setCardType] = useState<string>('personal_credit'); // 기본값: 개인 신용카드
+  const [isBCCard, setIsBCCard] = useState<boolean>(false); // BC카드 여부
 
-  // 카드 직접 선택 (카드사 등록)
-  const isDirectCard = ['card_shinhan', 'card_kb', 'card_hyundai', 'card_samsung'].includes(method);
+  // 일반 카드 선택 (카드사를 별도로 선택)
+  const isGeneralCard = method === 'card';
 
   // 페이 앱 선택 (삼성/네이버/카카오페이)
   const isSamsungPay = method === 'samsung_pay';
@@ -832,6 +853,12 @@ function AddPaymentMethodModal({
   const handleSubmit = () => {
     if (!method) {
       alert('결제수단을 선택해주세요.');
+      return;
+    }
+
+    // 일반 카드 선택 시 카드사 체크
+    if (isGeneralCard && !cardIssuer) {
+      alert('카드사를 선택해주세요.');
       return;
     }
 
@@ -851,8 +878,9 @@ function AddPaymentMethodModal({
       method: method as any,
       nickname: nickname.trim() || undefined,
       channel: channel || undefined,
-      cardIssuer: (isPayApp && channel === 'card') ? cardIssuer : undefined,
-      cardType: (isDirectCard || (isPayApp && channel === 'card')) ? cardType : undefined,
+      cardIssuer: (isGeneralCard || (isPayApp && channel === 'card')) ? cardIssuer : undefined,
+      cardType: (isGeneralCard || (isPayApp && channel === 'card')) ? cardType : undefined,
+      isBCCard: isBCCard || undefined,
       isDefault: false,
     } as any);
   };
@@ -881,6 +909,59 @@ function AddPaymentMethodModal({
             </select>
           </div>
 
+          {/* 일반 카드 선택 시 카드사 선택 */}
+          {isGeneralCard && (
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">카드사 *</label>
+                <select
+                  value={cardIssuer}
+                  onChange={(e) => {
+                    const newIssuer = e.target.value;
+                    setCardIssuer(newIssuer);
+                    // BC카드를 직접 선택하면 isBCCard를 true로 설정
+                    if (newIssuer === 'bc') {
+                      setIsBCCard(true);
+                    } else {
+                      setIsBCCard(false);
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="shinhan">신한카드</option>
+                  <option value="bc">BC카드</option>
+                  <option value="samsung">삼성카드</option>
+                  <option value="hana">하나카드</option>
+                  <option value="woori">우리카드</option>
+                  <option value="kb">KB국민카드</option>
+                  <option value="hyundai">현대카드</option>
+                  <option value="nh">NH농협카드</option>
+                  <option value="ibk">IBK기업은행카드</option>
+                  <option value="suhyup">수협카드</option>
+                </select>
+              </div>
+
+              {/* BC카드가 아닌 다른 카드사를 선택했을 때만 BC카드 체크박스 표시 */}
+              {cardIssuer && cardIssuer !== 'bc' && (
+                <div>
+                  <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={isBCCard}
+                      onChange={(e) => setIsBCCard(e.target.checked)}
+                      className="w-5 h-5 text-[#7C3FBF] border-gray-300 rounded focus:ring-[#7C3FBF]"
+                    />
+                    <div>
+                      <div className="font-semibold text-gray-900">BC카드</div>
+                      <div className="text-xs text-gray-600">이 카드는 BC카드를 함께 발급받았습니다 (예: 하나BC, 우리BC)</div>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </>
+          )}
+
           {/* 페이 앱 선택 시 (삼성페이, 네이버페이, 카카오페이) */}
           {isPayApp && (
             <div>
@@ -907,27 +988,57 @@ function AddPaymentMethodModal({
 
           {/* 페이 앱에서 카드 선택 시 카드사 선택 */}
           {isPayApp && channel === 'card' && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">카드사 *</label>
-              <select
-                value={cardIssuer}
-                onChange={(e) => setCardIssuer(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
-              >
-                <option value="">선택하세요</option>
-                <option value="shinhan">신한카드</option>
-                <option value="bc">BC카드</option>
-                <option value="samsung">삼성카드</option>
-                <option value="hana">하나카드</option>
-                <option value="woori">우리카드</option>
-                <option value="kb">KB국민카드</option>
-                <option value="hyundai">현대카드</option>
-              </select>
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">카드사 *</label>
+                <select
+                  value={cardIssuer}
+                  onChange={(e) => {
+                    const newIssuer = e.target.value;
+                    setCardIssuer(newIssuer);
+                    // BC카드를 직접 선택하면 isBCCard를 true로 설정
+                    if (newIssuer === 'bc') {
+                      setIsBCCard(true);
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="shinhan">신한카드</option>
+                  <option value="bc">BC카드</option>
+                  <option value="samsung">삼성카드</option>
+                  <option value="hana">하나카드</option>
+                  <option value="woori">우리카드</option>
+                  <option value="kb">KB국민카드</option>
+                  <option value="hyundai">현대카드</option>
+                  <option value="nh">NH농협카드</option>
+                  <option value="ibk">IBK기업은행카드</option>
+                  <option value="suhyup">수협카드</option>
+                </select>
+              </div>
+
+              {/* BC카드가 아닌 다른 카드사를 선택했을 때만 BC카드 체크박스 표시 */}
+              {cardIssuer && cardIssuer !== 'bc' && (
+                <div>
+                  <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={isBCCard}
+                      onChange={(e) => setIsBCCard(e.target.checked)}
+                      className="w-5 h-5 text-[#7C3FBF] border-gray-300 rounded focus:ring-[#7C3FBF]"
+                    />
+                    <div>
+                      <div className="font-semibold text-gray-900">BC카드</div>
+                      <div className="text-xs text-gray-600">이 카드는 BC카드를 함께 발급받았습니다 (예: 하나BC, 우리BC)</div>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </>
           )}
 
-          {/* 카드 직접 선택 또는 페이 앱에서 카드 선택 시 */}
-          {(isDirectCard || (isPayApp && channel === 'card')) && (
+          {/* 카드 선택 시 카드 종류 선택 */}
+          {(isGeneralCard || (isPayApp && channel === 'card')) && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">카드 종류</label>
               <select

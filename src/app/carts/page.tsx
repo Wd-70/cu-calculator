@@ -207,6 +207,17 @@ export default function CartsPage() {
   const getAppliedDiscounts = () => {
     if (!optimalCombination) return [];
 
+    // discountBreakdown이 있으면 그것을 사용 (실제 계산된 금액 포함)
+    if (optimalCombination.discountBreakdown && optimalCombination.discountBreakdown.length > 0) {
+      return optimalCombination.discountBreakdown.map((breakdown) => ({
+        discountId: breakdown.discountId,
+        discountName: breakdown.discountName,
+        discountAmount: breakdown.amount,
+        category: breakdown.category,
+      }));
+    }
+
+    // fallback: discountBreakdown이 없으면 기존 방식 사용
     return optimalCombination.discountIds.map((id) => {
       const discount = discountMap.get(id);
       return {

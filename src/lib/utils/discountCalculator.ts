@@ -13,8 +13,12 @@ import {
   CartCalculationResultV2,
   CartItemCalculationResult,
   DISCOUNT_CATEGORY_ORDER,
+  PaymentMethodRequirement,
+  CardIssuerRequirement,
+  PaymentMethodException,
 } from '@/types/discount';
 import { PaymentMethod } from '@/types/payment';
+import { PaymentMethodInfo } from '@/types/preset';
 
 // ============================================================================
 // 개별 할인 계산 함수들
@@ -37,9 +41,11 @@ function calculateTelecomDiscount(
   originalPrice: number,
   config: Extract<DiscountConfig, { category: 'telecom' }>
 ): number {
+  let discount = 0;
+
   if (config.valueType === 'percentage' && config.percentage) {
     // 퍼센트 방식: 20%
-    return Math.floor(originalPrice * (config.percentage / 100));
+    discount = Math.floor(originalPrice * (config.percentage / 100));
   } else if (
     config.valueType === 'tiered_amount' &&
     config.tierUnit &&
@@ -47,24 +53,39 @@ function calculateTelecomDiscount(
   ) {
     // 구간 방식: 1천원당 300원
     const tiers = Math.floor(originalPrice / config.tierUnit);
-    return tiers * config.tierAmount;
+    discount = tiers * config.tierAmount;
   }
-  return 0;
+
+  // 월 최대 할인 금액 제한 적용 (단일 구매 기준)
+  if (config.maxDiscountPerMonth && discount > config.maxDiscountPerMonth) {
+    discount = config.maxDiscountPerMonth;
+  }
+
+  return discount;
 }
 
 /**
- * 결제행사 할인 계산 (정가 기준)
+ * 결제행사 할인 계산
+ * @param originalPrice - 정가
+ * @param currentAmount - 현재 금액 (이전 할인 적용 후)
+ * @param config - 할인 설정
  */
 function calculatePaymentEventDiscount(
   originalPrice: number,
+  currentAmount: number,
   config: Extract<DiscountConfig, { category: 'payment_event' }>
 ): number {
+  // 기준 금액 결정 (기본값: 정가 기준)
+  const baseAmount = config.baseAmountType === 'current_amount'
+    ? currentAmount
+    : originalPrice;
+
   if (config.valueType === 'percentage' && config.percentage) {
     // 퍼센트 방식: 40%
-    return Math.floor(originalPrice * (config.percentage / 100));
+    return Math.floor(baseAmount * (config.percentage / 100));
   } else if (config.valueType === 'fixed_amount' && config.fixedAmount) {
     // 고정 금액 방식: 1000원
-    return Math.min(originalPrice, config.fixedAmount);
+    return Math.min(baseAmount, config.fixedAmount);
   }
   return 0;
 }
@@ -167,7 +188,7 @@ function isDiscountValid(
 }
 
 /**
- * 할인이 결제수단과 호환되는지 확인
+ * 할인이 결제수단과 호환되는지 확인 (레거시)
  */
 function isPaymentMethodCompatible(
   discount: IDiscountRuleV2,
@@ -183,6 +204,244 @@ function isPaymentMethodCompatible(
   }
 
   return discount.requiredPaymentMethods.includes(paymentMethod);
+}
+
+/**
+ * 결제수단 예외 조건과 사용자 결제정보가 매칭되는지 확인
+ */
+function matchesPaymentException(
+  exception: PaymentMethodException,
+  paymentInfo: PaymentMethodInfo
+): boolean {
+  // 결제수단이 다르면 매칭 안됨
+  if (exception.method !== paymentInfo.method) {
+    return false;
+  }
+
+  // 채널 확인 (지정된 경우)
+  if (exception.channel !== undefined) {
+    if (exception.channel !== paymentInfo.channel) {
+      return false;
+    }
+  }
+
+  // 카드사 확인 (지정된 경우)
+  if (exception.cardIssuer !== undefined) {
+    if (exception.cardIssuer !== paymentInfo.cardIssuer) {
+      return false;
+    }
+  }
+
+  // 카드 종류 확인 (지정된 경우)
+  if (exception.cardType !== undefined) {
+    if (exception.cardType !== paymentInfo.cardType) {
+      return false;
+    }
+  }
+
+  // BC카드 여부 확인 (지정된 경우)
+  if (exception.isBCCard !== undefined) {
+    if (exception.isBCCard !== paymentInfo.isBCCard) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * 카드 발급사 요구사항과 사용자 카드 정보가 호환되는지 확인
+ */
+function isCardIssuerCompatible(
+  requirement: CardIssuerRequirement,
+  paymentInfo: PaymentMethodInfo
+): { compatible: boolean; reason?: string } {
+  // 카드사 확인
+  if (paymentInfo.cardIssuer !== requirement.issuer) {
+    return { compatible: false, reason: '카드사가 일치하지 않습니다.' };
+  }
+
+  // BC카드 요구사항 확인
+  if (requirement.requiresBCCard !== undefined) {
+    if (requirement.requiresBCCard && !paymentInfo.isBCCard) {
+      return { compatible: false, reason: 'BC카드가 필요합니다.' };
+    }
+    if (!requirement.requiresBCCard && paymentInfo.isBCCard) {
+      return { compatible: false, reason: 'BC카드는 제외됩니다.' };
+    }
+  }
+
+  // 카드 종류 확인
+  if (requirement.allowedCardTypes && requirement.allowedCardTypes.length > 0) {
+    if (!paymentInfo.cardType) {
+      return { compatible: false, reason: '카드 종류 정보가 필요합니다.' };
+    }
+    if (!requirement.allowedCardTypes.includes(paymentInfo.cardType)) {
+      const typeNames: Record<string, string> = {
+        personal_credit: '개인 신용카드',
+        personal_check: '개인 체크카드',
+        corporate: '법인카드',
+        prepaid: '선불카드',
+        gift: '기프트카드',
+      };
+      return {
+        compatible: false,
+        reason: `${typeNames[paymentInfo.cardType] || paymentInfo.cardType}는 이 할인에 사용할 수 없습니다.`,
+      };
+    }
+  }
+
+  // 결제 채널 확인
+  if (requirement.allowedChannels && requirement.allowedChannels.length > 0) {
+    if (!paymentInfo.channel) {
+      return { compatible: false, reason: '결제 채널 정보가 필요합니다.' };
+    }
+    if (!requirement.allowedChannels.includes(paymentInfo.channel as any)) {
+      return { compatible: false, reason: '이 결제 방식은 지원하지 않습니다.' };
+    }
+  }
+
+  return { compatible: true };
+}
+
+/**
+ * 할인이 상세한 결제수단 정보와 호환되는지 확인 (신규)
+ */
+function isPaymentMethodDetailedCompatible(
+  discount: IDiscountRuleV2,
+  paymentInfo?: PaymentMethodInfo
+): { compatible: boolean; reason?: string } {
+  // 결제수단 정보가 없으면 통과
+  if (!paymentInfo) {
+    return { compatible: true };
+  }
+
+  // ========================================================================
+  // 1단계: 차단 예외 확인 (최우선)
+  // ========================================================================
+  if (discount.blockedExceptions && discount.blockedExceptions.length > 0) {
+    for (const exception of discount.blockedExceptions) {
+      if (matchesPaymentException(exception, paymentInfo)) {
+        return {
+          compatible: false,
+          reason: exception.reason || '이 결제 조합은 할인 대상에서 제외됩니다.',
+        };
+      }
+    }
+  }
+
+  // ========================================================================
+  // 2단계: 허용 예외 확인 (기본 규칙을 덮어씀)
+  // ========================================================================
+  if (discount.allowedExceptions && discount.allowedExceptions.length > 0) {
+    for (const exception of discount.allowedExceptions) {
+      if (matchesPaymentException(exception, paymentInfo)) {
+        return {
+          compatible: true,
+          reason: exception.reason,
+        };
+      }
+    }
+  }
+
+  // ========================================================================
+  // 3단계: 기본 규칙 확인
+  // ========================================================================
+
+  // 상세 요구사항이 없으면 레거시 방식으로 확인
+  if (!discount.paymentMethodRequirements || discount.paymentMethodRequirements.length === 0) {
+    const isCompatible = isPaymentMethodCompatible(discount, paymentInfo.method);
+    return {
+      compatible: isCompatible,
+      reason: isCompatible ? undefined : '지원하지 않는 결제수단입니다.',
+    };
+  }
+
+  // 복합결제 확인
+  const requirement = discount.paymentMethodRequirements.find(
+    (req) => req.method === paymentInfo.method
+  );
+
+  if (!requirement) {
+    return { compatible: false, reason: '지원하지 않는 결제수단입니다.' };
+  }
+
+  // 복합결제 제한 확인
+  if (requirement.allowMixedPayment === false) {
+    // 실제로 복합결제인지 확인하는 로직은 장바구니 레벨에서 처리 필요
+    // 여기서는 조건만 표시
+  }
+
+  // 카드인 경우 상세 검증
+  if (paymentInfo.method === 'card' && requirement.cardRequirements) {
+    // 사용자가 선택한 카드가 요구사항 중 하나와 일치하는지 확인
+    let matchFound = false;
+    let lastReason = '';
+
+    for (const cardReq of requirement.cardRequirements) {
+      const result = isCardIssuerCompatible(cardReq, paymentInfo);
+      if (result.compatible) {
+        matchFound = true;
+        break;
+      }
+      lastReason = result.reason || '';
+    }
+
+    if (!matchFound) {
+      return {
+        compatible: false,
+        reason: lastReason || '이 카드는 할인 대상이 아닙니다.',
+      };
+    }
+  }
+
+  // 간편결제인 경우 채널 확인
+  if (
+    ['samsung_pay', 'naver_pay', 'kakao_pay'].includes(paymentInfo.method) &&
+    requirement.allowedChannels
+  ) {
+    if (!paymentInfo.channel) {
+      return { compatible: false, reason: '결제 방법을 선택해주세요.' };
+    }
+    if (!requirement.allowedChannels.includes(paymentInfo.channel as any)) {
+      return {
+        compatible: false,
+        reason: '이 결제 방법은 할인 대상이 아닙니다.',
+      };
+    }
+
+    // 간편결제에서 카드를 선택한 경우 카드 검증
+    if (paymentInfo.channel === 'card' && requirement.cardRequirements && paymentInfo.cardIssuer) {
+      let matchFound = false;
+      let lastReason = '';
+
+      for (const cardReq of requirement.cardRequirements) {
+        const result = isCardIssuerCompatible(cardReq, paymentInfo);
+        if (result.compatible) {
+          matchFound = true;
+          break;
+        }
+        lastReason = result.reason || '';
+      }
+
+      if (!matchFound) {
+        return {
+          compatible: false,
+          reason: lastReason || '이 카드는 할인 대상이 아닙니다.',
+        };
+      }
+    }
+  }
+
+  // 제외된 간편결제 확인
+  if (requirement.excludedSimplePayments && requirement.excludedSimplePayments.length > 0) {
+    const methodName = paymentInfo.method;
+    if (requirement.excludedSimplePayments.includes(methodName)) {
+      return { compatible: false, reason: '이 간편결제는 할인 대상에서 제외됩니다.' };
+    }
+  }
+
+  return { compatible: true };
 }
 
 // ============================================================================
@@ -435,13 +694,20 @@ export function calculateDiscountForItem(
       );
     }, 0);
 
+  // payment_event는 baseAmountType에 따라 정가 또는 현재 금액 기준으로 계산
+  // current_amount 기준인 경우 순서대로 처리할 때 계산하므로 여기서는 정가 기준만 계산
   const paymentEventAmount = sortedDiscounts
-    .filter((d) => d.config.category === 'payment_event')
+    .filter((d) => {
+      const config = d.config as Extract<DiscountConfig, { category: 'payment_event' }>;
+      return d.config.category === 'payment_event' &&
+             config.baseAmountType !== 'current_amount';
+    })
     .reduce((sum, d) => {
       return (
         sum +
         calculatePaymentEventDiscount(
           originalPrice,
+          originalPrice, // 정가 기준이므로 originalPrice 전달
           d.config as Extract<DiscountConfig, { category: 'payment_event' }>
         )
       );
@@ -516,13 +782,19 @@ export function calculateDiscountForItem(
   }
 
   // 5-3. 결제행사 할인
+  // 정가 기준 할인
   if (paymentEventAmount > 0) {
     currentAmount -= paymentEventAmount;
     sortedDiscounts
-      .filter((d) => d.config.category === 'payment_event')
+      .filter((d) => {
+        const config = d.config as Extract<DiscountConfig, { category: 'payment_event' }>;
+        return d.config.category === 'payment_event' &&
+               config.baseAmountType !== 'current_amount';
+      })
       .forEach((d) => {
         const amount = calculatePaymentEventDiscount(
           originalPrice,
+          originalPrice, // 정가 기준
           d.config as Extract<DiscountConfig, { category: 'payment_event' }>
         );
         const config = d.config as Extract<
@@ -531,8 +803,8 @@ export function calculateDiscountForItem(
         >;
         const detail =
           config.valueType === 'percentage'
-            ? `${config.percentage}% 할인`
-            : `${config.fixedAmount}원 할인`;
+            ? `${config.percentage}% 할인 (정가 기준)`
+            : `${config.fixedAmount}원 할인 (정가 기준)`;
 
         steps.push({
           category: 'payment_event',
@@ -545,6 +817,45 @@ export function calculateDiscountForItem(
           calculationDetails: detail,
         });
       });
+  }
+
+  // 현재 금액 기준 할인 (프로모션 적용 후 등)
+  const currentAmountBasedPaymentEvents = sortedDiscounts.filter((d) => {
+    const config = d.config as Extract<DiscountConfig, { category: 'payment_event' }>;
+    return d.config.category === 'payment_event' &&
+           config.baseAmountType === 'current_amount';
+  });
+
+  if (currentAmountBasedPaymentEvents.length > 0) {
+    for (const d of currentAmountBasedPaymentEvents) {
+      const beforeAmount = currentAmount;
+      const amount = calculatePaymentEventDiscount(
+        originalPrice,
+        currentAmount, // 현재 금액 기준
+        d.config as Extract<DiscountConfig, { category: 'payment_event' }>
+      );
+      currentAmount -= amount;
+
+      const config = d.config as Extract<
+        DiscountConfig,
+        { category: 'payment_event' }
+      >;
+      const detail =
+        config.valueType === 'percentage'
+          ? `${config.percentage}% 할인 (프로모션 적용 후 기준)`
+          : `${config.fixedAmount}원 할인 (프로모션 적용 후 기준)`;
+
+      steps.push({
+        category: 'payment_event',
+        discountId: d._id,
+        discountName: d.name,
+        baseAmount: beforeAmount,
+        isOriginalPriceBased: false,
+        discountAmount: amount,
+        amountAfterDiscount: currentAmount,
+        calculationDetails: detail,
+      });
+    }
   }
 
   // 5-4. 금액권 (남은 금액 기준)
@@ -719,3 +1030,9 @@ export function calculateCart(
     errors: allErrors.length > 0 ? allErrors : undefined,
   };
 }
+
+// ============================================================================
+// Export utility functions
+// ============================================================================
+
+export { isPaymentMethodDetailedCompatible };

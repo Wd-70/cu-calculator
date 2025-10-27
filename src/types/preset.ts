@@ -15,8 +15,11 @@ export interface PaymentMethodInfo {
 
   // 상세 정보
   channel?: 'direct_card' | 'samsung_pay' | 'naver_pay' | 'kakao_pay' | 'cu_pay' | 'cash';
-  cardIssuer?: 'shinhan' | 'bc' | 'samsung' | 'hana' | 'woori' | 'kb' | 'hyundai';
+  cardIssuer?: 'shinhan' | 'bc' | 'samsung' | 'hana' | 'woori' | 'kb' | 'hyundai' | 'nh' | 'ibk' | 'suhyup';
   cardType?: 'personal_credit' | 'personal_check' | 'corporate' | 'prepaid' | 'gift';
+
+  // BC카드 여부 (하나BC, 우리BC 등)
+  isBCCard?: boolean;
 
   // 네이버페이 특수
   naverPayMethod?: 'qr' | 'card';

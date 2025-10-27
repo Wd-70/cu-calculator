@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { IProduct } from '@/types/product';
 import { ICartItem } from '@/types/cart';
 import BarcodeScannerModal from '@/components/BarcodeScannerModal';
+import ProductSearchModal from './ProductSearchModal';
 
 interface ProductSearchProps {
   onAddItem: (item: ICartItem) => void;
@@ -13,46 +14,43 @@ interface ProductSearchProps {
 export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps) {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<IProduct[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [isSearching, setIsSearching] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // 수동 검색 함수
+  const handleSearch = async () => {
     if (query.length < 2) {
-      setSearchResults([]);
-      setIsOpen(false);
       return;
     }
 
-    // 디바운스 검색
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+    // 바코드인 경우 검색하지 않음
+    if (query.match(/^\d{13}$/)) {
+      return;
     }
 
-    searchTimeoutRef.current = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=10`);
-        if (response.ok) {
-          const data = await response.json();
-          setSearchResults(data.products || []);
-          setIsOpen(true);
-        }
-      } catch (error) {
-        console.error('상품 검색 실패:', error);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
+    console.log('검색 시작:', query);
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/products?name=${encodeURIComponent(query)}&limit=200`);
+      console.log('검색 응답:', response.status);
 
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('검색 결과:', data);
+        console.log(`전체 ${data.total}개 중 ${data.data?.length || 0}개 표시`);
+        setSearchResults(data.data || []);
+        setTotalCount(data.total || 0);
+        setIsSearchModalOpen(true);
       }
-    };
-  }, [query]);
+    } catch (error) {
+      console.error('상품 검색 실패:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleAddProduct = (product: IProduct) => {
     const cartItem: ICartItem = {
@@ -73,10 +71,11 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
     };
 
     onAddItem(cartItem);
-    setQuery('');
-    setSearchResults([]);
-    setIsOpen(false);
-    inputRef.current?.focus();
+    // 모달을 닫지 않고 계속 사용할 수 있도록 수정
+    // setQuery('');
+    // setSearchResults([]);
+    // setIsSearchModalOpen(false);
+    // inputRef.current?.focus();
   };
 
   const handleBarcodeSearch = async (barcode: string) => {
@@ -132,92 +131,69 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
         </div>
 
         <div className="relative">
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && query.match(/^\d{13}$/)) {
-                  // 13자리 숫자면 바코드로 간주
-                  handleBarcodeSearch(query);
-                }
-              }}
-              placeholder="상품명 또는 바코드 입력..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-          </div>
-
-        {isOpen && searchResults.length > 0 && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setIsOpen(false)}
-            />
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-96 overflow-y-auto">
-              {searchResults.map((product) => (
-                <button
-                  key={String(product._id)}
-                  onClick={() => handleAddProduct(product)}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                >
-                  {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="w-12 h-12 object-cover rounded flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{product.name}</div>
-                    <div className="text-sm text-gray-500 truncate">
-                      {product.barcode}
-                      {product.brand && ` · ${product.brand}`}
-                    </div>
-                    <div className="text-sm font-semibold text-purple-600 mt-1">
-                      {product.price.toLocaleString()}원
-                    </div>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              ))}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (query.match(/^\d{13}$/)) {
+                      // 13자리 숫자면 바코드로 간주
+                      handleBarcodeSearch(query);
+                    } else {
+                      // 일반 검색
+                      handleSearch();
+                    }
+                  }
+                }}
+                placeholder="상품명 또는 바코드 입력..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
-          </>
-        )}
-
-        {isOpen && query.length >= 2 && searchResults.length === 0 && !isSearching && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-4 text-center text-gray-500 text-sm">
-            검색 결과가 없습니다.
+            <button
+              onClick={handleSearch}
+              disabled={isSearching || query.length < 2}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              검색
+            </button>
           </div>
-        )}
-      </div>
+        </div>
 
         <div className="mt-3 text-xs text-gray-500">
-          💡 13자리 바코드를 입력하고 Enter를 누르면 바로 추가됩니다.
+          💡 상품명을 입력하고 검색 버튼을 누르거나 Enter를 누르세요. 13자리 바코드는 Enter로 바로 추가됩니다.
         </div>
       </div>
+
+      {/* 상품 검색 결과 모달 */}
+      <ProductSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => {
+          setIsSearchModalOpen(false);
+          setQuery('');
+        }}
+        searchQuery={query}
+        searchResults={searchResults}
+        totalCount={totalCount}
+        isSearching={isSearching}
+        onSelectProduct={handleAddProduct}
+      />
 
       {/* 바코드 스캐너 모달 */}
       <BarcodeScannerModal

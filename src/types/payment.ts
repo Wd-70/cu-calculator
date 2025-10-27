@@ -1,10 +1,7 @@
 // Payment method types and constants
 
 export const PAYMENT_METHODS = {
-  CARD_SHINHAN: "card_shinhan",
-  CARD_KB: "card_kb",
-  CARD_HYUNDAI: "card_hyundai",
-  CARD_SAMSUNG: "card_samsung",
+  CARD: "card", // 일반 카드 (카드사 선택 가능)
   SAMSUNG_PAY: "samsung_pay",
   CU_PAY: "cu_pay",
   KAKAO_PAY: "kakao_pay",
@@ -16,10 +13,7 @@ export const PAYMENT_METHODS = {
 export type PaymentMethod = typeof PAYMENT_METHODS[keyof typeof PAYMENT_METHODS];
 
 export const PAYMENT_METHOD_NAMES: Record<PaymentMethod, string> = {
-  [PAYMENT_METHODS.CARD_SHINHAN]: "신한카드",
-  [PAYMENT_METHODS.CARD_KB]: "KB국민카드",
-  [PAYMENT_METHODS.CARD_HYUNDAI]: "현대카드",
-  [PAYMENT_METHODS.CARD_SAMSUNG]: "삼성카드",
+  [PAYMENT_METHODS.CARD]: "카드",
   [PAYMENT_METHODS.SAMSUNG_PAY]: "삼성페이",
   [PAYMENT_METHODS.CU_PAY]: "CU페이",
   [PAYMENT_METHODS.KAKAO_PAY]: "카카오페이",

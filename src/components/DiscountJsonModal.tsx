@@ -140,10 +140,11 @@ export default function DiscountJsonModal({
       }
 
       // 서명 생성
-      const { signature, timestamp } = await signWithTimestamp({
-        action: selectedDiscount ? 'update_discount' : 'create_discount',
-        ...discountData,
-      });
+      const signData = selectedDiscount
+        ? { action: 'update_discount', id: selectedDiscount._id, ...discountData }
+        : { action: 'create_discount', ...discountData };
+
+      const { signature, timestamp } = await signWithTimestamp(signData);
 
       // API 호출
       const url = selectedDiscount

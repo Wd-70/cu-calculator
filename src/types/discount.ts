@@ -20,13 +20,13 @@ export type DiscountCategory =
   | 'promotion';       // 프로모션 할인 (1+1, 2+1 등)
 
 export const DISCOUNT_CATEGORY_ORDER: Record<DiscountCategory, number> = {
-  coupon: 1,
-  telecom: 2,
-  payment_event: 3,
-  voucher: 4,
-  payment_instant: 5,
-  payment_compound: 6,
-  promotion: 7,
+  promotion: 1,        // 프로모션(1+1, 2+1)이 가장 먼저 적용
+  coupon: 2,
+  telecom: 3,
+  payment_event: 4,    // 결제행사는 프로모션 이후 적용
+  voucher: 5,
+  payment_instant: 6,
+  payment_compound: 7,
 };
 
 export const DISCOUNT_CATEGORY_NAMES: Record<DiscountCategory, string> = {
@@ -77,6 +77,7 @@ export interface TelecomDiscount {
 
   // 퍼센트 방식 (예: 20%)
   percentage?: number;
+  maxDiscountPerMonth?: number; // 월 최대 할인 금액 (예: 5000원)
 
   // 구간 방식 (예: 1천원당 300원)
   tierUnit?: number; // 1000 (1천원)
@@ -84,6 +85,7 @@ export interface TelecomDiscount {
 
   provider: string; // 우주패스, SKT, KT알뜰, etc.
   canCombineWithMembership?: boolean; // CU멤버십/네이버플러스와 중복 가능 여부
+  restrictedProviders?: string[]; // 특정 통신사와 중복 불가 (예: ["KT알뜰"])
 }
 
 // ============================================================================
@@ -96,6 +98,11 @@ export interface PaymentEventDiscount {
 
   percentage?: number; // 퍼센트 방식
   fixedAmount?: number; // 고정 금액 방식
+
+  // 할인 계산 기준 금액
+  baseAmountType?: 'original_price' | 'current_amount'; // 기본값: original_price (정가 기준)
+  // 'original_price': 정가 기준으로 할인 계산
+  // 'current_amount': 이전 할인 적용 후 금액 기준으로 할인 계산 (프로모션 적용 후 등)
 
   requiresQR?: boolean; // QR코드 제시 필요 여부
   eventName: string;
@@ -177,6 +184,70 @@ export type DiscountApplicationMethod =
   | 'cart_total';   // 장바구니 전체 합산 후 적용
 
 // ============================================================================
+// 결제수단 상세 제약 조건
+// ============================================================================
+
+export interface CardIssuerRequirement {
+  issuer: 'shinhan' | 'bc' | 'samsung' | 'hana' | 'woori' | 'kb' | 'hyundai' | 'nh' | 'ibk' | 'suhyup';
+
+  // 허용되는 카드 종류 (지정하지 않으면 모든 종류 허용)
+  allowedCardTypes?: ('personal_credit' | 'personal_check' | 'corporate' | 'prepaid' | 'gift')[];
+
+  // BC카드 포함 여부 (하나BC, 우리BC 등)
+  requiresBCCard?: boolean; // true면 BC카드만, false면 BC카드 제외
+
+  // 허용되는 결제 채널 (지정하지 않으면 모든 채널 허용)
+  allowedChannels?: ('direct_card' | 'samsung_pay' | 'naver_pay' | 'kakao_pay' | 'cu_pay')[];
+
+  // 특별 조건 설명 (예: "수협은행, 광주은행 BC카드 포함")
+  specialConditions?: string;
+}
+
+export interface PaymentMethodRequirement {
+  method: PaymentMethod;
+
+  // 카드인 경우 상세 조건
+  cardRequirements?: CardIssuerRequirement[];
+
+  // 간편결제인 경우 제약
+  allowedChannels?: ('card' | 'money')[];
+
+  // 제외되는 간편결제 (카카오페이, 페이코 등)
+  excludedSimplePayments?: string[];
+
+  // 복합결제 허용 여부
+  allowMixedPayment?: boolean;
+}
+
+// ============================================================================
+// 결제수단 예외 처리
+// ============================================================================
+
+/**
+ * 특정 결제 조합을 정의하는 타입
+ * 기본 규칙을 덮어쓰는 허용/차단 예외에 사용
+ */
+export interface PaymentMethodException {
+  // 결제수단
+  method: PaymentMethod;
+
+  // 간편결제 채널 (카드/머니)
+  channel?: 'direct_card' | 'card' | 'money';
+
+  // 카드사
+  cardIssuer?: 'shinhan' | 'bc' | 'samsung' | 'hana' | 'woori' | 'kb' | 'hyundai' | 'nh' | 'ibk' | 'suhyup';
+
+  // 카드 종류
+  cardType?: 'personal_credit' | 'personal_check' | 'corporate' | 'prepaid' | 'gift';
+
+  // BC카드 여부
+  isBCCard?: boolean;
+
+  // 예외 설명 (예: "네이버페이/신한카드 조합 가능 확인됨")
+  reason?: string;
+}
+
+// ============================================================================
 // 할인 규칙 (데이터베이스 모델)
 // ============================================================================
 
@@ -196,9 +267,16 @@ export interface IDiscountRuleV2 {
   applicableCategories: string[]; // 빈 배열 = 전체 카테고리
   applicableBrands?: string[];
 
-  // 결제수단 제약
+  // 결제수단 제약 (레거시)
   requiredPaymentMethods: PaymentMethod[];
   paymentMethodNames: string[];
+
+  // 결제수단 상세 제약 (신규)
+  paymentMethodRequirements?: PaymentMethodRequirement[];
+
+  // 결제수단 예외 처리
+  allowedExceptions?: PaymentMethodException[]; // 기본 규칙에서 차단되지만 허용되는 예외
+  blockedExceptions?: PaymentMethodException[]; // 기본 규칙에서 허용되지만 차단되는 예외
 
   // 중복 적용 규칙
   cannotCombineWithCategories?: DiscountCategory[]; // 특정 카테고리와 중복 불가
@@ -212,6 +290,11 @@ export interface IDiscountRuleV2 {
   // 최대 할인 제한
   maxDiscountAmount?: number;
   maxDiscountPerItem?: number;
+
+  // 사용 횟수 제한
+  dailyUsageLimit?: number; // 일일 사용 횟수 제한 (예: 1)
+  totalUsageLimit?: number; // 총 사용 횟수 제한
+  usageResetTime?: string; // 사용 횟수 리셋 시간 (예: "00:00")
 
   // 행사 정보
   eventMonth?: string; // 예: "2025-01"
