@@ -523,9 +523,17 @@ export default function PromotionsTab() {
           onVerify={handleVerify}
           onDispute={handleDispute}
           onEdit={(promotion) => {
+            // JSON 편집 (관리자 전용)
             setSelectedPromotion(promotion);
             setShowJsonModal(true);
             setShowDetailModal(false);
+          }}
+          onUpdate={(updatedPromotion) => {
+            // 위키 편집 후 리스트에서 해당 프로모션만 업데이트
+            setPromotions(prev => prev.map(p =>
+              p._id.toString() === updatedPromotion._id.toString() ? updatedPromotion : p
+            ));
+            setSelectedPromotionForModal(updatedPromotion);
           }}
           isAdmin={isAdmin}
           userAddress={userAddress}

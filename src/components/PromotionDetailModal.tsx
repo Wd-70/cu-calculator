@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Barcode from 'react-barcode';
 import { IPromotion } from '@/lib/models/Promotion';
 import CameraCapture from './CameraCapture';
+import PromotionWikiEditModal from './PromotionWikiEditModal';
+import PromotionHistoryModal from './PromotionHistoryModal';
 
 interface PromotionDetailModalProps {
   promotion: IPromotion;
@@ -12,7 +14,8 @@ interface PromotionDetailModalProps {
   onMerge?: (promotionId: string) => void;
   onVerify?: (promotionId: string, adminVerify?: boolean) => void;
   onDispute?: (promotionId: string) => void;
-  onEdit?: (promotion: IPromotion) => void;
+  onEdit?: (promotion: IPromotion) => void; // JSON 편집 (관리자 전용)
+  onUpdate?: (promotion: IPromotion) => void; // 위키 편집 후 데이터 업데이트
   isAdmin?: boolean;
   userAddress?: string | null;
 }
@@ -27,6 +30,7 @@ export default function PromotionDetailModal({
   onVerify,
   onDispute,
   onEdit,
+  onUpdate,
   isAdmin = false,
   userAddress,
 }: PromotionDetailModalProps) {
@@ -39,6 +43,9 @@ export default function PromotionDetailModal({
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [productInfo, setProductInfo] = useState<{ [barcode: string]: { name: string; price?: number } }>({});
+  const [showWikiEdit, setShowWikiEdit] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [currentPromotion, setCurrentPromotion] = useState<IPromotion>(promotion);
 
   if (!isOpen) return null;
 
@@ -150,14 +157,40 @@ export default function PromotionDetailModal({
   const hasDisputed = userAddress && promotion.disputedBy?.includes(userAddress);
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
+    <>
+      {showWikiEdit && (
+        <PromotionWikiEditModal
+          promotion={currentPromotion}
+          isOpen={showWikiEdit}
+          onClose={() => setShowWikiEdit(false)}
+          onSave={(updatedPromotion) => {
+            setCurrentPromotion(updatedPromotion);
+            setShowWikiEdit(false);
+            // 부모 컴포넌트의 리스트 업데이트 (JSON 모달 열지 않음)
+            if (onUpdate) {
+              onUpdate(updatedPromotion);
+            }
+          }}
+          userAddress={userAddress}
+        />
+      )}
+
+      {showHistory && (
+        <PromotionHistoryModal
+          promotionId={promotion._id.toString()}
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
+
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
       >
+        <div
+          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* 헤더 */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
           <div className="flex items-start justify-between">
@@ -561,6 +594,42 @@ export default function PromotionDetailModal({
                   </div>
                 </div>
               </div>
+
+              {/* 위키 편집 */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-1">📝 위키 편집</h4>
+                    <p className="text-sm text-blue-700">
+                      프로모션 정보를 수정할 수 있습니다. 모든 수정 내역은 기록됩니다.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowWikiEdit(true)}
+                  className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+                >
+                  프로모션 편집하기
+                </button>
+              </div>
+
+              {/* 히스토리 보기 */}
+              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-semibold text-indigo-900 mb-1">📜 수정 히스토리</h4>
+                    <p className="text-sm text-indigo-700">
+                      이 프로모션의 모든 수정 내역을 확인할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="w-full px-4 py-3 bg-indigo-500 text-white rounded-lg font-semibold hover:bg-indigo-600 transition-colors"
+                >
+                  히스토리 보기
+                </button>
+              </div>
             </div>
           )}
 
@@ -651,5 +720,6 @@ export default function PromotionDetailModal({
         </div>
       </div>
     </div>
+    </>
   );
 }
