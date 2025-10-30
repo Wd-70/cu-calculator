@@ -5,49 +5,90 @@ import { isAdmin } from '@/lib/adminAuth';
 // API 라우트 타임아웃 설정 (2분)
 export const maxDuration = 120;
 
+interface ProgressMessage {
+  type: 'progress' | 'complete' | 'error';
+  message?: string;
+  categoryNum?: number;
+  categoryProgress?: {
+    current: number;
+    total: number;
+  };
+  pageProgress?: {
+    current: number;
+    total: number;
+  };
+  productCount?: number;
+  products?: any[];
+  total?: number;
+  error?: string;
+}
+
 /**
  * POST /api/admin/crawl-products
- * Crawl products from CU official website
+ * Crawl products from CU official website with real-time streaming progress
  * Admin only
  */
 export async function POST(request: NextRequest) {
-  let browser;
+  const { accountAddress, category = '', pagesPerCategory = 3 } = await request.json();
 
-  try {
-    const { accountAddress, category = '', maxProducts = 50 } = await request.json();
+  // 관리자 계정 검증
+  if (!isAdmin(accountAddress)) {
+    return NextResponse.json(
+      { error: '관리자 권한이 필요합니다.' },
+      { status: 403 }
+    );
+  }
 
-    // 관리자 계정 검증
-    if (!isAdmin(accountAddress)) {
-      return NextResponse.json(
-        { error: '관리자 권한이 필요합니다.' },
-        { status: 403 }
-      );
-    }
+  const encoder = new TextEncoder();
 
-    console.log('Starting CU product crawling...');
-    console.log('Max products:', maxProducts);
+  const stream = new ReadableStream({
+    async start(controller) {
+      let browser;
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+      const sendMessage = (msg: ProgressMessage) => {
+        const text = JSON.stringify(msg) + '\n';
+        controller.enqueue(encoder.encode(text));
+      };
 
-    const page = await browser.newPage();
+      try {
+        sendMessage({
+          type: 'progress',
+          message: '브라우저 시작 중...'
+        });
 
-    // User agent 설정
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        console.log('Starting CU product crawling...');
+        console.log('Pages per category:', pagesPerCategory);
 
-    // 전체 상품을 모을 배열
-    const allProducts: any[] = [];
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
 
-    // 카테고리 1~7 순회
-    for (let categoryNum = 1; categoryNum <= 7; categoryNum++) {
-      if (allProducts.length >= maxProducts) {
-        console.log(`목표 상품 수(${maxProducts}개)에 도달했습니다.`);
-        break;
-      }
+        const page = await browser.newPage();
 
-      console.log(`\n=== 카테고리 ${categoryNum} 크롤링 시작 ===`);
+        // User agent 설정
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+        // 전체 상품을 모을 배열
+        const allProducts: any[] = [];
+
+        sendMessage({
+          type: 'progress',
+          message: '카테고리 크롤링 시작...',
+          categoryProgress: { current: 0, total: 7 }
+        });
+
+        // 카테고리 1~7 순회
+        for (let categoryNum = 1; categoryNum <= 7; categoryNum++) {
+          console.log(`\n=== 카테고리 ${categoryNum} 크롤링 시작 (최대 ${pagesPerCategory}페이지) ===`);
+
+          sendMessage({
+            type: 'progress',
+            message: `카테고리 ${categoryNum}/7 크롤링 중...`,
+            categoryNum,
+            categoryProgress: { current: categoryNum, total: 7 },
+            productCount: allProducts.length
+          });
 
       const categoryUrl = `https://cu.bgfretail.com/product/product.do?category=product&depth2=4&depth3=${categoryNum}`;
 
@@ -82,37 +123,46 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // "더보기" 버튼을 클릭하여 더 많은 상품 로드 (제한 없음)
-      let clickAttempts = 0;
-      const remainingNeeded = maxProducts - allProducts.length;
+          // "더보기" 버튼을 클릭하여 더 많은 상품 로드 (페이지 수 제한)
+          let clickAttempts = 0;
 
-      while (true) {
-        // 목표 상품 수에 도달하면 중단
-        if (productCount >= remainingNeeded + 40) { // 여유분 40개
-          console.log(`카테고리 ${categoryNum} - 충분한 상품 로드됨 (${productCount}개), 추출로 이동`);
-          break;
-        }
+          while (clickAttempts < pagesPerCategory) {
+            sendMessage({
+              type: 'progress',
+              message: `카테고리 ${categoryNum}/7 - 페이지 ${clickAttempts + 1}/${pagesPerCategory} 로드 중...`,
+              categoryNum,
+              categoryProgress: { current: categoryNum, total: 7 },
+              pageProgress: { current: clickAttempts + 1, total: pagesPerCategory },
+              productCount: allProducts.length
+            });
 
-        // "더보기" 버튼 찾기 및 클릭
-        const clicked = await page.evaluate(() => {
-          const moreButton = Array.from(document.querySelectorAll('a')).find(
-            a => a.textContent?.trim() === '더보기'
-          );
+            // "더보기" 버튼 찾기 및 클릭
+            const clicked = await page.evaluate(() => {
+              const moreButton = Array.from(document.querySelectorAll('a')).find(
+                a => a.textContent?.trim() === '더보기'
+              );
 
-          if (moreButton) {
-            const href = moreButton.getAttribute('href');
-            if (href && href.startsWith('javascript:')) {
-              eval(href.replace('javascript:', ''));
-              return true;
+              if (moreButton) {
+                const href = moreButton.getAttribute('href');
+                if (href && href.startsWith('javascript:')) {
+                  eval(href.replace('javascript:', ''));
+                  return true;
+                }
+              }
+              return false;
+            });
+
+            if (!clicked) {
+              console.log(`카테고리 ${categoryNum} - "더보기" 버튼 없음, 다음 카테고리로`);
+              sendMessage({
+                type: 'progress',
+                message: `카테고리 ${categoryNum}/7 - 더 이상 페이지 없음`,
+                categoryNum,
+                categoryProgress: { current: categoryNum, total: 7 },
+                productCount: allProducts.length
+              });
+              break;
             }
-          }
-          return false;
-        });
-
-        if (!clicked) {
-          console.log(`카테고리 ${categoryNum} - "더보기" 버튼 없음, 다음 카테고리로`);
-          break;
-        }
 
         // AJAX 로딩 대기 (폴링 방식 - 200ms 주기)
         let newProductCount = productCount;
@@ -145,9 +195,17 @@ export async function POST(request: NextRequest) {
         clickAttempts++;
       }
 
-      console.log(`카테고리 ${categoryNum} - 최종 상품 수: ${productCount}개 (총 ${clickAttempts}번 클릭)`);
+          console.log(`카테고리 ${categoryNum} - 최종 상품 수: ${productCount}개 (총 ${clickAttempts}번 클릭)`);
 
-      // 현재 카테고리의 상품 데이터 추출
+          sendMessage({
+            type: 'progress',
+            message: `카테고리 ${categoryNum}/7 - 상품 데이터 추출 중...`,
+            categoryNum,
+            categoryProgress: { current: categoryNum, total: 7 },
+            productCount: allProducts.length
+          });
+
+          // 현재 카테고리의 상품 데이터 추출
       const categoryProducts = await page.evaluate(() => {
         const productElements = document.querySelectorAll('.prod_list');
       const results: Array<{
@@ -273,10 +331,23 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      console.log(`카테고리 ${categoryNum} - ${categoryProducts.length}개 추출, ${addedCount}개 추가, ${duplicateCount}개 중복 (detailUrl 병합), 총 ${allProducts.length}개`);
-    }
+          console.log(`카테고리 ${categoryNum} - ${categoryProducts.length}개 추출, ${addedCount}개 추가, ${duplicateCount}개 중복 (detailUrl 병합), 총 ${allProducts.length}개`);
 
-    await browser.close();
+          sendMessage({
+            type: 'progress',
+            message: `카테고리 ${categoryNum}/7 완료 - ${addedCount}개 추가, 총 ${allProducts.length}개`,
+            categoryNum,
+            categoryProgress: { current: categoryNum, total: 7 },
+            productCount: allProducts.length
+          });
+        }
+
+        await browser.close();
+
+        sendMessage({
+          type: 'progress',
+          message: '상품 데이터 정리 중...'
+        });
 
     // 최종 처리: detailUrl을 detailUrls 배열로 정리
     const uniqueProducts = allProducts.map(product => {
@@ -299,54 +370,68 @@ export async function POST(request: NextRequest) {
         ...productWithoutDetailUrl,
         detailUrls
       };
-    }).slice(0, maxProducts);
-
-    // 디버깅: detailUrls가 2개 이상인 상품 찾기
-    const multiUrlProducts = uniqueProducts.filter(p => p.detailUrls && p.detailUrls.length > 1);
-
-    console.log(`\n크롤링 완료: ${uniqueProducts.length}개`);
-
-    if (multiUrlProducts.length > 0) {
-      console.log(`\n여러 detailUrl을 가진 상품 ${multiUrlProducts.length}개 발견:\n`);
-      multiUrlProducts.forEach((product, index) => {
-        console.log(`${index + 1}. ${product.name} (바코드: ${product.barcode})`);
-        console.log(`   - 가격: ${product.price}원`);
-        console.log(`   - 프로모션: ${product.promotion || '없음'}`);
-        console.log(`   - detailUrls (${product.detailUrls.length}개):`);
-        product.detailUrls.forEach((url: string, urlIndex: number) => {
-          console.log(`     [${urlIndex + 1}] ${url}`);
-        });
-        console.log('');
-      });
-    } else {
-      console.log('\n모든 상품이 고유한 detailUrl을 가지고 있습니다.');
-    }
-
-    // 샘플 상품 출력 (디버깅용)
-    if (uniqueProducts.length > 0) {
-      console.log('\n샘플 상품 (첫 번째):');
-      console.log(JSON.stringify(uniqueProducts[0], null, 2));
-    }
-
-    return NextResponse.json({
-      success: true,
-      products: uniqueProducts,
-      total: uniqueProducts.length,
-      message: `${uniqueProducts.length}개의 상품 정보를 수집했습니다.`
     });
-  } catch (error) {
-    console.error('Error crawling products:', error);
 
-    if (browser) {
-      await browser.close();
+        // 디버깅: detailUrls가 2개 이상인 상품 찾기
+        const multiUrlProducts = uniqueProducts.filter(p => p.detailUrls && p.detailUrls.length > 1);
+
+        console.log(`\n크롤링 완료: ${uniqueProducts.length}개`);
+
+        if (multiUrlProducts.length > 0) {
+          console.log(`\n여러 detailUrl을 가진 상품 ${multiUrlProducts.length}개 발견:\n`);
+          multiUrlProducts.forEach((product, index) => {
+            console.log(`${index + 1}. ${product.name} (바코드: ${product.barcode})`);
+            console.log(`   - 가격: ${product.price}원`);
+            console.log(`   - 프로모션: ${product.promotion || '없음'}`);
+            console.log(`   - detailUrls (${product.detailUrls.length}개):`);
+            product.detailUrls.forEach((url: string, urlIndex: number) => {
+              console.log(`     [${urlIndex + 1}] ${url}`);
+            });
+            console.log('');
+          });
+        } else {
+          console.log('\n모든 상품이 고유한 detailUrl을 가지고 있습니다.');
+        }
+
+        // 샘플 상품 출력 (디버깅용)
+        if (uniqueProducts.length > 0) {
+          console.log('\n샘플 상품 (첫 번째):');
+          console.log(JSON.stringify(uniqueProducts[0], null, 2));
+        }
+
+        // 최종 완료 메시지 전송
+        sendMessage({
+          type: 'complete',
+          message: `크롤링 완료! ${uniqueProducts.length}개의 상품을 수집했습니다.`,
+          products: uniqueProducts,
+          total: uniqueProducts.length
+        });
+
+        controller.close();
+      } catch (error) {
+        console.error('Error crawling products:', error);
+
+        if (browser) {
+          await browser.close();
+        }
+
+        sendMessage({
+          type: 'error',
+          message: '상품 크롤링 중 오류가 발생했습니다.',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+
+        controller.close();
+      }
     }
+  });
 
-    return NextResponse.json(
-      {
-        error: '상품 크롤링 중 오류가 발생했습니다.',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Transfer-Encoding': 'chunked',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 }

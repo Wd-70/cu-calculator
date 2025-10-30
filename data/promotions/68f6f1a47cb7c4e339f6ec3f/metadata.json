@@ -1,0 +1,64 @@
+{
+  "promotionId": "68f6f1a47cb7c4e339f6ec3f",
+  "promotionName": "롯데)찰떡아이스꿀고구마 2+1",
+  "currentData": {
+    "name": "롯데)찰떡아이스꿀고구마 2+1",
+    "promotionType": "2+1",
+    "applicableProducts": [
+      "8802259026723"
+    ],
+    "giftSelectionType": "same",
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z"
+  },
+  "photos": [
+    {
+      "filename": "photo_2025-10-28T09-15-02-868Z.jpg",
+      "uploadedAt": "2025-10-28T09:15:05.884Z",
+      "status": "uploaded"
+    }
+  ],
+  "photoCollected": true,
+  "conversionStatus": "completed",
+  "convertedAt": "2025-10-30T02:44:28.913Z",
+  "batchId": "batch_2025-10-30_15-32-00",
+  "convertedData": {
+    "name": "2510아이스2500원54종2+1",
+    "description": "아이스 2,500원 54종 2+1 행사",
+    "promotionType": "2+1",
+    "buyQuantity": 2,
+    "getQuantity": 1,
+    "applicableType": "products",
+    "applicableProducts": [
+      "8801062001200",
+      "8801062016945",
+      "8801062623488",
+      "8801062861996",
+      "8801104172059",
+      "8801104172134",
+      "8801104304351",
+      "8801104663922",
+      "8801104666404",
+      "8801104670029",
+      "8802259026723"
+    ],
+    "giftSelectionType": "cross",
+    "giftProducts": [
+      "8801062001200",
+      "8801062016945",
+      "8801062623488",
+      "8801062861996",
+      "8801104172059",
+      "8801104172134",
+      "8801104304351",
+      "8801104663922",
+      "8801104666404",
+      "8801104670029",
+      "8802259026723"
+    ],
+    "validFrom": "2025-10-01T00:00:00.000Z",
+    "validTo": "2025-10-31T23:59:59.999Z",
+    "status": "active",
+    "isActive": true
+  }
+}

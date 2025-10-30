@@ -29,9 +29,17 @@ import { PaymentMethodInfo } from '@/types/preset';
  */
 function calculateCouponDiscount(
   originalPrice: number,
-  config: Extract<DiscountConfig, { category: 'coupon' }>
+  config: Extract<DiscountConfig, { category: 'coupon' }>,
+  maxDiscountAmount?: number
 ): number {
-  return Math.floor(originalPrice * (config.percentage / 100));
+  let discount = Math.floor(originalPrice * (config.percentage / 100));
+
+  // 최대 할인 금액 제한 적용
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
+  return discount;
 }
 
 /**
@@ -39,7 +47,8 @@ function calculateCouponDiscount(
  */
 function calculateTelecomDiscount(
   originalPrice: number,
-  config: Extract<DiscountConfig, { category: 'telecom' }>
+  config: Extract<DiscountConfig, { category: 'telecom' }>,
+  maxDiscountAmount?: number
 ): number {
   let discount = 0;
 
@@ -61,6 +70,11 @@ function calculateTelecomDiscount(
     discount = config.maxDiscountPerMonth;
   }
 
+  // 할인 규칙 레벨의 최대 할인 금액 제한 적용
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
   return discount;
 }
 
@@ -69,25 +83,37 @@ function calculateTelecomDiscount(
  * @param originalPrice - 정가
  * @param currentAmount - 현재 금액 (이전 할인 적용 후)
  * @param config - 할인 설정
+ * @param maxDiscountAmount - 최대 할인 금액 제한
  */
 function calculatePaymentEventDiscount(
   originalPrice: number,
   currentAmount: number,
-  config: Extract<DiscountConfig, { category: 'payment_event' }>
+  config: Extract<DiscountConfig, { category: 'payment_event' }>,
+  maxDiscountAmount?: number
 ): number {
-  // 기준 금액 결정 (기본값: 정가 기준)
-  const baseAmount = config.baseAmountType === 'current_amount'
-    ? currentAmount
-    : originalPrice;
+  // 기준 금액 결정 (기본값: 프로모션 적용 후 기준)
+  const baseAmount = config.baseAmountType === 'original_price'
+    ? originalPrice
+    : currentAmount;  // 기본값을 currentAmount로 변경
+
+  let discount = 0;
 
   if (config.valueType === 'percentage' && config.percentage) {
     // 퍼센트 방식: 40%
-    return Math.floor(baseAmount * (config.percentage / 100));
+    discount = Math.floor(baseAmount * (config.percentage / 100));
+    // 10원 단위로 올림 처리 (실제 영수증 기준)
+    discount = Math.ceil(discount / 10) * 10;
   } else if (config.valueType === 'fixed_amount' && config.fixedAmount) {
     // 고정 금액 방식: 1000원
-    return Math.min(baseAmount, config.fixedAmount);
+    discount = Math.min(baseAmount, config.fixedAmount);
   }
-  return 0;
+
+  // 최대 할인 금액 제한 적용
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
+  return discount;
 }
 
 /**
@@ -106,9 +132,17 @@ function calculateVoucherDiscount(
  */
 function calculatePaymentInstantDiscount(
   originalPrice: number,
-  config: Extract<DiscountConfig, { category: 'payment_instant' }>
+  config: Extract<DiscountConfig, { category: 'payment_instant' }>,
+  maxDiscountAmount?: number
 ): number {
-  return Math.floor(originalPrice * (config.percentage / 100));
+  let discount = Math.floor(originalPrice * (config.percentage / 100));
+
+  // 최대 할인 금액 제한 적용
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
+  return discount;
 }
 
 /**
@@ -116,9 +150,50 @@ function calculatePaymentInstantDiscount(
  */
 function calculatePaymentCompoundDiscount(
   remainingAmount: number,
-  config: Extract<DiscountConfig, { category: 'payment_compound' }>
+  config: Extract<DiscountConfig, { category: 'payment_compound' }>,
+  maxDiscountAmount?: number
 ): number {
-  return Math.floor(remainingAmount * (config.percentage / 100));
+  let discount = Math.floor(remainingAmount * (config.percentage / 100));
+
+  // 최대 할인 금액 제한 적용
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
+  return discount;
+}
+
+/**
+ * 프로모션 할인 계산 (1+1, 2+1 등)
+ * @param unitPrice - 상품 단가
+ * @param quantity - 구매 수량
+ * @param config - 프로모션 설정
+ * @returns 할인 금액
+ */
+function calculatePromotionDiscount(
+  unitPrice: number,
+  quantity: number,
+  config: Extract<DiscountConfig, { category: 'promotion' }>
+): number {
+  const { buyQuantity, getQuantity, giftSelectionType } = config;
+
+  // 크로스 프로모션인 경우 0 반환 (장바구니 레벨에서 처리)
+  if (giftSelectionType === 'cross') {
+    console.log(`  [크로스 프로모션] 장바구니 레벨에서 처리 필요`);
+    return 0;
+  }
+
+  // Same 프로모션 (같은 상품 증정)
+  const setSize = buyQuantity + getQuantity; // 1+1이면 2, 2+1이면 3
+
+  // 프로모션 적용 가능 세트 수
+  const setsApplied = Math.floor(quantity / setSize);
+
+  // 무료로 받는 상품 개수
+  const freeItems = setsApplied * getQuantity;
+
+  // 할인 금액 = 무료 상품 가격
+  return freeItems * unitPrice;
 }
 
 // ============================================================================
@@ -595,7 +670,9 @@ export function calculateDiscountForItem(
   productCategory?: string,
   productBrand?: string,
   paymentMethod?: PaymentMethod,
-  currentDate: Date = new Date()
+  currentDate: Date = new Date(),
+  verbose: boolean = false, // 상세 로그 출력 여부
+  crossPromotionDiscount: number = 0 // 크로스 프로모션 할인액 (장바구니 레벨에서 계산됨)
 ): DiscountCalculationResultV2 {
   const steps: DiscountApplicationStep[] = [];
   const warnings: string[] = [];
@@ -603,20 +680,33 @@ export function calculateDiscountForItem(
 
   // 1. 필터링: 유효하고 적용 가능한 할인만 선택
   const applicableDiscounts = discounts.filter((discount) => {
+    if (verbose) {
+      console.log(`[할인 검증] ${discount.name} (${discount.config.category})`);
+    }
+
     // 활성화 및 날짜 체크
     if (!isDiscountValid(discount, currentDate)) {
+      if (verbose) {
+        console.log(`  ❌ 유효하지 않음 (날짜/활성화)`);
+      }
       warnings.push(
         `'${discount.name}' 할인은 현재 사용할 수 없습니다. (유효기간 확인)`
       );
       return false;
     }
 
-    // 결제수단 체크
-    if (!isPaymentMethodCompatible(discount, paymentMethod)) {
-      warnings.push(
-        `'${discount.name}' 할인은 선택한 결제수단으로 사용할 수 없습니다.`
-      );
-      return false;
+    // 프로모션은 결제수단 체크 스킵
+    if (discount.config.category !== 'promotion') {
+      // 결제수단 체크
+      if (!isPaymentMethodCompatible(discount, paymentMethod)) {
+        if (verbose) {
+          console.log(`  ❌ 결제수단 불일치`);
+        }
+        warnings.push(
+          `'${discount.name}' 할인은 선택한 결제수단으로 사용할 수 없습니다.`
+        );
+        return false;
+      }
     }
 
     // 상품 적용 대상 체크
@@ -628,10 +718,16 @@ export function calculateDiscountForItem(
         productBrand
       )
     ) {
+      if (verbose) {
+        console.log(`  ❌ 상품 적용 대상 불일치 (바코드: ${productBarcode})`);
+      }
       warnings.push(`'${discount.name}' 할인은 이 상품에 적용할 수 없습니다.`);
       return false;
     }
 
+    if (verbose) {
+      console.log(`  ✅ 적용 가능`);
+    }
     return true;
   });
 
@@ -669,15 +765,80 @@ export function calculateDiscountForItem(
   // 4. 각 할인 계산 (엑셀 로직 따름)
   let currentAmount = originalPrice;
 
-  // 정가 기준 할인액들을 먼저 계산
+  // 4-1. 프로모션 할인 (가장 먼저 적용)
+  // Same 프로모션 (1+1, 2+1 등)
+  const samePromotionAmount = sortedDiscounts
+    .filter((d) => d.config.category === 'promotion')
+    .reduce((sum, d) => {
+      return (
+        sum +
+        calculatePromotionDiscount(
+          unitPrice,
+          quantity,
+          d.config as Extract<DiscountConfig, { category: 'promotion' }>
+        )
+      );
+    }, 0);
+
+  // 전체 프로모션 할인 = Same 프로모션 + 크로스 프로모션
+  const promotionAmount = samePromotionAmount + crossPromotionDiscount;
+
+  // 프로모션 적용 후 금액
+  if (promotionAmount > 0) {
+    currentAmount -= promotionAmount;
+
+    // Same 프로모션 스텝 추가
+    sortedDiscounts
+      .filter((d) => d.config.category === 'promotion')
+      .forEach((d) => {
+        const amount = calculatePromotionDiscount(
+          unitPrice,
+          quantity,
+          d.config as Extract<DiscountConfig, { category: 'promotion' }>
+        );
+        if (amount > 0) {
+          const config = d.config as Extract<DiscountConfig, { category: 'promotion' }>;
+          steps.push({
+            category: 'promotion',
+            discountId: d._id,
+            discountName: d.name,
+            baseAmount: originalPrice,
+            isOriginalPriceBased: true,
+            discountAmount: amount,
+            amountAfterDiscount: currentAmount,
+            calculationDetails: `${config.promotionType} 프로모션`,
+          });
+        }
+      });
+
+    // 크로스 프로모션 스텝 추가 (장바구니 레벨에서 계산된 것)
+    if (crossPromotionDiscount > 0) {
+      steps.push({
+        category: 'promotion',
+        discountName: '크로스 프로모션',
+        baseAmount: originalPrice,
+        isOriginalPriceBased: true,
+        discountAmount: crossPromotionDiscount,
+        amountAfterDiscount: currentAmount,
+        calculationDetails: `크로스 증정 프로모션`,
+      });
+    }
+  }
+
+  // 프로모션 적용 후 금액을 새로운 기준가로 설정
+  // 이후 모든 할인은 이 금액을 기준으로 계산됨
+  const adjustedBasePrice = currentAmount;
+
+  // 프로모션 적용 후 금액 기준으로 할인액 계산
   const couponAmount = sortedDiscounts
     .filter((d) => d.config.category === 'coupon')
     .reduce((sum, d) => {
       return (
         sum +
         calculateCouponDiscount(
-          originalPrice,
-          d.config as Extract<DiscountConfig, { category: 'coupon' }>
+          adjustedBasePrice,
+          d.config as Extract<DiscountConfig, { category: 'coupon' }>,
+          d.maxDiscountAmount
         )
       );
     }, 0);
@@ -688,39 +849,38 @@ export function calculateDiscountForItem(
       return (
         sum +
         calculateTelecomDiscount(
-          originalPrice,
-          d.config as Extract<DiscountConfig, { category: 'telecom' }>
+          adjustedBasePrice,
+          d.config as Extract<DiscountConfig, { category: 'telecom' }>,
+          d.maxDiscountAmount
         )
       );
     }, 0);
 
-  // payment_event는 baseAmountType에 따라 정가 또는 현재 금액 기준으로 계산
-  // current_amount 기준인 경우 순서대로 처리할 때 계산하므로 여기서는 정가 기준만 계산
+  // 결제행사 할인 (프로모션 적용 후 금액 기준)
   const paymentEventAmount = sortedDiscounts
-    .filter((d) => {
-      const config = d.config as Extract<DiscountConfig, { category: 'payment_event' }>;
-      return d.config.category === 'payment_event' &&
-             config.baseAmountType !== 'current_amount';
-    })
+    .filter((d) => d.config.category === 'payment_event')
     .reduce((sum, d) => {
       return (
         sum +
         calculatePaymentEventDiscount(
           originalPrice,
-          originalPrice, // 정가 기준이므로 originalPrice 전달
-          d.config as Extract<DiscountConfig, { category: 'payment_event' }>
+          adjustedBasePrice, // 프로모션 적용 후 금액 기준
+          d.config as Extract<DiscountConfig, { category: 'payment_event' }>,
+          d.maxDiscountAmount
         )
       );
     }, 0);
 
+  // 결제 할인(독립형) (프로모션 적용 후 금액 기준)
   const paymentInstantAmount = sortedDiscounts
     .filter((d) => d.config.category === 'payment_instant')
     .reduce((sum, d) => {
       return (
         sum +
         calculatePaymentInstantDiscount(
-          originalPrice,
-          d.config as Extract<DiscountConfig, { category: 'payment_instant' }>
+          adjustedBasePrice,
+          d.config as Extract<DiscountConfig, { category: 'payment_instant' }>,
+          d.maxDiscountAmount
         )
       );
     }, 0);
@@ -733,19 +893,22 @@ export function calculateDiscountForItem(
       .filter((d) => d.config.category === 'coupon')
       .forEach((d) => {
         const amount = calculateCouponDiscount(
-          originalPrice,
-          d.config as Extract<DiscountConfig, { category: 'coupon' }>
+          adjustedBasePrice,
+          d.config as Extract<DiscountConfig, { category: 'coupon' }>,
+          d.maxDiscountAmount
         );
-        steps.push({
-          category: 'coupon',
-          discountId: d._id,
-          discountName: d.name,
-          baseAmount: originalPrice,
-          isOriginalPriceBased: true,
-          discountAmount: amount,
-          amountAfterDiscount: originalPrice - couponAmount,
-          calculationDetails: `${(d.config as any).percentage}% 할인`,
-        });
+        if (amount > 0) {  // 할인액이 있을 때만 step 추가
+          steps.push({
+            category: 'coupon',
+            discountId: d._id,
+            discountName: d.name,
+            baseAmount: adjustedBasePrice,
+            isOriginalPriceBased: promotionAmount > 0 ? false : true,
+            discountAmount: amount,
+            amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
+            calculationDetails: `${(d.config as any).percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}${d.maxDiscountAmount ? ` (최대 ${d.maxDiscountAmount.toLocaleString()}원)` : ''}`,
+          });
+        }
       });
   }
 
@@ -756,33 +919,41 @@ export function calculateDiscountForItem(
       .filter((d) => d.config.category === 'telecom')
       .forEach((d) => {
         const amount = calculateTelecomDiscount(
-          originalPrice,
-          d.config as Extract<DiscountConfig, { category: 'telecom' }>
+          adjustedBasePrice,
+          d.config as Extract<DiscountConfig, { category: 'telecom' }>,
+          d.maxDiscountAmount
         );
-        const config = d.config as Extract<
-          DiscountConfig,
-          { category: 'telecom' }
-        >;
-        const detail =
-          config.valueType === 'percentage'
-            ? `${config.percentage}% 할인`
-            : `${config.tierUnit}원당 ${config.tierAmount}원 할인`;
+        if (amount > 0) {  // 할인액이 있을 때만 step 추가
+          const config = d.config as Extract<
+            DiscountConfig,
+            { category: 'telecom' }
+          >;
+          const detail =
+            config.valueType === 'percentage'
+              ? `${config.percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}`
+              : `${config.tierUnit}원당 ${config.tierAmount}원 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}`;
 
-        steps.push({
-          category: 'telecom',
-          discountId: d._id,
-          discountName: d.name,
-          baseAmount: originalPrice,
-          isOriginalPriceBased: true,
-          discountAmount: amount,
-          amountAfterDiscount: currentAmount,
-          calculationDetails: detail,
-        });
+          const limitInfo = [];
+          if (config.maxDiscountPerMonth) limitInfo.push(`월 최대 ${config.maxDiscountPerMonth.toLocaleString()}원`);
+          if (d.maxDiscountAmount) limitInfo.push(`최대 ${d.maxDiscountAmount.toLocaleString()}원`);
+          const limitText = limitInfo.length > 0 ? ` (${limitInfo.join(', ')})` : '';
+
+          steps.push({
+            category: 'telecom',
+            discountId: d._id,
+            discountName: d.name,
+            baseAmount: adjustedBasePrice,
+            isOriginalPriceBased: promotionAmount > 0 ? false : true,
+            discountAmount: amount,
+            amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
+            calculationDetails: detail + limitText,
+          });
+        }
       });
   }
 
   // 5-3. 결제행사 할인
-  // 정가 기준 할인
+  // 프로모션 적용 후 금액 기준 할인
   if (paymentEventAmount > 0) {
     currentAmount -= paymentEventAmount;
     sortedDiscounts
@@ -794,28 +965,31 @@ export function calculateDiscountForItem(
       .forEach((d) => {
         const amount = calculatePaymentEventDiscount(
           originalPrice,
-          originalPrice, // 정가 기준
-          d.config as Extract<DiscountConfig, { category: 'payment_event' }>
+          adjustedBasePrice, // 프로모션 적용 후 기준
+          d.config as Extract<DiscountConfig, { category: 'payment_event' }>,
+          d.maxDiscountAmount
         );
-        const config = d.config as Extract<
-          DiscountConfig,
-          { category: 'payment_event' }
-        >;
-        const detail =
-          config.valueType === 'percentage'
-            ? `${config.percentage}% 할인 (정가 기준)`
-            : `${config.fixedAmount}원 할인 (정가 기준)`;
+        if (amount > 0) {  // 할인액이 있을 때만 step 추가
+          const config = d.config as Extract<
+            DiscountConfig,
+            { category: 'payment_event' }
+          >;
+          const detail =
+            config.valueType === 'percentage'
+              ? `${config.percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}`
+              : `${config.fixedAmount}원 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}`;
 
-        steps.push({
-          category: 'payment_event',
-          discountId: d._id,
-          discountName: d.name,
-          baseAmount: originalPrice,
-          isOriginalPriceBased: true,
-          discountAmount: amount,
-          amountAfterDiscount: currentAmount,
-          calculationDetails: detail,
-        });
+          steps.push({
+            category: 'payment_event',
+            discountId: d._id,
+            discountName: d.name,
+            baseAmount: adjustedBasePrice,
+            isOriginalPriceBased: promotionAmount > 0 ? false : true,
+            discountAmount: amount,
+            amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
+            calculationDetails: detail + (d.maxDiscountAmount ? ` (최대 ${d.maxDiscountAmount.toLocaleString()}원)` : ''),
+          });
+        }
       });
   }
 
@@ -832,7 +1006,8 @@ export function calculateDiscountForItem(
       const amount = calculatePaymentEventDiscount(
         originalPrice,
         currentAmount, // 현재 금액 기준
-        d.config as Extract<DiscountConfig, { category: 'payment_event' }>
+        d.config as Extract<DiscountConfig, { category: 'payment_event' }>,
+        d.maxDiscountAmount
       );
       currentAmount -= amount;
 
@@ -853,7 +1028,7 @@ export function calculateDiscountForItem(
         isOriginalPriceBased: false,
         discountAmount: amount,
         amountAfterDiscount: currentAmount,
-        calculationDetails: detail,
+        calculationDetails: detail + (d.maxDiscountAmount ? ` (최대 ${d.maxDiscountAmount.toLocaleString()}원)` : ''),
       });
     }
   }
@@ -883,26 +1058,29 @@ export function calculateDiscountForItem(
     }
   }
 
-  // 5-5. 결제 할인(독립형) - 정가 기준
+  // 5-5. 결제 할인(독립형) - 프로모션 적용 후 기준
   if (paymentInstantAmount > 0) {
     currentAmount -= paymentInstantAmount;
     sortedDiscounts
       .filter((d) => d.config.category === 'payment_instant')
       .forEach((d) => {
         const amount = calculatePaymentInstantDiscount(
-          originalPrice,
-          d.config as Extract<DiscountConfig, { category: 'payment_instant' }>
+          adjustedBasePrice,
+          d.config as Extract<DiscountConfig, { category: 'payment_instant' }>,
+          d.maxDiscountAmount
         );
-        steps.push({
-          category: 'payment_instant',
-          discountId: d._id,
-          discountName: d.name,
-          baseAmount: originalPrice,
-          isOriginalPriceBased: true,
-          discountAmount: amount,
-          amountAfterDiscount: currentAmount,
-          calculationDetails: `${(d.config as any).percentage}% 할인 (정가 기준)`,
-        });
+        if (amount > 0) {  // 할인액이 있을 때만 step 추가
+          steps.push({
+            category: 'payment_instant',
+            discountId: d._id,
+            discountName: d.name,
+            baseAmount: adjustedBasePrice,
+            isOriginalPriceBased: promotionAmount > 0 ? false : true,
+            discountAmount: amount,
+            amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
+            calculationDetails: `${(d.config as any).percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}${d.maxDiscountAmount ? ` (최대 ${d.maxDiscountAmount.toLocaleString()}원)` : ''}`,
+          });
+        }
       });
   }
 
@@ -914,7 +1092,8 @@ export function calculateDiscountForItem(
     for (const d of compoundDiscounts) {
       const amount = calculatePaymentCompoundDiscount(
         currentAmount,
-        d.config as Extract<DiscountConfig, { category: 'payment_compound' }>
+        d.config as Extract<DiscountConfig, { category: 'payment_compound' }>,
+        d.maxDiscountAmount
       );
       currentAmount -= amount;
 
@@ -926,7 +1105,7 @@ export function calculateDiscountForItem(
         isOriginalPriceBased: false,
         discountAmount: amount,
         amountAfterDiscount: currentAmount,
-        calculationDetails: `${(d.config as any).percentage}% 할인 (누적 금액 기준)`,
+        calculationDetails: `${(d.config as any).percentage}% 할인 (누적 금액 기준)${d.maxDiscountAmount ? ` (최대 ${d.maxDiscountAmount.toLocaleString()}원)` : ''}`,
       });
     }
   }
@@ -953,11 +1132,146 @@ export function calculateDiscountForItem(
 export function calculateCart(
   options: CartCalculationOptionsV2
 ): CartCalculationResultV2 {
-  const { items, discountSelections, paymentMethod, currentDate } = options;
+  const { items, discountSelections, paymentMethod, currentDate, verbose = false } = options;
 
   const itemResults: CartItemCalculationResult[] = [];
   const allWarnings: string[] = [];
   const allErrors: string[] = [];
+
+  // ============================================================================
+  // 1단계: 크로스 프로모션을 먼저 찾고 계산 (A 구매 시 B 증정)
+  // ============================================================================
+  if (verbose) {
+    console.log('\n[1단계: 크로스 프로모션 검사 시작]');
+  }
+
+  // 모든 선택된 할인에서 크로스 프로모션 찾기
+  const crossPromotions: Array<{
+    promotion: IDiscountRuleV2;
+    buyProduct: typeof items[0];
+    giftProduct?: typeof items[0];
+  }> = [];
+
+  for (const item of items) {
+    const productId = item.productId.toString();
+    const selection = discountSelections.find(
+      (s) => s.productId.toString() === productId
+    );
+
+    if (!selection) continue;
+
+    for (const discount of selection.selectedDiscounts) {
+      const config = discount.config;
+      if (config.category === 'promotion' && config.giftSelectionType === 'cross') {
+        // 크로스 프로모션: 현재 상품이 증정 상품인 경우 스킵
+        // (구매 상품에서만 프로모션을 트리거해야 함)
+        if (config.giftProducts && config.giftProducts.includes(item.productBarcode)) {
+          if (verbose) {
+            console.log(`[크로스 프로모션 스킵] ${discount.name} - 증정 상품임 (${item.productBarcode})`);
+          }
+          continue;
+        }
+
+        if (verbose) {
+          console.log(`[크로스 프로모션 발견] ${discount.name}`);
+          console.log(`  구매 상품: ${item.productBarcode} (${item.quantity}개)`);
+        }
+
+        // 증정 상품 찾기
+        let giftProduct = null;
+
+        // gift products가 지정된 경우
+        if (config.giftProducts && config.giftProducts.length > 0) {
+          if (verbose) {
+            console.log(`  증정 상품 바코드: ${config.giftProducts.join(', ')}`);
+          }
+
+          for (const giftBarcode of config.giftProducts) {
+            const foundGift = items.find((i) => i.productBarcode === giftBarcode);
+            if (foundGift) {
+              giftProduct = foundGift;
+              if (verbose) {
+                console.log(`  ✅ 증정 상품 발견: ${giftBarcode}`);
+              }
+              break;
+            }
+          }
+        }
+
+        if (giftProduct) {
+          crossPromotions.push({
+            promotion: discount,
+            buyProduct: item,
+            giftProduct,
+          });
+        } else {
+          if (verbose) {
+            console.log(`  ❌ 증정 상품이 장바구니에 없음`);
+          }
+          allWarnings.push(
+            `'${discount.name}' 프로모션: 증정 상품을 장바구니에 추가하세요.`
+          );
+        }
+      }
+    }
+  }
+
+  // 크로스 프로모션 할인액 계산 및 저장 (중복 방지)
+  const crossPromotionDiscounts = new Map<string, number>(); // productId -> 할인액
+  const appliedCrossPromotions = new Set<string>(); // 이미 적용된 프로모션 추적
+
+  for (const { promotion, buyProduct, giftProduct } of crossPromotions) {
+    if (!giftProduct) continue;
+
+    // 중복 적용 방지: promotionId_giftProductId 조합으로 체크
+    const promotionKey = `${promotion._id}_${giftProduct.productId}`;
+    if (appliedCrossPromotions.has(promotionKey)) {
+      console.log(`[크로스 프로모션 스킵] ${promotion.name} - 이미 적용됨`);
+      continue;
+    }
+
+    const config = promotion.config as Extract<DiscountConfig, { category: 'promotion' }>;
+    const { buyQuantity, getQuantity } = config;
+
+    // 구매 상품 수량으로 적용 가능 세트 수 계산
+    const setsApplied = Math.floor(buyProduct.quantity / buyQuantity);
+
+    if (setsApplied > 0) {
+      // 무료로 받을 수 있는 증정 상품 수량
+      const freeGifts = Math.min(setsApplied * getQuantity, giftProduct.quantity);
+
+      // 할인 금액 = 증정 상품 가격 × 무료 수량
+      const giftDiscount = giftProduct.unitPrice * freeGifts;
+
+      // 크로스 프로모션 적용 로그는 항상 출력 (디버깅용)
+      console.log(`[크로스 프로모션 계산] ${promotion.name}`);
+      console.log(`  구매: ${buyProduct.productBarcode} ${buyProduct.quantity}개`);
+      console.log(`  증정: ${giftProduct.productBarcode} ${freeGifts}개 무료`);
+      console.log(`  할인 금액: ${giftDiscount}원`);
+
+      // 증정 상품의 할인액 저장
+      const giftProductId = giftProduct.productId.toString();
+      const existingDiscount = crossPromotionDiscounts.get(giftProductId) || 0;
+      crossPromotionDiscounts.set(giftProductId, existingDiscount + giftDiscount);
+
+      // 적용 완료 표시
+      appliedCrossPromotions.add(promotionKey);
+    } else {
+      if (verbose) {
+        console.log(`  ❌ 구매 수량 부족 (${buyProduct.quantity}개 < ${buyQuantity}개)`);
+      }
+      allWarnings.push(
+        `'${promotion.name}' 프로모션: 구매 상품 ${buyQuantity}개 이상 필요`
+      );
+    }
+  }
+
+  // ============================================================================
+  // 2단계: 각 상품별 할인 계산 (크로스 프로모션 할인 반영)
+  // ============================================================================
+  if (verbose) {
+    console.log('\n[2단계: 각 상품별 할인 계산]');
+  }
 
   for (const item of items) {
     const productId = item.productId.toString();
@@ -973,7 +1287,10 @@ export function calculateCart(
     // 상품 총액 (단가 × 수량)
     const itemOriginalPrice = item.unitPrice * item.quantity;
 
-    // 할인 계산
+    // 크로스 프로모션 할인액 가져오기
+    const crossPromotionDiscount = crossPromotionDiscounts.get(productId) || 0;
+
+    // 할인 계산 (verbose 플래그 및 크로스 프로모션 할인 전달)
     const calculation = calculateDiscountForItem(
       itemOriginalPrice,
       item.unitPrice,
@@ -983,7 +1300,9 @@ export function calculateCart(
       item.productCategory,
       item.productBrand,
       paymentMethod,
-      currentDate
+      currentDate,
+      verbose,
+      crossPromotionDiscount // 크로스 프로모션 할인액 전달
     );
 
     itemResults.push({
@@ -1006,7 +1325,7 @@ export function calculateCart(
     }
   }
 
-  // 전체 합계 계산
+  // 전체 합계 계산 (크로스 프로모션 적용 후)
   const totalOriginalPrice = itemResults.reduce(
     (sum, item) => sum + item.itemOriginalPrice,
     0

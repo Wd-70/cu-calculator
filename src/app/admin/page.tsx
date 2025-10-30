@@ -25,7 +25,13 @@ export default function AdminPage() {
   const [crawledProducts, setCrawledProducts] = useState<CrawledProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
-  const [maxProducts, setMaxProducts] = useState(50);
+  const [pagesPerCategory, setPagesPerCategory] = useState(3);
+  const [crawlProgress, setCrawlProgress] = useState({
+    message: '',
+    categoryProgress: { current: 0, total: 7 },
+    pageProgress: { current: 0, total: 0 },
+    productCount: 0
+  });
   const [updatingCategories, setUpdatingCategories] = useState(false);
   const [maxCategoryUpdates, setMaxCategoryUpdates] = useState(999999); // 전체 업데이트
   const [checkingDetailUrls, setCheckingDetailUrls] = useState(false);
@@ -83,6 +89,12 @@ export default function AdminPage() {
 
     try {
       setCrawling(true);
+      setCrawlProgress({
+        message: '크롤링 시작...',
+        categoryProgress: { current: 0, total: 7 },
+        pageProgress: { current: 0, total: 0 },
+        productCount: 0
+      });
 
       const response = await fetch('/api/admin/crawl-products', {
         method: 'POST',
@@ -91,25 +103,64 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           accountAddress: userAddress,
-          maxProducts
+          pagesPerCategory
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error('크롤링 요청이 실패했습니다.');
+      }
 
-      if (response.ok && data.success) {
-        setCrawledProducts(data.products || []);
-        // 모든 상품 자동 선택
-        setSelectedProducts(new Set(data.products.map((p: CrawledProduct) => p.barcode)));
-        setToast({
-          message: `${data.products.length}개의 상품을 크롤링했습니다!`,
-          type: 'success'
-        });
-      } else {
-        setToast({
-          message: data.error || '크롤링에 실패했습니다.',
-          type: 'error'
-        });
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('응답을 읽을 수 없습니다.');
+      }
+
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const message = JSON.parse(line);
+
+              if (message.type === 'progress') {
+                setCrawlProgress({
+                  message: message.message || '',
+                  categoryProgress: message.categoryProgress || { current: 0, total: 7 },
+                  pageProgress: message.pageProgress || { current: 0, total: 0 },
+                  productCount: message.productCount || 0
+                });
+              } else if (message.type === 'complete') {
+                setCrawledProducts(message.products || []);
+                setSelectedProducts(new Set((message.products || []).map((p: CrawledProduct) => p.barcode)));
+                setToast({
+                  message: message.message || '크롤링이 완료되었습니다!',
+                  type: 'success'
+                });
+              } else if (message.type === 'error') {
+                setToast({
+                  message: message.message || '크롤링 중 오류가 발생했습니다.',
+                  type: 'error'
+                });
+              }
+            } catch (e) {
+              console.error('Failed to parse message:', line, e);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to crawl:', error);
@@ -372,16 +423,19 @@ export default function AdminPage() {
           <div className="flex gap-4 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                최대 크롤링 개수
+                카테고리별 크롤링 페이지 수
               </label>
               <input
                 type="number"
-                value={maxProducts}
-                onChange={(e) => setMaxProducts(parseInt(e.target.value) || 50)}
+                value={pagesPerCategory}
+                onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 3)}
                 min="1"
-                max="500"
+                max="20"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                각 카테고리에서 앞쪽 페이지만 크롤링합니다 (신상품 우선)
+              </p>
             </div>
 
             <button
@@ -393,10 +447,62 @@ export default function AdminPage() {
             </button>
           </div>
 
+          {/* 크롤링 진행 상황 */}
+          {crawling && (
+            <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-semibold text-purple-900">{crawlProgress.message}</p>
+              </div>
+
+              {/* 카테고리 진행 바 */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-purple-700 mb-1">
+                  <span>카테고리 진행</span>
+                  <span>{crawlProgress.categoryProgress.current} / {crawlProgress.categoryProgress.total}</span>
+                </div>
+                <div className="w-full bg-purple-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-purple-600 h-full transition-all duration-300 ease-out"
+                    style={{ width: `${(crawlProgress.categoryProgress.current / crawlProgress.categoryProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* 페이지 진행 바 */}
+              {crawlProgress.pageProgress.total > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-xs text-purple-700 mb-1">
+                    <span>현재 카테고리 페이지</span>
+                    <span>{crawlProgress.pageProgress.current} / {crawlProgress.pageProgress.total}</span>
+                  </div>
+                  <div className="w-full bg-purple-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-purple-400 h-full transition-all duration-300 ease-out"
+                      style={{ width: `${(crawlProgress.pageProgress.current / crawlProgress.pageProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* 수집된 상품 수 */}
+              <div className="flex items-center justify-between text-xs text-purple-700">
+                <span>수집된 상품</span>
+                <span className="font-bold text-lg text-purple-900">{crawlProgress.productCount.toLocaleString()}개</span>
+              </div>
+            </div>
+          )}
+
           <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-            <p className="text-sm text-blue-800">
-              ℹ️ CU 공식 사이트에서 최신 상품 정보를 가져옵니다. 시간이 다소 소요될 수 있습니다.
+            <p className="text-sm text-blue-800 mb-2">
+              ℹ️ CU 공식 사이트에서 최신 상품 정보를 가져옵니다.
             </p>
+            <ul className="text-xs text-blue-700 space-y-1 ml-4">
+              <li>• 7개 카테고리를 모두 순회합니다</li>
+              <li>• 각 카테고리에서 지정한 페이지 수만큼만 크롤링합니다</li>
+              <li>• 앞쪽 페이지에 신상품이 많으므로, 적은 페이지 수로도 최신 상품을 효율적으로 수집할 수 있습니다</li>
+              <li>• 예상 크롤링 상품 수: 약 {pagesPerCategory * 7 * 20}개 (카테고리당 페이지당 약 20개)</li>
+            </ul>
           </div>
         </div>
 

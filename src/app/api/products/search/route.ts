@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // 바코드 배열로 상품 조회
     const products = await Product.find(
       { barcode: { $in: barcodes } },
-      { barcode: 1, name: 1, _id: 0 }
+      { barcode: 1, name: 1, price: 1, _id: 0 }
     ).lean();
 
     return NextResponse.json({

@@ -1,0 +1,69 @@
+{
+  "promotionId": "68f6f1e27cb7c4e339f6ec5e",
+  "promotionName": "라라스윗)넛티초코바닐라 1+1",
+  "currentData": {
+    "name": "라라스윗)넛티초코바닐라 1+1",
+    "promotionType": "1+1",
+    "applicableProducts": [
+      "8809599361309"
+    ],
+    "giftSelectionType": "same",
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z"
+  },
+  "photos": [
+    {
+      "filename": "photo_2025-10-28T09-14-24-436Z.jpg",
+      "uploadedAt": "2025-10-28T09:14:26.544Z",
+      "status": "uploaded"
+    },
+    {
+      "filename": "photo_2025-10-28T09-14-35-370Z.jpg",
+      "uploadedAt": "2025-10-28T09:14:36.925Z",
+      "status": "uploaded"
+    }
+  ],
+  "photoCollected": true,
+  "conversionStatus": "completed",
+  "convertedAt": "2025-10-30T02:44:30.064Z",
+  "batchId": "batch_2025-10-30_15-32-00",
+  "convertedData": {
+    "name": "2510아이스2500원20종1+1",
+    "description": "아이스 2,500원 20종 1+1 행사 (CU페이 추가 10% 할인 가능)",
+    "promotionType": "1+1",
+    "buyQuantity": 1,
+    "getQuantity": 1,
+    "applicableType": "products",
+    "applicableProducts": [
+      "8801104944304",
+      "8801206004005",
+      "8801206004524",
+      "8801206004531",
+      "8809194494136",
+      "8809194495478",
+      "8809194495539",
+      "8809419871896",
+      "8809599360739",
+      "8809599360791",
+      "8809599361309"
+    ],
+    "giftSelectionType": "cross",
+    "giftProducts": [
+      "8801104944304",
+      "8801206004005",
+      "8801206004524",
+      "8801206004531",
+      "8809194494136",
+      "8809194495478",
+      "8809194495539",
+      "8809419871896",
+      "8809599360739",
+      "8809599360791",
+      "8809599361309"
+    ],
+    "validFrom": "2025-10-01T00:00:00.000Z",
+    "validTo": "2025-10-31T23:59:59.999Z",
+    "status": "active",
+    "isActive": true
+  }
+}

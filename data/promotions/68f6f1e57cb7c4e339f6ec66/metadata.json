@@ -1,0 +1,42 @@
+{
+  "promotionId": "68f6f1e57cb7c4e339f6ec66",
+  "promotionName": "동학)구슬요거트파르페 2+1",
+  "currentData": {
+    "name": "동학)구슬요거트파르페 2+1",
+    "promotionType": "2+1",
+    "applicableProducts": [
+      "8809072593012"
+    ],
+    "giftSelectionType": "same",
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.999Z"
+  },
+  "photos": [
+    {
+      "filename": "photo_2025-10-28T09-13-54-384Z.jpg",
+      "uploadedAt": "2025-10-28T09:13:56.150Z",
+      "status": "uploaded"
+    }
+  ],
+  "photoCollected": true,
+  "conversionStatus": "completed",
+  "convertedAt": "2025-10-30T02:44:30.319Z",
+  "batchId": "batch_2025-10-30_15-32-00",
+  "convertedData": {
+    "name": "2510구슬파르페2+1",
+    "description": "동학 구슬요거트파르페 2+1 행사",
+    "promotionType": "2+1",
+    "buyQuantity": 2,
+    "getQuantity": 1,
+    "applicableType": "products",
+    "applicableProducts": [
+      "8809072593012"
+    ],
+    "giftSelectionType": "same",
+    "giftProducts": [],
+    "validFrom": "2025-10-01T00:00:00.000Z",
+    "validTo": "2025-10-31T23:59:59.999Z",
+    "status": "active",
+    "isActive": true
+  }
+}

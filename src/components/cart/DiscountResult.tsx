@@ -1,6 +1,7 @@
 'use client';
 
-import { IDiscountRule } from '@/types/discount';
+import { useState } from 'react';
+import { IDiscountRule, DiscountApplicationStep } from '@/types/discount';
 
 interface DiscountResultProps {
   isCalculating: boolean;
@@ -13,6 +14,8 @@ interface DiscountResultProps {
     discountName: string;
     discountAmount: number;
     category: string;
+    steps?: DiscountApplicationStep[]; // 상세 계산 과정
+    baseAmount?: number; // 기준 금액
   }[];
   warnings?: string[];
   onRecalculate?: () => void;
@@ -48,6 +51,8 @@ export default function DiscountResult({
   warnings,
   onRecalculate,
 }: DiscountResultProps) {
+  const [expandedDiscountIndex, setExpandedDiscountIndex] = useState<number | null>(null);
+
   if (isCalculating) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-8">
@@ -137,27 +142,133 @@ export default function DiscountResult({
             {appliedDiscounts.map((discount, index) => {
               const colorScheme = CATEGORY_COLORS[discount.category] || CATEGORY_COLORS.coupon;
               const categoryName = CATEGORY_NAMES[discount.category] || '기타';
+              const isExpanded = expandedDiscountIndex === index;
 
               return (
                 <div
                   key={`${discount.discountId}-${index}`}
-                  className={`${colorScheme.bg} border border-${discount.category === 'promotion' ? 'pink' : discount.category === 'subscription' ? 'blue' : 'purple'}-200 rounded-lg p-3`}
+                  className={`${colorScheme.bg} border border-${discount.category === 'promotion' ? 'pink' : discount.category === 'subscription' ? 'blue' : 'purple'}-200 rounded-lg overflow-hidden transition-all`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-xs px-2 py-0.5 rounded ${colorScheme.badge} font-medium`}>
-                          {categoryName}
-                        </span>
-                        <span className={`text-sm font-medium ${colorScheme.text} truncate`}>
-                          {discount.discountName}
-                        </span>
+                  {/* 할인 헤더 (클릭 가능) */}
+                  <div
+                    onClick={() => setExpandedDiscountIndex(isExpanded ? null : index)}
+                    className="p-3 cursor-pointer hover:bg-opacity-70 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs px-2 py-0.5 rounded ${colorScheme.badge} font-medium`}>
+                            {categoryName}
+                          </span>
+                          <span className={`text-sm font-medium ${colorScheme.text} truncate`}>
+                            {discount.discountName}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className={`text-sm font-semibold ${colorScheme.text}`}>
+                          -{discount.discountAmount.toLocaleString()}원
+                        </div>
+                        <svg
+                          className={`w-4 h-4 ${colorScheme.text} transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </div>
                     </div>
-                    <div className={`text-sm font-semibold ${colorScheme.text} flex-shrink-0`}>
-                      -{discount.discountAmount.toLocaleString()}원
-                    </div>
                   </div>
+
+                  {/* 할인 상세 내용 (펼쳐지는 부분) */}
+                  {isExpanded && (
+                    <div className="px-3 pb-3 pt-0 border-t border-gray-200 bg-white bg-opacity-50">
+                      <div className="space-y-3 mt-3">
+                        {/* 기준 금액 정보 */}
+                        {discount.baseAmount !== undefined && (
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="text-xs text-gray-600 mb-1">기준 금액</div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {discount.baseAmount.toLocaleString()}원
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 계산 과정 - 상품별 그룹화 */}
+                        {discount.steps && discount.steps.length > 0 && (
+                          <div>
+                            <h5 className="text-xs font-semibold text-gray-700 mb-2">
+                              계산 상세 ({discount.steps.length}개 상품)
+                            </h5>
+                            <div className="space-y-2">
+                              {discount.steps.map((step, stepIndex) => (
+                                <div key={stepIndex} className="bg-white rounded-lg p-3 border border-gray-200 text-xs">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex-1">
+                                      <div className="font-medium text-gray-900 mb-1">
+                                        상품 #{stepIndex + 1}
+                                      </div>
+                                      {step.calculationDetails && (
+                                        <div className="text-gray-600 text-xs">
+                                          {step.calculationDetails}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className="font-semibold text-red-600">
+                                      -{step.discountAmount.toLocaleString()}원
+                                    </span>
+                                  </div>
+
+                                  {step.baseAmount !== undefined && (
+                                    <div className="text-gray-500 space-y-1 bg-gray-50 rounded p-2 mt-2">
+                                      <div className="flex justify-between">
+                                        <span>기준 금액:</span>
+                                        <span className="font-medium">{step.baseAmount.toLocaleString()}원</span>
+                                      </div>
+                                      {step.amountAfterDiscount !== undefined && (
+                                        <div className="flex justify-between">
+                                          <span>할인 후:</span>
+                                          <span className="font-medium">{step.amountAfterDiscount.toLocaleString()}원</span>
+                                        </div>
+                                      )}
+                                      {step.isOriginalPriceBased !== undefined && (
+                                        <div className="flex justify-between items-center mt-1 pt-1 border-t border-gray-200">
+                                          <span>계산 방식:</span>
+                                          <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+                                            step.isOriginalPriceBased
+                                              ? 'bg-blue-100 text-blue-700'
+                                              : 'bg-green-100 text-green-700'
+                                          }`}>
+                                            {step.isOriginalPriceBased ? '원가 기준' : '프로모션 적용 후'}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* 상품별 합계 설명 */}
+                            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                              💡 각 상품에 개별 적용된 할인을 모두 합산한 금액입니다
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 할인 요약 */}
+                        <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-3 border border-red-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-gray-700">총 할인 금액</span>
+                            <span className="text-base font-bold text-red-600">
+                              -{discount.discountAmount.toLocaleString()}원
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

@@ -160,6 +160,12 @@ export interface PromotionDiscount {
   buyQuantity: number; // 구매해야 하는 수량 (예: 1+1의 경우 1, 2+1의 경우 2)
   getQuantity: number; // 무료로 받는 수량 (예: 1+1의 경우 1, 2+1의 경우 1)
   promotionType: string; // 프로모션 이름 (예: '1+1', '2+1', '3+1')
+
+  // 크로스 프로모션 지원
+  giftSelectionType?: 'same' | 'cross'; // same: 같은 상품 증정, cross: 다른 상품 증정
+  giftProducts?: string[]; // 증정 상품 바코드 목록 (cross인 경우)
+  giftCategories?: string[]; // 증정 상품 카테고리 목록 (cross인 경우)
+  giftBrands?: string[]; // 증정 상품 브랜드 목록 (cross인 경우)
 }
 
 // ============================================================================
@@ -372,6 +378,7 @@ export interface CartCalculationOptionsV2 {
   discountSelections: CartItemDiscounts[]; // 상품별 선택된 할인
   paymentMethod?: PaymentMethod;
   currentDate?: Date;
+  verbose?: boolean; // 상세 로그 출력 여부 (기본값: false)
 }
 
 export interface CartItemCalculationResult {

@@ -7,6 +7,7 @@ import { IPreset } from '@/types/preset';
 import { IDiscountRule } from '@/types/discount';
 import * as clientDb from '@/lib/clientDb';
 import { findOptimalDiscountCombination, DiscountCombination } from '@/lib/utils/discountOptimizer';
+import { convertPromotionsToDiscountRules } from '@/lib/utils/promotionConverter';
 import PresetSelector from '@/components/cart/PresetSelector';
 import ProductSearch from '@/components/cart/ProductSearch';
 import CartItemList from '@/components/cart/CartItemList';
@@ -19,6 +20,7 @@ export default function CartsPage() {
   const [selectedCartId, setSelectedCartId] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<IPreset | null>(null);
   const [availableDiscounts, setAvailableDiscounts] = useState<IDiscountRule[]>([]);
+  const [availablePromotions, setAvailablePromotions] = useState<any[]>([]);
   const [isLoadingDiscounts, setIsLoadingDiscounts] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -33,6 +35,7 @@ export default function CartsPage() {
     clientDb.initializeClientStorage();
     loadCarts();
     loadDiscounts();
+    loadPromotions();
   }, []);
 
   // 카트 로드
@@ -72,6 +75,61 @@ export default function CartsPage() {
       console.error('할인 규칙 로드 실패:', error);
     } finally {
       setIsLoadingDiscounts(false);
+    }
+  };
+
+  // 프로모션 로드
+  const loadPromotions = async () => {
+    console.log('[장바구니] 프로모션 로드 시작...');
+    try {
+      const response = await fetch('/api/promotions');
+      console.log('[장바구니] API 응답 상태:', response.status, response.ok);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[장바구니] API 응답 데이터:', data);
+        console.log('[장바구니] 전체 프로모션 수:', data.total);
+
+        // API는 data.promotions로 반환 (data.data가 아님)
+        if (data.success && Array.isArray(data.promotions)) {
+          console.log('[장바구니] 받은 프로모션:', data.promotions.length, '개');
+
+          // 활성화되고 유효한 프로모션만 필터링
+          const activePromotions = data.promotions.filter((promo: any) =>
+            promo.isActive &&
+            promo.status === 'active' &&
+            new Date(promo.validFrom) <= new Date() &&
+            new Date(promo.validTo) >= new Date()
+          );
+          console.log('[장바구니] 활성 프로모션:', activePromotions.length, '개');
+
+          setAvailablePromotions(activePromotions);
+
+          // 프로모션도 discountMap에 추가
+          setDiscountMap(prev => {
+            const newMap = new Map(prev);
+            activePromotions.forEach((promo: any) => {
+              newMap.set(String(promo._id), {
+                name: promo.name,
+                category: 'promotion',
+              });
+            });
+            return newMap;
+          });
+
+          console.log('프로모션 로드 완료:', activePromotions.length, '개');
+        } else {
+          console.error('[장바구니] 프로모션 데이터 형식 오류:', {
+            success: data.success,
+            hasPromotions: !!data.promotions,
+            isArray: Array.isArray(data.promotions),
+          });
+        }
+      } else {
+        console.error('[장바구니] API 응답 실패:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('[장바구니] 프로모션 로드 에러:', error);
     }
   };
 
@@ -172,9 +230,17 @@ export default function CartsPage() {
 
     setIsCalculating(true);
     try {
+      // 프로모션을 할인 규칙으로 변환
+      const promotionRules = convertPromotionsToDiscountRules(availablePromotions);
+
+      // 프로모션 + 할인 규칙 통합
+      const allDiscounts = [...promotionRules, ...availableDiscounts];
+
+      console.log('전체 할인/프로모션:', allDiscounts.length, '개 (프로모션:', promotionRules.length, '개)');
+
       const result = findOptimalDiscountCombination(
         selectedCart.items,
-        availableDiscounts,
+        allDiscounts,
         selectedPreset,
         {
           maxCombinations: 100,
@@ -182,6 +248,29 @@ export default function CartsPage() {
           maxAlternatives: 5,
         }
       );
+
+      // 최적 조합에 대해서만 verbose=true로 다시 계산하여 상세 로그 출력
+      if (result.optimal) {
+        console.log('\n========== 최적 조합 상세 계산 ==========');
+        console.log('할인 ID:', result.optimal.discountIds);
+        console.log('총 할인액:', result.optimal.totalDiscount, '원');
+        console.log('할인율:', (result.optimal.totalDiscountRate * 100).toFixed(1), '%');
+        console.log('원가:', result.optimal.originalPrice, '원');
+        console.log('최종 가격:', result.optimal.finalPrice, '원');
+
+        if (result.optimal.discountBreakdown) {
+          console.log('\n[할인 상세 내역]');
+          result.optimal.discountBreakdown.forEach((d) => {
+            console.log(`  - ${d.discountName} (${d.category}): ${d.amount}원`);
+          });
+        }
+
+        if (result.optimal.warnings && result.optimal.warnings.length > 0) {
+          console.log('\n[경고]');
+          result.optimal.warnings.forEach((w) => console.log(`  ⚠️ ${w}`));
+        }
+        console.log('==========================================\n');
+      }
 
       setOptimalCombination(result.optimal);
       setAlternatives(result.alternatives);
@@ -191,7 +280,7 @@ export default function CartsPage() {
     } finally {
       setIsCalculating(false);
     }
-  }, [selectedCart, selectedPreset, availableDiscounts]);
+  }, [selectedCart, selectedPreset, availableDiscounts, availablePromotions]);
 
   // 장바구니나 프리셋 변경 시 자동 재계산
   useEffect(() => {
@@ -214,6 +303,8 @@ export default function CartsPage() {
         discountName: breakdown.discountName,
         discountAmount: breakdown.amount,
         category: breakdown.category,
+        steps: breakdown.steps, // 계산 과정 단계 추가
+        baseAmount: breakdown.baseAmount, // 기준 금액 추가
       }));
     }
 
