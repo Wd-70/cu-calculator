@@ -162,10 +162,10 @@ export interface PromotionDiscount {
   promotionType: string; // 프로모션 이름 (예: '1+1', '2+1', '3+1')
 
   // 크로스 프로모션 지원
-  giftSelectionType?: 'same' | 'cross'; // same: 같은 상품 증정, cross: 다른 상품 증정
-  giftProducts?: string[]; // 증정 상품 바코드 목록 (cross인 경우)
-  giftCategories?: string[]; // 증정 상품 카테고리 목록 (cross인 경우)
-  giftBrands?: string[]; // 증정 상품 브랜드 목록 (cross인 경우)
+  giftSelectionType?: 'same' | 'cross' | 'combo'; // same: 동일 상품, cross: 교차 증정, combo: 콤보 증정
+  giftProducts?: string[]; // 증정 상품 바코드 목록 (combo인 경우)
+  giftCategories?: string[]; // 증정 상품 카테고리 목록 (combo인 경우)
+  giftBrands?: string[]; // 증정 상품 브랜드 목록 (combo인 경우)
 }
 
 // ============================================================================

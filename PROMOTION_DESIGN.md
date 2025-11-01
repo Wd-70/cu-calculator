@@ -29,14 +29,18 @@ interface IPromotion {
   applicableBrands?: string[];        // 브랜드 배열
 
   // 증정 방식
-  giftSelectionType: 'same' | 'cross';
-  // 'same': 구매 상품 목록(applicableXXX)에서 증정품 선택
-  //         - 같은 그룹 내에서 교차 증정 가능 (예: A, B, C 중 2개 구매 → A, B, C 중 1개 증정)
-  //         - 일반적인 1+1, 2+1은 대부분 이 방식
-  // 'cross': 별도의 증정 가능 목록(giftXXX)에서 선택
-  //         - 구매한 상품과 다른 상품을 증정 (예: 음료 구매 → 과자 증정)
+  giftSelectionType: 'same' | 'cross' | 'combo';
+  // 'same': 동일 상품 증정
+  //         - 구매한 상품과 정확히 동일한 상품만 증정 (예: 코카콜라 구매 → 코카콜라 증정)
+  //         - 크롤링된 1+1, 2+1은 대부분 이 방식
+  // 'cross': 교차 증정
+  //         - 구매 상품 목록(applicableXXX) 내에서 아무거나 선택 가능
+  //         - 같은 그룹 내에서 교차 증정 (예: A, B, C 중 2개 구매 → A, B, C 중 아무거나 1개 증정)
+  // 'combo': 콤보 증정
+  //         - 구매 목록과 증정 목록이 별도로 분리
+  //         - 별도의 증정 가능 목록(giftXXX)에서 선택 (예: 음료 구매 → 과자 증정)
 
-  // 교차증정인 경우에만 사용
+  // 콤보 증정인 경우에만 사용
   giftProducts?: string[];      // 증정 가능 바코드 배열
   giftCategories?: string[];    // 증정 가능 카테고리
   giftBrands?: string[];        // 증정 가능 브랜드
@@ -117,14 +121,14 @@ interface IPromotion {
     "8801234567891",  // 코카제로 500ml
     "8801234567892"   // 코카라이트 500ml
   ],
-  "giftSelectionType": "same"
-  // 같은 그룹(applicableProducts) 내에서 교차 증정 가능
+  "giftSelectionType": "cross"
+  // 'cross' = 같은 그룹(applicableProducts) 내에서 교차 증정 가능
   // 예: 코카콜라 1개 구매 → 코카제로 증정 가능
   // 예: 코카제로 1개 구매 → 코카콜라 증정 가능
 }
 ```
 
-#### 예시 3: 교차증정 - A 구매 → B 증정 (구매 상품과 증정 상품이 다름)
+#### 예시 3: 콤보 증정 - A 구매 → B 증정 (구매 상품과 증정 상품이 다름)
 ```json
 {
   "name": "칸초 구매시 새우깡 증정",
@@ -133,14 +137,14 @@ interface IPromotion {
   "getQuantity": 1,
   "applicableType": "products",
   "applicableProducts": ["칸초바코드"],
-  "giftSelectionType": "cross",
+  "giftSelectionType": "combo",
   "giftProducts": ["새우깡바코드"]
-  // 'cross' = 구매 가능 상품(칸초)과 증정 가능 상품(새우깡)이 서로 다름
+  // 'combo' = 구매 목록(칸초)과 증정 목록(새우깡)이 별도로 분리됨
   // applicableProducts에서 구매 → giftProducts에서 증정
 }
 ```
 
-#### 예시 4: 교차증정 - 음료 2개 구매 시 과자 1개 (카테고리 간 교차)
+#### 예시 4: 콤보 증정 - 음료 2개 구매 시 과자 1개 (카테고리 간 콤보)
 ```json
 {
   "name": "음료 2+1 과자 증정",
@@ -149,14 +153,14 @@ interface IPromotion {
   "getQuantity": 1,
   "applicableType": "categories",
   "applicableCategories": ["음료"],
-  "giftSelectionType": "cross",
+  "giftSelectionType": "combo",
   "giftCategories": ["과자"],
   "giftConstraints": {
     "maxGiftPrice": 3000,
     "mustBeCheaperThanPurchased": true
   }
-  // 'cross' = 음료 카테고리에서 구매 → 과자 카테고리에서 증정
-  // 서로 다른 카테고리이므로 'cross' 사용
+  // 'combo' = 음료 카테고리에서 구매 → 과자 카테고리에서 증정
+  // 서로 다른 카테고리이므로 'combo' 사용
 }
 ```
 
@@ -169,12 +173,12 @@ interface IPromotion {
   "getQuantity": 1,
   "applicableType": "brands",
   "applicableBrands": ["롯데"],
-  "giftSelectionType": "same",
+  "giftSelectionType": "cross",
   "giftConstraints": {
     "maxGiftPrice": 2000
   }
-  // 'same' = 롯데 브랜드 제품끼리 서로 교차 증정 가능
-  // 같은 브랜드 내에서 선택하므로 'same' 사용
+  // 'cross' = 롯데 브랜드 제품끼리 서로 교차 증정 가능
+  // 같은 브랜드 내에서 선택하므로 'cross' 사용
 }
 ```
 
@@ -252,7 +256,7 @@ interface IPromotion {
     "8801234567891",  // 코카제로 500ml
     "8801234567892"   // 코카라이트 500ml
   ],
-  "giftSelectionType": "same",  // 같은 목록에서 선택
+  "giftSelectionType": "cross",  // 같은 목록에서 교차 증정 가능
   "giftConstraints": {},  // mustBeSameProduct 제거
   "mergedFrom": ["promo_001", "promo_002", "promo_003"]  // 병합 추적
 }
@@ -285,7 +289,7 @@ interface IPromotion {
   "mergedData": {
     "name": "코카콜라 제품 1+1",
     "applicableProducts": ["8801234567890", "8801234567891", "8801234567892"],
-    "giftSelectionType": "same"
+    "giftSelectionType": "cross"
   },
   "signature": "0x...",
   "timestamp": 1234567890,

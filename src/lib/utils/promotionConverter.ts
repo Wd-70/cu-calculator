@@ -19,7 +19,7 @@ export interface IPromotion {
   applicableProducts?: string[];
   applicableCategories?: string[];
   applicableBrands?: string[];
-  giftSelectionType: 'same' | 'cross';
+  giftSelectionType: 'same' | 'cross' | 'combo';
   giftProducts?: string[];
   giftCategories?: string[];
   giftBrands?: string[];
@@ -149,17 +149,17 @@ export function isPromotionApplicableToProduct(
 }
 
 /**
- * 크로스 증정 프로모션인지 확인
+ * 콤보 증정 프로모션인지 확인 (구매 목록과 증정 목록이 별도)
  */
 export function isCrossPromotion(promotion: IPromotion): boolean {
-  return promotion.giftSelectionType === 'cross';
+  return promotion.giftSelectionType === 'combo';
 }
 
 /**
- * 크로스 증정 시 증정 상품 목록 가져오기
+ * 콤보 증정 시 증정 상품 목록 가져오기
  */
 export function getGiftProducts(promotion: IPromotion): string[] {
-  if (promotion.giftSelectionType !== 'cross') {
+  if (promotion.giftSelectionType !== 'combo') {
     return [];
   }
 

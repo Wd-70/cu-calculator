@@ -27,7 +27,7 @@ interface ConversionData {
         getQuantity: number;
         applicableType: string;
         applicableProducts: string[];
-        giftSelectionType: 'same' | 'cross';
+        giftSelectionType: 'same' | 'cross' | 'combo';
         giftProducts?: string[];
         validFrom: string;
         validTo: string;

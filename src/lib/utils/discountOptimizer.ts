@@ -341,8 +341,8 @@ export function findOptimalDiscountCombination(
       cartBarcodes.includes(barcode)
     );
 
-    // 크로스 프로모션인 경우: 증정 상품도 확인
-    if (discount.config.category === 'promotion' && discount.config.giftSelectionType === 'cross') {
+    // 콤보 프로모션인 경우: 증정 상품도 확인
+    if (discount.config.category === 'promotion' && discount.config.giftSelectionType === 'combo') {
       const hasGiftProduct = discount.config.giftProducts?.some(barcode =>
         cartBarcodes.includes(barcode)
       );

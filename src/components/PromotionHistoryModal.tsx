@@ -139,13 +139,13 @@ export default function PromotionHistoryModal({
               <div>
                 <div className="text-red-600 font-medium mb-1">이전:</div>
                 <div className="bg-red-50 p-2 rounded">
-                  {formatValue(value.before)}
+                  {formatValue(key, value.before)}
                 </div>
               </div>
               <div>
                 <div className="text-green-600 font-medium mb-1">이후:</div>
                 <div className="bg-green-50 p-2 rounded">
-                  {formatValue(value.after)}
+                  {formatValue(key, value.after)}
                 </div>
               </div>
             </div>
@@ -171,7 +171,7 @@ export default function PromotionHistoryModal({
     return labels[key] || key;
   };
 
-  const formatValue = (value: any) => {
+  const formatValue = (key: string, value: any) => {
     if (value === null || value === undefined) return '없음';
     if (Array.isArray(value)) {
       if (value.length === 0) return '빈 배열';
@@ -187,6 +187,14 @@ export default function PromotionHistoryModal({
       return <pre className="text-xs">{JSON.stringify(value, null, 2)}</pre>;
     }
     if (typeof value === 'boolean') return value ? '예' : '아니오';
+
+    // giftSelectionType 값을 한글로 변환
+    if (key === 'giftSelectionType') {
+      if (value === 'same') return '동일 상품';
+      if (value === 'cross') return '교차 증정';
+      if (value === 'combo') return '콤보 증정';
+    }
+
     return String(value);
   };
 

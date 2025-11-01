@@ -433,7 +433,7 @@ export default function PromotionJsonModal({
                 </p>
                 <p>
                   • <code className="bg-blue-100 px-1 rounded">giftSelectionType</code>: same
-                  (동일 그룹), cross (교차증정)
+                  (동일 상품), cross (교차 증정), combo (콤보 증정)
                 </p>
                 <p>
                   • 날짜는 ISO 8601 형식으로 입력하세요 (예: &quot;2025-01-01T00:00:00.000Z&quot;)

@@ -773,7 +773,7 @@ export default function PromotionsTab() {
                               {applicableCount}개
                             </span>
                           </div>
-                          {promotion.giftSelectionType === 'cross' && giftCount > 0 && (
+                          {promotion.giftSelectionType === 'combo' && giftCount > 0 && (
                             <div className="flex items-center justify-between">
                               <span className="text-gray-500">증정 상품</span>
                               <span className="font-semibold text-pink-600">
@@ -784,7 +784,8 @@ export default function PromotionsTab() {
                           <div className="flex items-center justify-between">
                             <span className="text-gray-500">증정 방식</span>
                             <span className="font-medium text-gray-700">
-                              {promotion.giftSelectionType === 'same' ? '동일 그룹' : '교차증정'}
+                              {promotion.giftSelectionType === 'same' ? '동일 상품' :
+                               promotion.giftSelectionType === 'cross' ? '교차 증정' : '콤보 증정'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between pt-2 border-t border-gray-200">

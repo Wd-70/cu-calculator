@@ -391,7 +391,7 @@ export async function POST(request: NextRequest) {
             getQuantity: get,
             applicableType: 'products',
             applicableProducts: data.barcodes,
-            giftSelectionType: 'same',
+            giftSelectionType: 'same', // 동일 상품 증정
             giftProducts: [],
             giftConstraints: {},
             validFrom,

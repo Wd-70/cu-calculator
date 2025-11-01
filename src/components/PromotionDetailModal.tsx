@@ -53,7 +53,7 @@ export default function PromotionDetailModal({
   const giftBarcodes = promotion.giftProducts || [];
   const currentBarcode = barcodes[currentBarcodeIndex];
   const currentGiftBarcode = giftBarcodes[currentGiftBarcodeIndex];
-  const isCrossGift = promotion.giftSelectionType === 'cross' && giftBarcodes.length > 0;
+  const isComboGift = promotion.giftSelectionType === 'combo' && giftBarcodes.length > 0;
 
   // 바코드로 상품명과 가격 조회
   useEffect(() => {
@@ -353,8 +353,8 @@ export default function PromotionDetailModal({
                 </div>
               )}
 
-              {/* 증정 상품 섹션 (교차증정 방식일 때만) */}
-              {isCrossGift && (
+              {/* 증정 상품 섹션 (콤보 증정 방식일 때만) */}
+              {isComboGift && (
                 <div className="p-6 border-b border-gray-200">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">
                     증정 상품 ({giftBarcodes.length}개)
@@ -466,7 +466,8 @@ export default function PromotionDetailModal({
                   <div>
                     <p className="text-sm text-gray-500">증정 방식</p>
                     <p className="font-semibold text-gray-900">
-                      {promotion.giftSelectionType === 'same' ? '동일 그룹' : '교차 증정'}
+                      {promotion.giftSelectionType === 'same' ? '동일 상품' :
+                       promotion.giftSelectionType === 'cross' ? '교차 증정' : '콤보 증정'}
                     </p>
                   </div>
                   <div>

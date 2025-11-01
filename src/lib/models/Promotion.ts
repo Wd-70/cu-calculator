@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export type PromotionType = '1+1' | '2+1' | '3+1' | 'custom';
 export type ApplicableType = 'products' | 'categories' | 'brands';
-export type GiftSelectionType = 'same' | 'cross';
+export type GiftSelectionType = 'same' | 'cross' | 'combo'; // same: 동일 상품, cross: 교차 증정, combo: 콤보 증정
 export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'disputed';
 export type PromotionStatus = 'active' | 'expired' | 'archived' | 'merged';
 

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     if (category) {
       filter.$or = [
         { applicableType: 'categories', applicableCategories: category },
-        { giftSelectionType: 'cross', giftCategories: category },
+        { giftSelectionType: 'combo', giftCategories: category },
       ];
     }
 
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     if (brand) {
       filter.$or = [
         { applicableType: 'brands', applicableBrands: brand },
-        { giftSelectionType: 'cross', giftBrands: brand },
+        { giftSelectionType: 'combo', giftBrands: brand },
       ];
     }
 

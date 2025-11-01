@@ -177,9 +177,9 @@ function calculatePromotionDiscount(
 ): number {
   const { buyQuantity, getQuantity, giftSelectionType } = config;
 
-  // 크로스 프로모션인 경우 0 반환 (장바구니 레벨에서 처리)
-  if (giftSelectionType === 'cross') {
-    console.log(`  [크로스 프로모션] 장바구니 레벨에서 처리 필요`);
+  // 콤보 프로모션인 경우 0 반환 (장바구니 레벨에서 처리)
+  if (giftSelectionType === 'combo') {
+    console.log(`  [콤보 프로모션] 장바구니 레벨에서 처리 필요`);
     return 0;
   }
 
@@ -1162,18 +1162,18 @@ export function calculateCart(
 
     for (const discount of selection.selectedDiscounts) {
       const config = discount.config;
-      if (config.category === 'promotion' && config.giftSelectionType === 'cross') {
-        // 크로스 프로모션: 현재 상품이 증정 상품인 경우 스킵
+      if (config.category === 'promotion' && config.giftSelectionType === 'combo') {
+        // 콤보 프로모션: 현재 상품이 증정 상품인 경우 스킵
         // (구매 상품에서만 프로모션을 트리거해야 함)
         if (config.giftProducts && config.giftProducts.includes(item.productBarcode)) {
           if (verbose) {
-            console.log(`[크로스 프로모션 스킵] ${discount.name} - 증정 상품임 (${item.productBarcode})`);
+            console.log(`[콤보 프로모션 스킵] ${discount.name} - 증정 상품임 (${item.productBarcode})`);
           }
           continue;
         }
 
         if (verbose) {
-          console.log(`[크로스 프로모션 발견] ${discount.name}`);
+          console.log(`[콤보 프로모션 발견] ${discount.name}`);
           console.log(`  구매 상품: ${item.productBarcode} (${item.quantity}개)`);
         }
 
@@ -1216,7 +1216,7 @@ export function calculateCart(
     }
   }
 
-  // 크로스 프로모션 할인액 계산 및 저장 (중복 방지)
+  // 콤보 프로모션 할인액 계산 및 저장 (중복 방지)
   const crossPromotionDiscounts = new Map<string, number>(); // productId -> 할인액
   const appliedCrossPromotions = new Set<string>(); // 이미 적용된 프로모션 추적
 
@@ -1226,7 +1226,7 @@ export function calculateCart(
     // 중복 적용 방지: promotionId_giftProductId 조합으로 체크
     const promotionKey = `${promotion._id}_${giftProduct.productId}`;
     if (appliedCrossPromotions.has(promotionKey)) {
-      console.log(`[크로스 프로모션 스킵] ${promotion.name} - 이미 적용됨`);
+      console.log(`[콤보 프로모션 스킵] ${promotion.name} - 이미 적용됨`);
       continue;
     }
 
@@ -1243,8 +1243,8 @@ export function calculateCart(
       // 할인 금액 = 증정 상품 가격 × 무료 수량
       const giftDiscount = giftProduct.unitPrice * freeGifts;
 
-      // 크로스 프로모션 적용 로그는 항상 출력 (디버깅용)
-      console.log(`[크로스 프로모션 계산] ${promotion.name}`);
+      // 콤보 프로모션 적용 로그는 항상 출력 (디버깅용)
+      console.log(`[콤보 프로모션 계산] ${promotion.name}`);
       console.log(`  구매: ${buyProduct.productBarcode} ${buyProduct.quantity}개`);
       console.log(`  증정: ${giftProduct.productBarcode} ${freeGifts}개 무료`);
       console.log(`  할인 금액: ${giftDiscount}원`);
@@ -1267,7 +1267,7 @@ export function calculateCart(
   }
 
   // ============================================================================
-  // 2단계: 각 상품별 할인 계산 (크로스 프로모션 할인 반영)
+  // 2단계: 각 상품별 할인 계산 (콤보 프로모션 할인 반영)
   // ============================================================================
   if (verbose) {
     console.log('\n[2단계: 각 상품별 할인 계산]');

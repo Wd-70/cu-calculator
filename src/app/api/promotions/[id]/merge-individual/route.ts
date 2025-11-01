@@ -116,10 +116,13 @@ export async function POST(
       lastModifiedBy: address,
     };
 
-    // 증정 상품이 있으면 교차 증정으로 전환
+    // 증정 상품이 있으면 콤보 증정으로 전환
     if (shouldSwitchToCross) {
-      updateData.giftSelectionType = 'cross';
+      updateData.giftSelectionType = 'combo';
       updateData.giftProducts = uniqueGiftBarcodes;
+    } else if (uniqueBarcodes.length > 1) {
+      // 2개 이상 상품이 있고 증정 상품이 별도로 없으면 교차 증정
+      updateData.giftSelectionType = 'cross';
     }
 
     // 병합 시 mustBeSameProduct 제약 제거 (2개 이상 상품이 있으면 교차 증정 가능)

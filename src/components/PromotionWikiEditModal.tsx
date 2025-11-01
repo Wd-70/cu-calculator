@@ -82,8 +82,13 @@ export default function PromotionWikiEditModal({
         changes.push(`설명 수정`);
       }
       if (editedPromotion.giftSelectionType && editedPromotion.giftSelectionType !== promotion.giftSelectionType) {
-        const oldType = promotion.giftSelectionType === 'same' ? '동일 그룹' : '교차 증정';
-        const newType = editedPromotion.giftSelectionType === 'same' ? '동일 그룹' : '교차 증정';
+        const getTypeName = (type: string) => {
+          if (type === 'same') return '동일 상품';
+          if (type === 'cross') return '교차 증정';
+          return '콤보 증정';
+        };
+        const oldType = getTypeName(promotion.giftSelectionType);
+        const newType = getTypeName(editedPromotion.giftSelectionType);
         changes.push(`증정 방식 변경 (${oldType} → ${newType})`);
       }
 
@@ -95,7 +100,7 @@ export default function PromotionWikiEditModal({
       if (addedApplicable.length > 0) changes.push(`구매 상품 ${addedApplicable.length}개 추가`);
       if (removedApplicable.length > 0) changes.push(`구매 상품 ${removedApplicable.length}개 제거`);
 
-      if (editedPromotion.giftSelectionType === 'cross') {
+      if (editedPromotion.giftSelectionType === 'combo') {
         const oldGift = promotion.giftProducts || [];
         const newGift = editedPromotion.giftProducts || [];
         const addedGift = newGift.filter(b => !oldGift.includes(b));
@@ -253,7 +258,7 @@ export default function PromotionWikiEditModal({
 
   const applicableProducts = editedPromotion.applicableProducts || [];
   const giftProducts = editedPromotion.giftProducts || [];
-  const isCrossGift = editedPromotion.giftSelectionType === 'cross';
+  const isComboGift = editedPromotion.giftSelectionType === 'combo';
 
   return (
     <>
@@ -400,11 +405,12 @@ export default function PromotionWikiEditModal({
                   </label>
                   <select
                     value={editedPromotion.giftSelectionType || 'same'}
-                    onChange={(e) => setEditedPromotion({ ...editedPromotion, giftSelectionType: e.target.value as 'same' | 'cross' })}
+                    onChange={(e) => setEditedPromotion({ ...editedPromotion, giftSelectionType: e.target.value as 'same' | 'cross' | 'combo' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="same">동일 그룹</option>
+                    <option value="same">동일 상품</option>
                     <option value="cross">교차 증정</option>
+                    <option value="combo">콤보 증정</option>
                   </select>
                 </div>
               </div>
@@ -476,8 +482,8 @@ export default function PromotionWikiEditModal({
               </div>
             </div>
 
-            {/* 증정 상품 (교차증정일 경우만) */}
-            {isCrossGift && (
+            {/* 증정 상품 (콤보 증정일 경우만) */}
+            {isComboGift && (
               <div className="bg-pink-50 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900">
@@ -562,8 +568,13 @@ export default function PromotionWikiEditModal({
                   changes.push(`설명 수정`);
                 }
                 if (editedPromotion.giftSelectionType && editedPromotion.giftSelectionType !== promotion.giftSelectionType) {
-                  const oldType = promotion.giftSelectionType === 'same' ? '동일 그룹' : '교차 증정';
-                  const newType = editedPromotion.giftSelectionType === 'same' ? '동일 그룹' : '교차 증정';
+                  const getTypeName = (type: string) => {
+                    if (type === 'same') return '동일 상품';
+                    if (type === 'cross') return '교차 증정';
+                    return '콤보 증정';
+                  };
+                  const oldType = getTypeName(promotion.giftSelectionType);
+                  const newType = getTypeName(editedPromotion.giftSelectionType);
                   changes.push(`증정 방식 변경 (${oldType} → ${newType})`);
                 }
 
@@ -575,7 +586,7 @@ export default function PromotionWikiEditModal({
                 if (addedApplicable.length > 0) changes.push(`구매 상품 ${addedApplicable.length}개 추가`);
                 if (removedApplicable.length > 0) changes.push(`구매 상품 ${removedApplicable.length}개 제거`);
 
-                if (editedPromotion.giftSelectionType === 'cross') {
+                if (editedPromotion.giftSelectionType === 'combo') {
                   const oldGift = promotion.giftProducts || [];
                   const newGift = editedPromotion.giftProducts || [];
                   const addedGift = newGift.filter(b => !oldGift.includes(b));

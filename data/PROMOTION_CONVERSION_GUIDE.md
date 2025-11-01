@@ -33,6 +33,7 @@ data/
     "promotionType": "2+1",
     "applicableProducts": ["8807203003003"],
     "giftSelectionType": "same",
+    "giftConstraints": { "mustBeSameProduct": true },
     "validFrom": "2025-10-01T00:00:00.000Z",
     "validTo": "2025-10-31T23:59:59.999Z"
   },
@@ -71,7 +72,9 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
    - 예: `행사기간 : 2025-10-01 ~ 2025-10-31`
 
 5. **행사대상상품 섹션** (○ 행사대상상품(교차 가능))
-   - 이 섹션이 있으면 `giftSelectionType: "cross"`
+   - 이 섹션이 있으면 여러 상품이 서로 교차 증정 가능함을 의미
+   - 구매 상품도 이 목록에 포함되어야 함
+   - `giftSelectionType: "cross"` (같은 목록 내 교차 증정)
    - 각 줄: `- {바코드} {상품명}`
    - 예:
      ```
@@ -79,6 +82,7 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
      - 8801062001989 제로쿠키앤크림바
      - 8801062002504 일품팥빙수
      ```
+   - **주의**: 구매 상품 바코드를 applicableProducts에 포함시켜야 함!
 
 ## 📝 생성해야 할 JSON 구조
 
@@ -141,18 +145,7 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
             "8801206004609"
           ],
           "giftSelectionType": "cross",
-          "giftProducts": [
-            "8801062001774",
-            "8801062001989",
-            "8801062002504",
-            "8801062861729",
-            "8801062874729",
-            "8801118256936",
-            "8801206004548",
-            "8801206004555",
-            "8801206004562",
-            "8801206004609"
-          ],
+          "giftProducts": [],
           "validFrom": "2025-10-01T00:00:00.000Z",
           "validTo": "2025-10-31T23:59:59.999Z",
           "status": "active",
@@ -164,7 +157,7 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
         "description": "기존 단일 상품 프로모션을 교차 증정 가능한 다중 상품 프로모션으로 확장"
       },
       "warnings": [],
-      "notes": "POS 화면에서 교차 증정 가능한 10개 상품 확인됨. giftSelectionType을 same에서 cross로 전환 필요."
+      "notes": "POS 화면에서 교차 증정 가능한 10개 상품 확인됨. 구매 상품 포함 총 11개 상품이 서로 교차 증정 가능 (giftSelectionType: cross)."
     },
     {
       "sourcePromotionId": "507f1f77bcf86cd799439012",
@@ -243,13 +236,17 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
   - `2+1` → `buyQuantity: 2, getQuantity: 1`
   - `1+1` → `buyQuantity: 1, getQuantity: 1`
 
-### 3. 교차 증정 판단
+### 3. 증정 방식 판단
 - **"행사대상상품(교차 가능)"** 섹션이 있으면:
-  - `giftSelectionType: "cross"`
-  - `giftProducts` 배열에 모든 교차 가능 상품 바코드 추가
-- 없으면:
-  - `giftSelectionType: "same"`
-  - `giftProducts` 필드 생략 또는 빈 배열
+  - 목록의 상품이 2개 이상이고 구매 상품과 다른 상품이 포함되어 있으면:
+    - `giftSelectionType: "combo"` (콤보 증정)
+    - `giftProducts` 배열에 모든 증정 가능 상품 바코드 추가
+  - 목록의 상품이 2개 이상이고 모두 구매 목록에 포함되면:
+    - `giftSelectionType: "cross"` (교차 증정)
+    - 구매 목록 = 증정 목록
+- 교차 가능 섹션이 없고 단일 상품이면:
+  - `giftSelectionType: "same"` (동일 상품)
+  - `giftProducts` 필드 생략
 
 ### 4. 날짜 처리
 - **입력 형식**: `YYYY-MM-DD`
