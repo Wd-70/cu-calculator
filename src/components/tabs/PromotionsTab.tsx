@@ -9,6 +9,7 @@ import PromotionJsonModal from '@/components/PromotionJsonModal';
 import PromotionDetailModal from '@/components/PromotionDetailModal';
 import PromotionMergeModal from '@/components/PromotionMergeModal';
 import PhotoConversionModal from '@/components/PhotoConversionModal';
+import PromotionValidationModal from '@/components/PromotionValidationModal';
 
 interface ToastState {
   show: boolean;
@@ -59,6 +60,7 @@ export default function PromotionsTab() {
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [selectedPromotionForModal, setSelectedPromotionForModal] = useState<IPromotion | null>(null);
   const [showPhotoConversionModal, setShowPhotoConversionModal] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
 
   // 프로모션 목록 검색어 디바운싱 (300ms) - 서버 검색
   useEffect(() => {
@@ -561,6 +563,14 @@ export default function PromotionsTab() {
         />
       )}
 
+      {showValidationModal && (
+        <PromotionValidationModal
+          isOpen={showValidationModal}
+          onClose={() => setShowValidationModal(false)}
+          userAddress={userAddress}
+        />
+      )}
+
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-8 px-4">
         <div className="max-w-7xl mx-auto">
           {/* 헤더 */}
@@ -667,6 +677,12 @@ export default function PromotionsTab() {
                     className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md"
                   >
                     📷 사진 데이터 변환
+                  </button>
+                  <button
+                    onClick={() => setShowValidationModal(true)}
+                    className="px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg font-semibold hover:from-red-600 hover:to-orange-600 transition-all shadow-md"
+                  >
+                    🔍 무결성 검증
                   </button>
                 </>
               )}
