@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Barcode from 'react-barcode';
 
 interface CategoryTag {
@@ -23,6 +23,10 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onAddToCart: (quantity: number) => void;
   currentQuantity?: number;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 }
 
 export default function ProductDetailModal({
@@ -30,9 +34,36 @@ export default function ProductDetailModal({
   onClose,
   onAddToCart,
   currentQuantity = 0,
+  onNext,
+  onPrevious,
+  hasNext = false,
+  hasPrevious = false,
 }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [showBarcode, setShowBarcode] = useState(true); // 기본적으로 바코드 표시
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // 모달이 열릴 때 배경 스크롤 방지
+  useEffect(() => {
+    // 현재 스크롤 위치 저장
+    const scrollY = window.scrollY;
+
+    // body 스크롤 방지
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+
+    // 클린업: 모달이 닫힐 때 원래대로 복구
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   const handleAddToCart = () => {
     onAddToCart(quantity);
@@ -49,12 +80,76 @@ export default function ProductDetailModal({
     setShowBarcode(!showBarcode);
   };
 
+  // 스와이프 최소 거리 (픽셀)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && hasNext && onNext) {
+      onNext();
+    }
+    if (isRightSwipe && hasPrevious && onPrevious) {
+      onPrevious();
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+      {/* 이전 상품 버튼 - 모달 왼쪽 */}
+      {hasPrevious && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrevious?.();
+          }}
+          className="absolute left-1 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 z-[110] p-2.5 sm:p-4 bg-black/70 hover:bg-black/90 rounded-full shadow-lg transition-all touch-manipulation"
+          aria-label="이전 상품"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+
+      {/* 다음 상품 버튼 - 모달 오른쪽 */}
+      {hasNext && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext?.();
+          }}
+          className="absolute right-1 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 z-[110] p-2.5 sm:p-4 bg-black/70 hover:bg-black/90 rounded-full shadow-lg transition-all touch-manipulation"
+          aria-label="다음 상품"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col relative mx-auto"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {/* 헤더 */}
         <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
           <h2 className="text-lg font-bold text-gray-900">상품 정보</h2>
@@ -150,12 +245,6 @@ export default function ProductDetailModal({
               <span className="font-semibold">브랜드:</span> {product.brand}
             </p>
           )}
-
-          {/* 바코드 번호 표시 */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-xl">
-            <p className="text-xs text-gray-500 mb-1">바코드 번호</p>
-            <p className="text-sm font-mono font-semibold text-gray-900">{product.barcode}</p>
-          </div>
 
           {/* 현재 장바구니 수량 표시 */}
           {currentQuantity > 0 && (

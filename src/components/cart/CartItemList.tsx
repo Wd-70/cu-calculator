@@ -6,9 +6,10 @@ interface CartItemListProps {
   items: ICartItem[];
   onUpdateQuantity: (barcode: string, quantity: number) => void;
   onRemoveItem: (barcode: string) => void;
+  onItemClick?: (item: ICartItem) => void;
 }
 
-export default function CartItemList({ items, onUpdateQuantity, onRemoveItem }: CartItemListProps) {
+export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, onItemClick }: CartItemListProps) {
   if (items.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
@@ -35,7 +36,11 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem }: 
 
       <div className="divide-y divide-gray-100">
         {items.map((item) => (
-          <div key={item.barcode} className="p-4 hover:bg-gray-50 transition-colors">
+          <div
+            key={item.barcode}
+            className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+            onClick={() => onItemClick?.(item)}
+          >
             <div className="flex items-start gap-3">
               {item.imageUrl ? (
                 <img

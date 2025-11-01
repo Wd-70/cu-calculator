@@ -13,6 +13,7 @@ import ProductSearch from '@/components/cart/ProductSearch';
 import CartItemList from '@/components/cart/CartItemList';
 import DiscountResult from '@/components/cart/DiscountResult';
 import AlternativeCombinations from '@/components/cart/AlternativeCombinations';
+import ProductDetailModal from '@/components/ProductDetailModal';
 
 export default function CartsPage() {
   // 상태 관리
@@ -23,6 +24,7 @@ export default function CartsPage() {
   const [availablePromotions, setAvailablePromotions] = useState<any[]>([]);
   const [isLoadingDiscounts, setIsLoadingDiscounts] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedProductIndex, setSelectedProductIndex] = useState<number>(-1);
 
   // 할인 계산 결과
   const [isCalculating, setIsCalculating] = useState(false);
@@ -167,6 +169,47 @@ export default function CartsPage() {
     if (!selectedCartId) return;
 
     const updated = clientDb.removeItemFromCart(selectedCartId, barcode);
+    if (updated) {
+      loadCarts();
+    }
+  };
+
+  // 선택된 상품 가져오기
+  const selectedProductForDetail = selectedProductIndex >= 0 && selectedCart
+    ? selectedCart.items[selectedProductIndex]
+    : null;
+
+  // 상품 클릭 (상세 정보 모달)
+  const handleItemClick = (item: ICartItem) => {
+    if (!selectedCart) return;
+    const index = selectedCart.items.findIndex(i => i.barcode === item.barcode);
+    setSelectedProductIndex(index);
+  };
+
+  // 다음 상품으로 이동
+  const handleNextProduct = () => {
+    if (!selectedCart || selectedProductIndex >= selectedCart.items.length - 1) return;
+    setSelectedProductIndex(selectedProductIndex + 1);
+  };
+
+  // 이전 상품으로 이동
+  const handlePreviousProduct = () => {
+    if (selectedProductIndex <= 0) return;
+    setSelectedProductIndex(selectedProductIndex - 1);
+  };
+
+  // 상세 모달 닫기
+  const handleCloseDetailModal = () => {
+    setSelectedProductIndex(-1);
+  };
+
+  // 상세 모달에서 장바구니에 추가
+  const handleAddFromDetailModal = (quantity: number) => {
+    if (!selectedProductForDetail || !selectedCartId) return;
+
+    const updated = clientDb.updateCartItem(selectedCartId, selectedProductForDetail.barcode, {
+      quantity: selectedProductForDetail.quantity + quantity,
+    });
     if (updated) {
       loadCarts();
     }
@@ -478,6 +521,7 @@ export default function CartsPage() {
                   items={selectedCart.items}
                   onUpdateQuantity={handleUpdateQuantity}
                   onRemoveItem={handleRemoveItem}
+                  onItemClick={handleItemClick}
                 />
               </>
             ) : (
@@ -544,6 +588,30 @@ export default function CartsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 상품 상세 정보 모달 */}
+      {selectedProductForDetail && selectedCart && (
+        <ProductDetailModal
+          product={{
+            _id: selectedProductForDetail.barcode, // barcode를 _id로 사용
+            barcode: selectedProductForDetail.barcode,
+            name: selectedProductForDetail.name,
+            price: selectedProductForDetail.price,
+            brand: selectedProductForDetail.brand,
+            imageUrl: selectedProductForDetail.imageUrl,
+            categoryTags: selectedProductForDetail.category
+              ? [{ name: selectedProductForDetail.category, level: 1 }]
+              : undefined,
+          }}
+          onClose={handleCloseDetailModal}
+          onAddToCart={handleAddFromDetailModal}
+          currentQuantity={selectedProductForDetail.quantity}
+          onNext={handleNextProduct}
+          onPrevious={handlePreviousProduct}
+          hasNext={selectedProductIndex < selectedCart.items.length - 1}
+          hasPrevious={selectedProductIndex > 0}
+        />
       )}
     </div>
   );
