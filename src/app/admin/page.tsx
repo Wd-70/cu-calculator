@@ -38,6 +38,17 @@ export default function AdminPage() {
   const [detailUrlStats, setDetailUrlStats] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+  // 프로모션 크롤링 상태
+  const [crawlingPromotions, setCrawlingPromotions] = useState(false);
+  const [pagesPerTab, setPagesPerTab] = useState(5);
+  const [promotionCrawlProgress, setPromotionCrawlProgress] = useState({
+    message: '',
+    tabProgress: { current: 0, total: 2 },
+    pageProgress: { current: 0, total: 0 },
+    productCount: 0,
+    promotionCount: 0
+  });
+
   useEffect(() => {
     const address = getCurrentUserAddress();
     setUserAddress(address);
@@ -327,6 +338,98 @@ export default function AdminPage() {
     }
   };
 
+  const handleCrawlPromotions = async () => {
+    if (!userAddress) {
+      setToast({ message: '계정이 필요합니다.', type: 'error' });
+      return;
+    }
+
+    try {
+      setCrawlingPromotions(true);
+      setPromotionCrawlProgress({
+        message: '프로모션 크롤링 시작...',
+        tabProgress: { current: 0, total: 2 },
+        pageProgress: { current: 0, total: 0 },
+        productCount: 0,
+        promotionCount: 0
+      });
+
+      const response = await fetch('/api/admin/crawl-promotions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountAddress: userAddress,
+          pagesPerTab
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('프로모션 크롤링 요청이 실패했습니다.');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('응답을 읽을 수 없습니다.');
+      }
+
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const message = JSON.parse(line);
+
+              if (message.type === 'progress') {
+                setPromotionCrawlProgress({
+                  message: message.message || '',
+                  tabProgress: message.tabProgress || { current: 0, total: 2 },
+                  pageProgress: message.pageProgress || { current: 0, total: 0 },
+                  productCount: message.productCount || 0,
+                  promotionCount: message.promotionCount || 0
+                });
+              } else if (message.type === 'complete') {
+                setToast({
+                  message: message.message || '프로모션 크롤링이 완료되었습니다!',
+                  type: 'success'
+                });
+              } else if (message.type === 'error') {
+                setToast({
+                  message: message.message || '프로모션 크롤링 중 오류가 발생했습니다.',
+                  type: 'error'
+                });
+              }
+            } catch (e) {
+              console.error('Failed to parse message:', line, e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to crawl promotions:', error);
+      setToast({
+        message: '프로모션 크롤링 중 오류가 발생했습니다.',
+        type: 'error'
+      });
+    } finally {
+      setCrawlingPromotions(false);
+    }
+  };
+
   // 로딩 중
   if (checkingAdmin) {
     return (
@@ -502,6 +605,103 @@ export default function AdminPage() {
               <li>• 각 카테고리에서 지정한 페이지 수만큼만 크롤링합니다</li>
               <li>• 앞쪽 페이지에 신상품이 많으므로, 적은 페이지 수로도 최신 상품을 효율적으로 수집할 수 있습니다</li>
               <li>• 예상 크롤링 상품 수: 약 {pagesPerCategory * 7 * 20}개 (카테고리당 페이지당 약 20개)</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* 프로모션 크롤링 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">행사 상품 크롤링 (1+1, 2+1)</h2>
+
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                탭별 크롤링 페이지 수
+              </label>
+              <input
+                type="number"
+                value={pagesPerTab}
+                onChange={(e) => setPagesPerTab(parseInt(e.target.value) || 5)}
+                min="1"
+                max="20"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                각 탭(1+1, 2+1)에서 크롤링할 페이지 수
+              </p>
+            </div>
+
+            <button
+              onClick={handleCrawlPromotions}
+              disabled={crawlingPromotions || !userAddress}
+              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {crawlingPromotions ? '크롤링 중...' : '행사 상품 크롤링'}
+            </button>
+          </div>
+
+          {/* 프로모션 크롤링 진행 상황 */}
+          {crawlingPromotions && (
+            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-semibold text-orange-900">{promotionCrawlProgress.message}</p>
+              </div>
+
+              {/* 탭 진행 바 */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-orange-700 mb-1">
+                  <span>탭 진행 (1+1, 2+1)</span>
+                  <span>{promotionCrawlProgress.tabProgress.current} / {promotionCrawlProgress.tabProgress.total}</span>
+                </div>
+                <div className="w-full bg-orange-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-orange-600 h-full transition-all duration-300 ease-out"
+                    style={{ width: `${(promotionCrawlProgress.tabProgress.current / promotionCrawlProgress.tabProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* 페이지 진행 바 */}
+              {promotionCrawlProgress.pageProgress.total > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-xs text-orange-700 mb-1">
+                    <span>현재 탭 페이지</span>
+                    <span>{promotionCrawlProgress.pageProgress.current} / {promotionCrawlProgress.pageProgress.total}</span>
+                  </div>
+                  <div className="w-full bg-orange-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-orange-400 h-full transition-all duration-300 ease-out"
+                      style={{ width: `${(promotionCrawlProgress.pageProgress.current / promotionCrawlProgress.pageProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* 수집 통계 */}
+              <div className="grid grid-cols-2 gap-4 text-xs text-orange-700">
+                <div className="flex items-center justify-between">
+                  <span>수집된 상품</span>
+                  <span className="font-bold text-lg text-orange-900">{promotionCrawlProgress.productCount.toLocaleString()}개</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>생성된 프로모션</span>
+                  <span className="font-bold text-lg text-orange-900">{promotionCrawlProgress.promotionCount.toLocaleString()}개</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 p-4 bg-orange-50 rounded-xl">
+            <p className="text-sm text-orange-800 mb-2">
+              ℹ️ CU 행사 상품 페이지에서 1+1, 2+1 프로모션 상품을 가져옵니다.
+            </p>
+            <ul className="text-xs text-orange-700 space-y-1 ml-4">
+              <li>• 1+1, 2+1 탭을 모두 크롤링합니다</li>
+              <li>• 현재 달 ({new Date().getFullYear()}년 {new Date().getMonth() + 1}월) 프로모션으로 자동 등록됩니다</li>
+              <li>• 존재하지 않는 상품은 자동으로 상품 DB에 추가됩니다</li>
+              <li>• 프로모션 인덱스도 자동으로 업데이트됩니다</li>
+              <li>• 예상 크롤링 상품 수: 약 {pagesPerTab * 2 * 40}개 (탭당 페이지당 약 40개)</li>
             </ul>
           </div>
         </div>
