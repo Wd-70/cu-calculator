@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { DiscountCombination } from '@/lib/utils/discountOptimizer';
+import { IPreset } from '@/types/preset';
 
 interface AlternativeCombinationsProps {
   alternatives: DiscountCombination[];
   discountMap: Map<string, { name: string; category: string }>;
+  currentPreset?: IPreset | null;
   onSelectCombination?: (combination: DiscountCombination) => void;
 }
 
@@ -32,6 +34,7 @@ const CATEGORY_NAMES: Record<string, string> = {
 export default function AlternativeCombinations({
   alternatives,
   discountMap,
+  currentPreset,
   onSelectCombination,
 }: AlternativeCombinationsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -115,16 +118,78 @@ export default function AlternativeCombinations({
                     </div>
                   )}
 
-                  {/* 경고 메시지 */}
-                  {combination.warnings && combination.warnings.length > 0 && (
-                    <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
-                      <div className="font-medium mb-1">⚠️ 주의사항</div>
-                      <ul className="space-y-0.5">
-                        {combination.warnings.map((warning, idx) => (
-                          <li key={idx}>• {warning}</li>
-                        ))}
-                      </ul>
-                    </div>
+                  {/* 필요한 조건 표시 - 사용자가 가지고 있지 않은 결제수단/구독만 표시 */}
+                  {combination.discountBreakdown && combination.discountBreakdown.length > 0 && (
+                    (() => {
+                      const requirements: string[] = [];
+
+                      // 현재 프리셋의 결제수단/구독 확인
+                      const hasPaymentMethod = currentPreset?.paymentMethods && currentPreset.paymentMethods.length > 0;
+                      const currentPaymentMethods = new Set(currentPreset?.paymentMethods?.map(pm => pm.type) || []);
+                      const currentSubscriptions = new Set(currentPreset?.subscriptions || []);
+
+                      combination.discountBreakdown.forEach((breakdown) => {
+                        // 프로모션은 제외 (조건만 맞으면 자동 적용)
+                        if (breakdown.category === 'promotion') {
+                          return;
+                        }
+
+                        // 구독 - 현재 가지고 있지 않은 것만
+                        if (breakdown.category === 'subscription') {
+                          const reqText = `구독: ${breakdown.discountName}`;
+                          // TODO: discountId나 이름으로 매칭 필요 (현재는 모두 표시)
+                          if (!requirements.includes(reqText)) {
+                            requirements.push(reqText);
+                          }
+                        }
+                        // 결제수단 - 현재 가지고 있지 않은 것만
+                        else if (breakdown.category === 'payment_method') {
+                          const reqText = `결제수단: ${breakdown.discountName}`;
+                          // TODO: 결제수단 타입 매칭 필요 (현재는 모두 표시)
+                          if (!requirements.includes(reqText)) {
+                            requirements.push(reqText);
+                          }
+                        }
+                        // 카드 혜택
+                        else if (breakdown.category === 'card_benefit') {
+                          const reqText = `카드: ${breakdown.discountName}`;
+                          if (!requirements.includes(reqText)) {
+                            requirements.push(reqText);
+                          }
+                        }
+                        // 통신사
+                        else if (breakdown.category === 'telecom') {
+                          const reqText = `통신사: ${breakdown.discountName}`;
+                          if (!requirements.includes(reqText)) {
+                            requirements.push(reqText);
+                          }
+                        }
+                        // 멤버십
+                        else if (breakdown.category === 'membership') {
+                          const reqText = `멤버십: ${breakdown.discountName}`;
+                          if (!requirements.includes(reqText)) {
+                            requirements.push(reqText);
+                          }
+                        }
+                      });
+
+                      if (requirements.length > 0) {
+                        return (
+                          <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                            <div className="font-medium text-blue-900 mb-1">✅ 필요한 조건</div>
+                            <ul className="text-blue-700 space-y-0.5">
+                              {requirements.map((req, idx) => (
+                                <li key={idx}>• {req}</li>
+                              ))}
+                            </ul>
+                            <div className="mt-1 pt-1 border-t border-blue-300 text-blue-600">
+                              💡 프리셋에 등록하면 이 조합을 사용할 수 있습니다
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()
                   )}
 
                   {/* 선택 버튼 */}
@@ -150,10 +215,10 @@ export default function AlternativeCombinations({
           </div>
 
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-            <div className="font-medium mb-1">💡 대안 조합이란?</div>
+            <div className="font-medium mb-1">💡 대안 조합 활용하기</div>
             <p>
               최적 조합 외에도 비슷한 할인 효과를 가진 다른 조합들입니다.
-              특정 할인을 사용할 수 없는 경우 참고하세요.
+              각 조합에 표시된 "필요한 조건"을 확인하여 추가 결제수단이나 구독을 등록하면 더 많이 절약할 수 있습니다!
             </p>
           </div>
         </div>

@@ -557,6 +557,7 @@ export default function CartsPage() {
             <AlternativeCombinations
               alternatives={alternatives}
               discountMap={discountMap}
+              currentPreset={selectedPreset}
             />
 
             {/* 도움말 */}

@@ -368,12 +368,22 @@ export function findOptimalDiscountCombination(
     };
   }
 
-  // 2. 가능한 할인 조합 생성
-  // 조합 크기를 제한하여 스택 오버플로우 방지 (최대 4개 할인 동시 적용)
-  const maxCombinationSize = Math.min(4, eligibleDiscounts.length);
-  let combinations = generateCombinations(eligibleDiscounts, maxCombinationSize);
+  // 2. 프로모션과 비프로모션 분리
+  // 프로모션은 조건만 맞으면 무조건 적용되어야 함
+  const promotions = eligibleDiscounts.filter(d => d.config.category === 'promotion');
+  const nonPromotions = eligibleDiscounts.filter(d => d.config.category !== 'promotion');
 
-  console.log(`[최적화] 생성된 조합: ${combinations.length}개 (할인 ${eligibleDiscounts.length}개에서)`);
+  console.log(`[최적화] 프로모션: ${promotions.length}개, 비프로모션: ${nonPromotions.length}개`);
+
+  // 3. 가능한 할인 조합 생성
+  // 비프로모션 할인만으로 조합 생성 (프로모션은 모든 조합에 자동 포함)
+  const maxCombinationSize = Math.min(4, nonPromotions.length);
+  let nonPromotionCombinations = generateCombinations(nonPromotions, maxCombinationSize);
+
+  // 모든 조합에 프로모션 추가 (프로모션은 무조건 적용)
+  let combinations = nonPromotionCombinations.map(combo => [...promotions, ...combo]);
+
+  console.log(`[최적화] 생성된 조합: ${combinations.length}개 (프로모션 ${promotions.length}개 + 비프로모션 조합)`);
 
   // 조합 수 제한
   if (combinations.length > maxCombinations) {

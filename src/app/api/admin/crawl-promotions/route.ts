@@ -377,40 +377,93 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // 2. 프로모션 생성
+        // 2. 프로모션 생성 또는 업데이트 (중복 방지)
         for (const [promotionType, data] of Object.entries(promotionData)) {
           if (data.barcodes.length === 0) continue;
 
           const [buy, get] = promotionType.split('+').map(Number);
 
-          const promotion = await Promotion.create({
-            name: `CU ${promotionType} 행사 (${now.getFullYear()}년 ${now.getMonth() + 1}월)`,
-            description: `CU ${promotionType} 행사 상품`,
-            promotionType: promotionType,
-            buyQuantity: buy,
-            getQuantity: get,
-            applicableType: 'products',
-            applicableProducts: data.barcodes,
-            giftSelectionType: 'same', // 동일 상품 증정
-            giftProducts: [],
-            giftConstraints: {},
-            validFrom,
-            validTo,
-            status: 'active',
-            isActive: true,
-            priority: 0,
-            createdBy: accountAddress,
-            lastModifiedBy: accountAddress,
-            verificationStatus: 'unverified',
-            verificationCount: 0,
-            disputeCount: 0,
-            verifiedBy: [],
-            disputedBy: [],
-            modificationHistory: [],
-            crawledAt: new Date(),
+          // 프로모션 이름 생성: YYMM동일상품[프로모션타입]
+          // 예: 2511동일상품1+1, 2512동일상품2+1
+          const year = now.getFullYear().toString().slice(2); // 25
+          const month = (now.getMonth() + 1).toString().padStart(2, '0'); // 11
+          const promotionName = `${year}${month}동일상품${promotionType}`;
+
+          // 같은 이름의 프로모션이 있는지 확인 (같은 달, 같은 타입)
+          const existingPromotion = await Promotion.findOne({
+            name: promotionName,
             isCrawled: true,
-            needsVerification: false
           });
+
+          let promotion;
+
+          if (existingPromotion) {
+            // 기존 프로모션이 있으면 상품만 추가
+            console.log(`기존 프로모션 발견: ${existingPromotion.name}, 상품 ${data.barcodes.length}개 추가`);
+
+            // 기존 상품과 새 상품을 합쳐서 중복 제거
+            const existingBarcodes = new Set(existingPromotion.applicableProducts || []);
+            let addedCount = 0;
+
+            for (const barcode of data.barcodes) {
+              if (!existingBarcodes.has(barcode)) {
+                addedCount++;
+              }
+              existingBarcodes.add(barcode);
+            }
+
+            // 상품 목록 업데이트
+            await Promotion.updateOne(
+              { _id: existingPromotion._id },
+              {
+                $addToSet: { applicableProducts: { $each: data.barcodes } },
+                $set: {
+                  lastModifiedBy: accountAddress,
+                  crawledAt: new Date()
+                }
+              }
+            );
+
+            promotion = await Promotion.findById(existingPromotion._id);
+            console.log(`프로모션 업데이트 완료: ${addedCount}개 신규 상품 추가, 총 ${existingBarcodes.size}개 상품`);
+          } else {
+            // 새 프로모션 생성
+            console.log(`새 프로모션 생성: ${promotionName}`);
+
+            promotion = await Promotion.create({
+              name: promotionName,
+              description: `CU ${promotionType} 동일상품 행사 (크롤링 자동생성)`,
+              promotionType: promotionType,
+              buyQuantity: buy,
+              getQuantity: get,
+              applicableType: 'products',
+              applicableProducts: data.barcodes,
+              giftSelectionType: 'same', // 동일 상품 증정
+              giftProducts: [],
+              giftConstraints: {},
+              validFrom,
+              validTo,
+              status: 'active',
+              isActive: true,
+              priority: 0,
+              createdBy: 'crawler_bot',
+              lastModifiedBy: 'crawler_bot',
+              verificationStatus: 'unverified',
+              verificationCount: 0,
+              disputeCount: 0,
+              verifiedBy: [],
+              disputedBy: [],
+              modificationHistory: [{
+                modifiedBy: 'crawler_bot',
+                modifiedAt: new Date(),
+                changes: { type: 'crawl' },
+                comment: '크롤링으로 자동 생성'
+              }],
+              crawledAt: new Date(),
+              isCrawled: true,
+              needsVerification: true
+            });
+          }
 
           createdPromotions.push(promotion);
 
@@ -429,12 +482,12 @@ export async function POST(request: NextRequest) {
 
         console.log(`\n크롤링 완료: 총 ${allProducts.length}개 상품`);
         console.log(`새 상품: ${newProductCount}개, 기존 상품: ${existingProductCount}개`);
-        console.log(`프로모션 생성: ${createdPromotions.length}개`);
+        console.log(`프로모션 처리: ${createdPromotions.length}개 (신규 생성 또는 업데이트)`);
 
         // 최종 완료 메시지 전송
         sendMessage({
           type: 'complete',
-          message: `크롤링 완료! ${allProducts.length}개 상품, ${newProductCount}개 신규 등록, ${createdPromotions.length}개 프로모션 생성`,
+          message: `크롤링 완료! ${allProducts.length}개 상품, ${newProductCount}개 신규 등록, ${createdPromotions.length}개 프로모션 처리 (중복 시 상품 추가)`,
           products: allProducts,
           promotions: createdPromotions,
           total: allProducts.length,

@@ -458,19 +458,37 @@ export default function PromotionsTab() {
     );
   };
 
-  const getStatusBadge = (status: string) => {
-    const badges: Record<string, { text: string; color: string }> = {
-      active: { text: '활성', color: 'bg-blue-100 text-blue-800' },
-      expired: { text: '만료', color: 'bg-gray-100 text-gray-800' },
-      merged: { text: '병합됨', color: 'bg-purple-100 text-purple-800' },
-      archived: { text: '보관', color: 'bg-gray-200 text-gray-600' },
+  const getStatusBadge = (promotion: IPromotion) => {
+    // 실제 유효기간 확인
+    const now = new Date();
+    const validTo = new Date(promotion.validTo);
+    const validFrom = new Date(promotion.validFrom);
+    const isExpired = validTo < now;
+    const isNotStarted = validFrom > now;
+
+    let status = promotion.status;
+    // DB status가 없거나 잘못된 경우 실제 날짜 기준으로 판단
+    if (isExpired) {
+      status = 'expired';
+    } else if (isNotStarted) {
+      status = 'scheduled';
+    } else if (promotion.isActive) {
+      status = 'active';
+    }
+
+    const badges: Record<string, { text: string; color: string; icon?: string }> = {
+      active: { text: '진행 중', color: 'bg-green-100 text-green-800', icon: '✅' },
+      expired: { text: '기간 만료', color: 'bg-gray-100 text-gray-600', icon: '⏰' },
+      merged: { text: '병합됨', color: 'bg-purple-100 text-purple-800', icon: '🔗' },
+      archived: { text: '보관', color: 'bg-gray-200 text-gray-600', icon: '📦' },
+      scheduled: { text: '예정', color: 'bg-yellow-100 text-yellow-800', icon: '⏱️' },
     };
 
     const badge = badges[status] || badges.active;
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs ${badge.color}`}>
-        {badge.text}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+        {badge.icon && `${badge.icon} `}{badge.text}
       </span>
     );
   };
@@ -640,12 +658,12 @@ export default function PromotionsTab() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white"
                 >
-                  <option value="all">전체</option>
-                  <option value="active">활성</option>
-                  <option value="expired">만료</option>
-                  <option value="merged">병합됨</option>
+                  <option value="all">전체 (모든 기간)</option>
+                  <option value="active">✅ 활성 (진행 중)</option>
+                  <option value="expired">⏰ 만료 (기간 지남)</option>
+                  <option value="merged">🔗 병합됨</option>
                 </select>
               </div>
               <div>
@@ -751,7 +769,7 @@ export default function PromotionsTab() {
                           </div>
                           <div className="flex items-center gap-2 mb-3 flex-wrap">
                             {getVerificationBadge(promotion)}
-                            {getStatusBadge(promotion.status)}
+                            {getStatusBadge(promotion)}
                             <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
                               {promotion.promotionType}
                             </span>

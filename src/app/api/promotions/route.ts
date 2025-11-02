@@ -23,11 +23,6 @@ export async function GET(request: NextRequest) {
 
     const filter: any = {};
 
-    // 상태 필터
-    if (status) {
-      filter.status = status;
-    }
-
     // 검증 상태 필터
     if (verificationStatus) {
       filter.verificationStatus = verificationStatus;
@@ -69,13 +64,21 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // 활성 프로모션만 조회 (기본)
+    // 상태별 날짜 필터링 (DB의 status 필드가 아닌 실제 날짜 기준)
+    const now = new Date();
     if (status === 'active') {
-      const now = new Date();
+      // 활성 프로모션: 현재 날짜가 유효기간 내
       filter.isActive = true;
       filter.validFrom = { $lte: now };
       filter.validTo = { $gte: now };
+    } else if (status === 'expired') {
+      // 만료된 프로모션: 유효기간 종료일이 현재보다 이전
+      filter.validTo = { $lt: now };
+    } else if (status === 'merged') {
+      // 병합된 프로모션: DB의 status 필드가 'merged'인 것
+      filter.status = 'merged';
     }
+    // status === 'all'인 경우 날짜 필터 없음 (모든 프로모션)
 
     // 총 개수 조회
     const total = await Promotion.countDocuments(filter);
