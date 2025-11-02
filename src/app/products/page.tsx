@@ -37,6 +37,7 @@ export default function ProductsPage() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   useEffect(() => {
     // 초기 로드
@@ -151,6 +152,9 @@ export default function ProductsPage() {
   const loadCarts = () => {
     const localCarts = clientDb.getCarts();
     setCarts(localCarts);
+    // 메인 카트의 아이템 개수 업데이트
+    const count = clientDb.getMainCartItemCount();
+    setCartItemCount(count);
   };
 
   // 카드 클릭 시 상세 모달 열기
@@ -287,10 +291,15 @@ export default function ProductsPage() {
               </div>
               <h1 className="text-xl font-bold text-gray-900">상품 검색</h1>
             </Link>
-            <Link href="/carts" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Link href="/carts" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#FF3B3B] rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                  {cartItemCount > 99 ? '99+' : cartItemCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

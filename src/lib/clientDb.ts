@@ -45,6 +45,15 @@ export function getMainCart(): ICart | null {
 }
 
 /**
+ * 메인 카트의 총 아이템 개수 반환
+ */
+export function getMainCartItemCount(): number {
+  const mainCart = getMainCart();
+  if (!mainCart) return 0;
+  return mainCart.items.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+/**
  * 메인 카트를 가져오거나, 없으면 자동으로 생성
  */
 export function getOrCreateMainCart(): ICart {

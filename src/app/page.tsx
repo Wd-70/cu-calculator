@@ -1,6 +1,37 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import * as clientDb from '@/lib/clientDb';
 
 export default function Home() {
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  useEffect(() => {
+    // 초기 로드 시 카트 개수 가져오기
+    const updateCartCount = () => {
+      const count = clientDb.getMainCartItemCount();
+      setCartItemCount(count);
+    };
+
+    updateCartCount();
+
+    // localStorage 변경 감지 (다른 탭에서 변경 시)
+    const handleStorageChange = () => {
+      updateCartCount();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // 페이지 포커스 시에도 업데이트
+    window.addEventListener('focus', updateCartCount);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', updateCartCount);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* 헤더 */}
@@ -23,9 +54,11 @@ export default function Home() {
               <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF3B3B] rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
-                0
-              </span>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-[#FF3B3B] rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                  {cartItemCount > 99 ? '99+' : cartItemCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
