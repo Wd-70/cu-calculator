@@ -16,6 +16,7 @@ import {
   PaymentMethodRequirement,
   CardIssuerRequirement,
   PaymentMethodException,
+  getConstraints,
 } from '@/types/discount';
 import { PaymentMethod } from '@/types/payment';
 import { PaymentMethodInfo } from '@/types/preset';

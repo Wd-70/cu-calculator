@@ -1,0 +1,15 @@
+{
+  "sessionId": "session_2025-11-03T09-46-24",
+  "sessionName": "이름 없는 세션",
+  "createdAt": "2025-11-03T09:46:31.244Z",
+  "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+  "photos": [
+    {
+      "filename": "photo_2025-11-03T09-46-31-707Z.jpg",
+      "uploadedAt": "2025-11-03T09:46:31.244Z",
+      "status": "uploaded"
+    }
+  ],
+  "conversionStatus": "pending",
+  "lastUpdated": "2025-11-03T09:46:31.244Z"
+}

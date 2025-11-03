@@ -273,17 +273,18 @@ export default function CartsPage() {
 
     setIsCalculating(true);
     try {
-      // 프로모션을 할인 규칙으로 변환
+      console.log('할인 계산 시작...');
+      console.log('  - 할인규칙:', availableDiscounts.length, '개');
+      console.log('  - 프로모션:', availablePromotions.length, '개');
+
+      // 프로모션을 할인 규칙 형식으로 변환
       const promotionRules = convertPromotionsToDiscountRules(availablePromotions);
-
-      // 프로모션 + 할인 규칙 통합
-      const allDiscounts = [...promotionRules, ...availableDiscounts];
-
-      console.log('전체 할인/프로모션:', allDiscounts.length, '개 (프로모션:', promotionRules.length, '개)');
+      console.log('  - 변환된 프로모션 규칙:', promotionRules.length, '개');
 
       const result = findOptimalDiscountCombination(
         selectedCart.items,
-        allDiscounts,
+        availableDiscounts,      // 할인규칙
+        promotionRules,          // 프로모션 (IDiscountRule 형식으로 변환)
         selectedPreset,
         {
           maxCombinations: 100,

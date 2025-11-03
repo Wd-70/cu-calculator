@@ -254,6 +254,43 @@ export interface PaymentMethodException {
 }
 
 // ============================================================================
+// 할인 결합 규칙
+// ============================================================================
+
+export interface DiscountCombinationRules {
+  // 카테고리 기반 제약
+  cannotCombineWithCategories?: DiscountCategory[]; // 특정 카테고리와 중복 불가
+
+  // 개별 할인 ID 기반 제약
+  cannotCombineWithIds?: (Types.ObjectId | string)[]; // 특정 할인과 중복 불가
+
+  // 프로모션 타입 기반 제약 (프로모션 카테고리 전용)
+  cannotCombineWithPromotionGiftTypes?: ('same' | 'cross' | 'combo')[]; // 특정 프로모션 증정방식과 중복 불가
+
+  // 의존성
+  requiresDiscountId?: Types.ObjectId | string; // 특정 할인이 먼저 적용되어야 함
+}
+
+// ============================================================================
+// 할인 적용 제약 조건
+// ============================================================================
+
+export interface DiscountConstraints {
+  // 최소 구매 조건
+  minPurchaseAmount?: number; // 최소 구매 금액 (원)
+  minQuantity?: number; // 최소 구매 수량
+
+  // 최대 할인 제한
+  maxDiscountAmount?: number; // 최대 할인 금액 (원)
+  maxDiscountPerItem?: number; // 상품당 최대 할인 금액 (원)
+
+  // 사용 횟수 제한
+  dailyUsageLimit?: number; // 일일 사용 횟수 제한 (예: 1)
+  totalUsageLimit?: number; // 총 사용 횟수 제한
+  usageResetTime?: string; // 사용 횟수 리셋 시간 (예: "00:00")
+}
+
+// ============================================================================
 // 할인 규칙 (데이터베이스 모델)
 // ============================================================================
 
@@ -262,63 +299,61 @@ export interface IDiscountRuleV2 {
   name: string;
   description?: string;
 
-  // 할인 설정
+  // 1. 할인 메커니즘 (무엇을, 어떻게 할인하는가)
   config: DiscountConfig;
+  applicationMethod?: DiscountApplicationMethod; // 적용 방식 (기본값: cart_total)
 
-  // 적용 방식 (기본값: cart_total)
-  applicationMethod?: DiscountApplicationMethod;
-
-  // 적용 대상
+  // 2. 적용 대상 (어디에 적용되는가)
   applicableProducts: string[]; // 바코드 배열 - 빈 배열 = 전체 상품
   applicableCategories: string[]; // 빈 배열 = 전체 카테고리
-  applicableBrands?: string[];
+  applicableBrands?: string[]; // 빈 배열 = 전체 브랜드
 
-  // 결제수단 제약 (레거시)
-  requiredPaymentMethods: PaymentMethod[];
-  paymentMethodNames: string[];
-
-  // 결제수단 상세 제약 (신규)
-  paymentMethodRequirements?: PaymentMethodRequirement[];
+  // 3. 결제수단 요구사항
+  requiredPaymentMethods: PaymentMethod[]; // 레거시: 간단한 결제수단 목록
+  paymentMethodNames: string[]; // 레거시: 결제수단 이름
+  paymentMethodRequirements?: PaymentMethodRequirement[]; // 신규: 상세 결제수단 제약
 
   // 결제수단 예외 처리
   allowedExceptions?: PaymentMethodException[]; // 기본 규칙에서 차단되지만 허용되는 예외
   blockedExceptions?: PaymentMethodException[]; // 기본 규칙에서 허용되지만 차단되는 예외
 
-  // 중복 적용 규칙
-  cannotCombineWithCategories?: DiscountCategory[]; // 특정 카테고리와 중복 불가
-  cannotCombineWithIds?: (Types.ObjectId | string)[]; // 특정 할인과 중복 불가
-  requiresDiscountId?: Types.ObjectId | string; // 특정 할인이 먼저 적용되어야 함
+  // 4. 할인 결합 규칙 (다른 할인과의 관계)
+  combinationRules?: DiscountCombinationRules;
 
-  // 최소 구매 조건
-  minPurchaseAmount?: number;
-  minQuantity?: number;
+  // 5. 적용 제약 조건 (금액, 수량, 사용 횟수 등)
+  constraints?: DiscountConstraints;
 
-  // 최대 할인 제한
-  maxDiscountAmount?: number;
-  maxDiscountPerItem?: number;
-
-  // 사용 횟수 제한
-  dailyUsageLimit?: number; // 일일 사용 횟수 제한 (예: 1)
-  totalUsageLimit?: number; // 총 사용 횟수 제한
-  usageResetTime?: string; // 사용 횟수 리셋 시간 (예: "00:00")
-
-  // 행사 정보
+  // 6. 행사 정보
   eventMonth?: string; // 예: "2025-01"
   eventName?: string;
   isRecurring?: boolean;
 
-  // 유효 기간
+  // 7. 유효 기간
   validFrom: Date;
   validTo: Date;
 
-  // 메타데이터
+  // 8. 메타데이터
   sourceUrl?: string;
   lastCrawledAt?: Date;
   priority?: number; // 동일 카테고리 내 우선순위
-
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  // ===== 하위 호환성을 위한 레거시 필드 (새로운 코드에서는 사용 안 함) =====
+  // 아래 필드들은 combinationRules와 constraints로 통합되었지만,
+  // 기존 데이터베이스 호환성을 위해 유지
+  cannotCombineWithCategories?: DiscountCategory[];
+  cannotCombineWithIds?: (Types.ObjectId | string)[];
+  cannotCombineWithPromotionGiftTypes?: ('same' | 'cross' | 'combo')[];
+  requiresDiscountId?: Types.ObjectId | string;
+  minPurchaseAmount?: number;
+  minQuantity?: number;
+  maxDiscountAmount?: number;
+  maxDiscountPerItem?: number;
+  dailyUsageLimit?: number;
+  totalUsageLimit?: number;
+  usageResetTime?: string;
 }
 
 // ============================================================================
@@ -446,3 +481,44 @@ export type DiscountCalculationResult = DiscountCalculationResultV2;
 export type CartCalculationResult = CartCalculationResultV2;
 export type CartCalculationOptions = CartCalculationOptionsV2;
 export type DiscountValidationResult = DiscountValidationResultV2;
+
+// ============================================================================
+// 헬퍼 함수 - 레거시와 신규 구조 모두 지원
+// ============================================================================
+
+/**
+ * 할인 결합 규칙 가져오기 (신규 우선, 레거시 폴백)
+ */
+export function getCombinationRules(discount: IDiscountRule): DiscountCombinationRules {
+  if (discount.combinationRules) {
+    return discount.combinationRules;
+  }
+
+  // 레거시 필드에서 변환
+  return {
+    cannotCombineWithCategories: discount.cannotCombineWithCategories,
+    cannotCombineWithIds: discount.cannotCombineWithIds,
+    cannotCombineWithPromotionGiftTypes: discount.cannotCombineWithPromotionGiftTypes,
+    requiresDiscountId: discount.requiresDiscountId,
+  };
+}
+
+/**
+ * 할인 제약 조건 가져오기 (신규 우선, 레거시 폴백)
+ */
+export function getConstraints(discount: IDiscountRule): DiscountConstraints {
+  if (discount.constraints) {
+    return discount.constraints;
+  }
+
+  // 레거시 필드에서 변환
+  return {
+    minPurchaseAmount: discount.minPurchaseAmount,
+    minQuantity: discount.minQuantity,
+    maxDiscountAmount: discount.maxDiscountAmount,
+    maxDiscountPerItem: discount.maxDiscountPerItem,
+    dailyUsageLimit: discount.dailyUsageLimit,
+    totalUsageLimit: discount.totalUsageLimit,
+    usageResetTime: discount.usageResetTime,
+  };
+}

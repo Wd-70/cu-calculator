@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { isAdmin } from '@/lib/adminAuth';
+import DiscountRule from '@/lib/models/DiscountRule';
 
 /**
  * GET /api/discounts/[id]
@@ -8,12 +9,13 @@ import { isAdmin } from '@/lib/adminAuth';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await db.connect();
 
-    const discount = await db.findDiscountRuleById(params.id);
+    const discount = await db.findDiscountRuleById(id);
 
     if (!discount) {
       return NextResponse.json(
@@ -41,9 +43,10 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { discountData, signature, timestamp, address, comment } = body;
 
@@ -58,7 +61,7 @@ export async function PUT(
     const { verifyWithTimestamp } = await import('@/lib/userAuth');
 
     const isValidSignature = verifyWithTimestamp(
-      { action: 'update_discount', id: params.id, ...discountData },
+      { action: 'update_discount', id, ...discountData },
       signature,
       timestamp,
       address
@@ -73,7 +76,7 @@ export async function PUT(
 
     // 2. DB 연결 및 기존 규칙 조회
     await db.connect();
-    const existingRule = await db.findDiscountRuleById(params.id);
+    const existingRule = await db.findDiscountRuleById(id);
 
     if (!existingRule) {
       return NextResponse.json(
@@ -88,19 +91,25 @@ export async function PUT(
       after: discountData,
     };
 
-    // 4. 할인 규칙 업데이트
-    const updatedRule = await db.updateDiscountRule(params.id, {
-      ...discountData,
-      lastModifiedBy: address,
-      $push: {
-        modificationHistory: {
-          modifiedBy: address,
-          modifiedAt: new Date(),
-          changes,
-          comment: comment || '할인 규칙 수정',
+    // 4. 할인 규칙 업데이트 (Mongoose 직접 사용)
+    const updatedRule = await DiscountRule.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          ...discountData,
+          lastModifiedBy: address,
+        },
+        $push: {
+          modificationHistory: {
+            modifiedBy: address,
+            modifiedAt: new Date(),
+            changes,
+            comment: comment || '할인 규칙 수정',
+          },
         },
       },
-    });
+      { new: true, runValidators: false }
+    ).lean();
 
     return NextResponse.json({
       success: true,
@@ -121,9 +130,10 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { signature, timestamp, address } = body;
 
@@ -138,7 +148,7 @@ export async function DELETE(
     const { verifyWithTimestamp } = await import('@/lib/userAuth');
 
     const isValidSignature = verifyWithTimestamp(
-      { action: 'delete_discount', id: params.id },
+      { action: 'delete_discount', id },
       signature,
       timestamp,
       address
@@ -161,7 +171,7 @@ export async function DELETE(
 
     // 3. DB 연결 및 삭제
     await db.connect();
-    const deleted = await db.deleteDiscountRule(params.id);
+    const deleted = await db.deleteDiscountRule(id);
 
     if (!deleted) {
       return NextResponse.json(

@@ -60,6 +60,10 @@ export default function DiscountJsonModal({
         applicableBrands: selectedDiscount.applicableBrands,
         requiredPaymentMethods: selectedDiscount.requiredPaymentMethods,
         paymentMethodNames: selectedDiscount.paymentMethodNames,
+        // 신규 구조 (우선)
+        ...(selectedDiscount.combinationRules && { combinationRules: selectedDiscount.combinationRules }),
+        ...(selectedDiscount.constraints && { constraints: selectedDiscount.constraints }),
+        // 레거시 필드 (하위 호환)
         cannotCombineWithCategories: selectedDiscount.cannotCombineWithCategories,
         cannotCombineWithIds: selectedDiscount.cannotCombineWithIds,
         requiresDiscountId: selectedDiscount.requiresDiscountId,

@@ -1,0 +1,20 @@
+{
+  "sessionId": "session_2025-11-03T08-12-39",
+  "sessionName": "배러10",
+  "createdAt": "2025-11-03T08:12:59.544Z",
+  "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+  "photos": [
+    {
+      "filename": "photo_2025-11-03T08-12-59-659Z.jpg",
+      "uploadedAt": "2025-11-03T08:12:59.544Z",
+      "status": "uploaded"
+    },
+    {
+      "filename": "photo_2025-11-03T08-13-11-493Z.jpg",
+      "uploadedAt": "2025-11-03T08:13:11.965Z",
+      "status": "uploaded"
+    }
+  ],
+  "conversionStatus": "pending",
+  "lastUpdated": "2025-11-03T08:13:11.965Z"
+}

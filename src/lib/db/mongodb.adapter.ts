@@ -111,7 +111,8 @@ export class MongoDBAdapter implements IDatabase {
     filter?: QueryFilter<IDiscountRule>,
     options?: QueryOptions
   ): Promise<IDiscountRule[]> {
-    let query = DiscountRule.find(filter || {});
+    let query = DiscountRule.find(filter || {})
+      .select('-modificationHistory -__v -lastModifiedBy -createdAt -updatedAt');
 
     if (options?.sort) {
       query = query.sort(options.sort);
@@ -123,22 +124,28 @@ export class MongoDBAdapter implements IDatabase {
       query = query.limit(options.limit);
     }
 
-    return query.exec();
+    return query.lean().exec();
   }
 
   async findDiscountRuleById(id: string): Promise<IDiscountRule | null> {
-    return DiscountRule.findById(id).exec();
+    return DiscountRule.findById(id)
+      .select('-modificationHistory -__v -lastModifiedBy -createdAt -updatedAt')
+      .lean()
+      .exec();
   }
 
   async findDiscountRulesByIds(ids: string[]): Promise<IDiscountRule[]> {
-    return DiscountRule.find({ _id: { $in: ids } }).exec();
+    return DiscountRule.find({ _id: { $in: ids } })
+      .select('-modificationHistory -__v -lastModifiedBy -createdAt -updatedAt')
+      .lean()
+      .exec();
   }
 
   async createDiscountRule(
     data: Omit<IDiscountRule, '_id' | 'createdAt' | 'updatedAt'>
   ): Promise<IDiscountRule> {
     const rule = await DiscountRule.create(data);
-    return rule.toObject();
+    return rule.toObject({ minimize: false });
   }
 
   async updateDiscountRule(
@@ -149,8 +156,8 @@ export class MongoDBAdapter implements IDatabase {
       id,
       { $set: data },
       { new: true, runValidators: false }
-    ).exec();
-    return rule ? rule.toObject() : null;
+    ).lean().exec();
+    return rule;
   }
 
   async deleteDiscountRule(id: string): Promise<boolean> {

@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
 
     // 페이지네이션 적용
     const promotions = await Promotion.find(filter)
+      .select('-modificationHistory -__v -lastModifiedBy')
       .sort({ priority: -1, verificationCount: -1, createdAt: -1 })
       .skip(offset)
       .limit(limit)

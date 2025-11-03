@@ -3,7 +3,7 @@
  * 프리셋의 결제수단, 구독 정보를 기반으로 할인 규칙 적용 가능 여부 판단
  */
 
-import { IDiscountRule } from '@/types/discount';
+import { IDiscountRule, getCombinationRules } from '@/types/discount';
 import { IPreset, PaymentMethodInfo, UserSubscription } from '@/types/preset';
 import { PaymentMethod } from '@/types/payment';
 
@@ -79,8 +79,11 @@ export function checkSubscriptionRequirement(
   preset: IPreset,
   currentDate: Date = new Date()
 ): DiscountEligibilityResult {
+  // 할인 결합 규칙 가져오기
+  const rules = getCombinationRules(discount);
+
   // 할인 규칙에 특정 구독이 필요한 경우
-  if (discount.requiresDiscountId) {
+  if (rules.requiresDiscountId) {
     if (!preset.subscriptions || preset.subscriptions.length === 0) {
       return {
         isEligible: false,
@@ -90,7 +93,7 @@ export function checkSubscriptionRequirement(
 
     // 해당 구독이 활성화되어 있는지 확인
     const requiredSubscription = preset.subscriptions.find(
-      (sub) => String(sub.discountId) === String(discount.requiresDiscountId)
+      (sub) => String(sub.discountId) === String(rules.requiresDiscountId)
     );
 
     if (!requiredSubscription) {

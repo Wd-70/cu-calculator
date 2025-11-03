@@ -1,13 +1,18 @@
 /**
  * 할인 최적화 알고리즘
  * 프리셋 데이터와 장바구니를 기반으로 최적의 할인 조합을 찾음
+ *
+ * 구조:
+ * 1. 프로모션 적용 (개별 상품 단위, 조합 불필요)
+ * 2. 할인규칙 조합 최적화 (프로모션 적용 후 가격 기준)
  */
 
-import { IDiscountRule, DiscountCategory, DISCOUNT_CATEGORY_ORDER } from '@/types/discount';
+import { IDiscountRule, DiscountCategory, DISCOUNT_CATEGORY_ORDER, getCombinationRules } from '@/types/discount';
 import { IPreset } from '@/types/preset';
 import { ICartItem } from '@/types/cart';
 import { checkDiscountEligibility, filterEligibleDiscounts } from './discountEligibility';
 import { calculateCart } from './discountCalculator';
+import { applyPromotionsToCart, CartItem } from './promotionApplicator';
 
 /**
  * 할인 조합 결과
@@ -52,44 +57,72 @@ export function checkDiscountConflict(
     return true;
   }
 
-  // discount1이 discount2의 카테고리를 금지하는 경우
+  // 할인 결합 규칙 가져오기 (신규 구조 우선, 레거시 폴백)
+  const rules1 = getCombinationRules(discount1);
+  const rules2 = getCombinationRules(discount2);
+
+  // 1. 카테고리 기반 제약 체크
   if (
-    discount1.cannotCombineWithCategories &&
-    discount1.cannotCombineWithCategories.includes(discount2.config.category)
+    rules1.cannotCombineWithCategories &&
+    rules1.cannotCombineWithCategories.includes(discount2.config.category)
   ) {
     return true;
   }
 
-  // discount2가 discount1의 카테고리를 금지하는 경우
   if (
-    discount2.cannotCombineWithCategories &&
-    discount2.cannotCombineWithCategories.includes(discount1.config.category)
+    rules2.cannotCombineWithCategories &&
+    rules2.cannotCombineWithCategories.includes(discount1.config.category)
   ) {
     return true;
   }
 
-  // discount1이 discount2의 ID를 명시적으로 금지하는 경우
+  // 2. 개별 할인 ID 기반 제약 체크
   if (
-    discount1.cannotCombineWithIds &&
-    discount1.cannotCombineWithIds.some((id) => String(id) === String(discount2._id))
+    rules1.cannotCombineWithIds &&
+    rules1.cannotCombineWithIds.some((id) => String(id) === String(discount2._id))
   ) {
     return true;
   }
 
-  // discount2가 discount1의 ID를 명시적으로 금지하는 경우
   if (
-    discount2.cannotCombineWithIds &&
-    discount2.cannotCombineWithIds.some((id) => String(id) === String(discount1._id))
+    rules2.cannotCombineWithIds &&
+    rules2.cannotCombineWithIds.some((id) => String(id) === String(discount1._id))
   ) {
     return true;
   }
 
-  // 통신사 할인의 restrictedProviders 체크
+  // 3. 프로모션 증정방식 기반 제약 체크
+  // discount1이 discount2(프로모션)의 giftSelectionType을 제한하는 경우
+  if (
+    rules1.cannotCombineWithPromotionGiftTypes &&
+    discount2.config.category === 'promotion'
+  ) {
+    const promotionConfig = discount2.config as { giftSelectionType?: 'same' | 'cross' | 'combo' };
+    const giftType = promotionConfig.giftSelectionType || 'same'; // 기본값 same
+
+    if (rules1.cannotCombineWithPromotionGiftTypes.includes(giftType)) {
+      return true;
+    }
+  }
+
+  // discount2가 discount1(프로모션)의 giftSelectionType을 제한하는 경우
+  if (
+    rules2.cannotCombineWithPromotionGiftTypes &&
+    discount1.config.category === 'promotion'
+  ) {
+    const promotionConfig = discount1.config as { giftSelectionType?: 'same' | 'cross' | 'combo' };
+    const giftType = promotionConfig.giftSelectionType || 'same'; // 기본값 same
+
+    if (rules2.cannotCombineWithPromotionGiftTypes.includes(giftType)) {
+      return true;
+    }
+  }
+
+  // 4. 통신사 할인의 provider 기반 제약 체크
   if (discount1.config.category === 'telecom' && discount2.config.category === 'telecom') {
     const telecomConfig1 = discount1.config as { provider: string; restrictedProviders?: string[] };
     const telecomConfig2 = discount2.config as { provider: string; restrictedProviders?: string[] };
 
-    // discount1이 discount2의 provider를 금지하는 경우
     if (
       telecomConfig1.restrictedProviders &&
       telecomConfig1.restrictedProviders.includes(telecomConfig2.provider)
@@ -97,7 +130,6 @@ export function checkDiscountConflict(
       return true;
     }
 
-    // discount2가 discount1의 provider를 금지하는 경우
     if (
       telecomConfig2.restrictedProviders &&
       telecomConfig2.restrictedProviders.includes(telecomConfig1.provider)
@@ -300,11 +332,12 @@ function sortDiscountsByCategory(discounts: IDiscountRule[]): IDiscountRule[] {
 }
 
 /**
- * 최적 할인 조합 찾기
+ * 최적 할인 조합 찾기 (프로모션 분리 버전)
  */
 export function findOptimalDiscountCombination(
   cartItems: ICartItem[],
   availableDiscounts: IDiscountRule[],
+  availablePromotions: IDiscountRule[], // 프로모션 별도 파라미터
   preset: IPreset,
   options?: OptimizerOptions
 ): {
@@ -315,122 +348,272 @@ export function findOptimalDiscountCombination(
   const includeAlternatives = options?.includeAlternatives !== false;
   const maxAlternatives = options?.maxAlternatives || 5;
 
-  // 1. 프리셋으로 적용 가능한 할인만 필터링
+  console.log('\n========================================');
+  console.log('[할인 최적화] 시작');
+  console.log('========================================');
+  console.log(`장바구니 상품: ${cartItems.length}개`);
+  console.log(`할인규칙: ${availableDiscounts.length}개`);
+  console.log(`프로모션: ${availablePromotions.length}개`);
+
+  // ========================================================================
+  // 1단계: 프로모션 적용 (개별 상품 단위, 조합 불필요)
+  // ========================================================================
+  console.log('\n[1단계] 프로모션 적용');
+
+  // ICartItem → CartItem 변환
+  const cartItemsForPromotion: CartItem[] = cartItems.map(item => ({
+    productId: item.productId,
+    productBarcode: item.barcode,
+    productName: item.name,
+    productCategory: item.category,
+    productBrand: item.brand,
+    unitPrice: item.price,
+    quantity: item.quantity,
+  }));
+
+  const promotionResult = applyPromotionsToCart(
+    cartItemsForPromotion,
+    availablePromotions,
+    new Date(),
+    true // verbose
+  );
+
+  const { itemsWithPromotions, crossPromotionPairs, warnings: promotionWarnings, totalPromotionDiscount } = promotionResult;
+
+  console.log(`프로모션 적용 완료: ${totalPromotionDiscount.toLocaleString()}원 할인`);
+
+  // ========================================================================
+  // 2단계: 할인규칙 적용 가능 여부 체크
+  // ========================================================================
+  console.log('\n[2단계] 할인규칙 필터링');
+
   const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // 장바구니에 있는 상품 바코드 추출
-  const cartBarcodes = [...new Set(cartItems.map(item => item.barcode))];
-  console.log(`[최적화] 장바구니 상품 바코드: ${cartBarcodes.length}개`);
-
-  // 프로모션은 장바구니 상품과 관련된 것만 필터링
-  const filteredDiscounts = availableDiscounts.filter(discount => {
-    // 프로모션이 아니면 모두 포함
-    if (discount.config.category !== 'promotion') {
-      return true;
-    }
-
-    // 프로모션인 경우: 장바구니에 있는 상품과 관련된 것만
-    // applicableProducts가 비어있으면 (전체 상품 대상) 포함
-    if (!discount.applicableProducts || discount.applicableProducts.length === 0) {
-      return true;
-    }
-
-    // 구매 상품이 장바구니에 있는지 확인
-    const hasApplicableProduct = discount.applicableProducts.some(barcode =>
-      cartBarcodes.includes(barcode)
-    );
-
-    // 콤보 프로모션인 경우: 증정 상품도 확인
-    if (discount.config.category === 'promotion' && discount.config.giftSelectionType === 'combo') {
-      const hasGiftProduct = discount.config.giftProducts?.some(barcode =>
-        cartBarcodes.includes(barcode)
-      );
-      return hasApplicableProduct && hasGiftProduct;
-    }
-
-    return hasApplicableProduct;
-  });
-
-  console.log(`[최적화] 필터링 후 할인: ${availableDiscounts.length} → ${filteredDiscounts.length}개`);
-
-  const eligibleDiscounts = filterEligibleDiscounts(filteredDiscounts, preset, {
+  // 프리셋으로 적용 가능한 할인규칙 필터링
+  const eligibleDiscounts = filterEligibleDiscounts(availableDiscounts, preset, {
     totalAmount,
     totalQuantity,
   });
 
-  console.log(`[최적화] 적격 할인: ${eligibleDiscounts.length}개`);
+  console.log(`적용 가능한 할인규칙: ${eligibleDiscounts.length}개`);
 
-  if (eligibleDiscounts.length === 0) {
+  // 프로모션과 충돌하는 할인규칙 제외
+  const nonConflictingDiscounts = eligibleDiscounts.filter(discount => {
+    for (const { promotion } of itemsWithPromotions) {
+      if (promotion && checkDiscountConflict(discount, promotion)) {
+        console.log(`  [충돌 제외] ${discount.name} ↔ ${promotion.name}`);
+        return false;
+      }
+    }
+    return true;
+  });
+
+  console.log(`충돌 체크 후: ${nonConflictingDiscounts.length}개`);
+
+  if (nonConflictingDiscounts.length === 0) {
+    // 할인규칙이 없으면 프로모션만 적용된 결과 반환
+    console.log('\n할인규칙 없음, 프로모션만 적용');
+
+    if (totalPromotionDiscount === 0) {
+      return {
+        optimal: null,
+        alternatives: [],
+      };
+    }
+
+    // 프로모션만 적용된 결과 (상품별 상세 포함)
+    const promotionBreakdownMap = new Map<string, {
+      discountId: string;
+      discountName: string;
+      category: string;
+      amount: number;
+      steps: any[];
+    }>();
+
+    itemsWithPromotions
+      .filter(iwp => iwp.promotion && iwp.promotionDiscount > 0)
+      .forEach(iwp => {
+        const promoId = String(iwp.promotion!._id);
+        const config = iwp.promotion!.config as any;
+
+        // 프로모션 상세 설명 생성
+        let promotionDetail = '';
+        if (config.giftSelectionType === 'combo') {
+          promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} 구매 시 다른 상품 증정`;
+        } else {
+          const quantity = iwp.item.quantity;
+          const buyQty = config.buyQuantity || 1;
+          const getQty = config.getQuantity || 1;
+          const sets = Math.floor(quantity / (buyQty + getQty));
+          const freeItems = sets * getQty;
+
+          promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} ${quantity}개 중 ${freeItems}개 증정`;
+        }
+
+        if (!promotionBreakdownMap.has(promoId)) {
+          promotionBreakdownMap.set(promoId, {
+            discountId: promoId,
+            discountName: iwp.promotion!.name,
+            category: 'promotion',
+            amount: 0,
+            steps: [],
+          });
+        }
+
+        const entry = promotionBreakdownMap.get(promoId)!;
+        entry.amount += iwp.promotionDiscount;
+        entry.steps.push({
+          category: 'promotion',
+          discountId: promoId,
+          discountName: iwp.promotion!.name,
+          baseAmount: iwp.item.unitPrice * iwp.item.quantity,
+          isOriginalPriceBased: true,
+          discountAmount: iwp.promotionDiscount,
+          amountAfterDiscount: iwp.priceAfterPromotion,
+          calculationDetails: promotionDetail,
+        });
+      });
+
+    const promotionOnlyResult: DiscountCombination = {
+      discountIds: Array.from(new Set(itemsWithPromotions
+        .filter(iwp => iwp.promotion)
+        .map(iwp => String(iwp.promotion!._id)))),
+      totalDiscount: totalPromotionDiscount,
+      totalDiscountRate: totalPromotionDiscount / totalAmount,
+      finalPrice: totalAmount - totalPromotionDiscount,
+      originalPrice: totalAmount,
+      isOptimal: true,
+      warnings: promotionWarnings.length > 0 ? promotionWarnings : undefined,
+      discountBreakdown: Array.from(promotionBreakdownMap.values()),
+    };
+
     return {
-      optimal: null,
+      optimal: promotionOnlyResult,
       alternatives: [],
     };
   }
 
-  // 2. 프로모션과 비프로모션 분리
-  // 프로모션은 조건만 맞으면 무조건 적용되어야 함
-  const promotions = eligibleDiscounts.filter(d => d.config.category === 'promotion');
-  const nonPromotions = eligibleDiscounts.filter(d => d.config.category !== 'promotion');
+  // ========================================================================
+  // 3단계: 할인규칙 조합 생성 및 계산
+  // ========================================================================
+  console.log('\n[3단계] 할인규칙 조합 최적화');
 
-  console.log(`[최적화] 프로모션: ${promotions.length}개, 비프로모션: ${nonPromotions.length}개`);
+  const maxCombinationSize = Math.min(4, nonConflictingDiscounts.length);
+  let combinations = generateCombinations(nonConflictingDiscounts, maxCombinationSize);
 
-  // 3. 가능한 할인 조합 생성
-  // 비프로모션 할인만으로 조합 생성 (프로모션은 모든 조합에 자동 포함)
-  const maxCombinationSize = Math.min(4, nonPromotions.length);
-  let nonPromotionCombinations = generateCombinations(nonPromotions, maxCombinationSize);
+  console.log(`생성된 조합: ${combinations.length}개`);
 
-  // 모든 조합에 프로모션 추가 (프로모션은 무조건 적용)
-  let combinations = nonPromotionCombinations.map(combo => [...promotions, ...combo]);
-
-  console.log(`[최적화] 생성된 조합: ${combinations.length}개 (프로모션 ${promotions.length}개 + 비프로모션 조합)`);
+  // 충돌 체크
+  const validCombinations = combinations.filter(isValidCombination);
+  console.log(`충돌 체크 후: ${validCombinations.length}개`);
 
   // 조합 수 제한
-  if (combinations.length > maxCombinations) {
-    // 큰 조합부터 우선 탐색 (할인액이 클 가능성이 높음)
-    combinations = combinations
+  if (validCombinations.length > maxCombinations) {
+    combinations = validCombinations
       .sort((a, b) => b.length - a.length)
       .slice(0, maxCombinations);
-    console.log(`[최적화] 조합 수 제한: ${combinations.length}개로 축소`);
+    console.log(`조합 수 제한: ${combinations.length}개로 축소`);
+  } else {
+    combinations = validCombinations;
   }
 
-  // 3. 유효한 조합만 필터링 (충돌 체크)
-  const validCombinations = combinations.filter(isValidCombination);
-
-  if (validCombinations.length === 0) {
-    return {
-      optimal: null,
-      alternatives: [],
-    };
-  }
-
-  // 4. 각 조합의 할인액 계산
+  // 각 조합의 할인액 계산
   const results: DiscountCombination[] = [];
 
-  for (const combination of validCombinations) {
+  for (const combination of combinations) {
     try {
-      // 카테고리 순서에 따라 정렬
       const sortedDiscounts = sortDiscountsByCategory(combination);
 
+      // 프로모션 적용 후 가격으로 계산
+      // TODO: 여기서 프로모션 적용 후 가격을 반영한 계산이 필요
+      // 현재는 기존 calculateCombinationDiscount 사용
       const calculation = calculateCombinationDiscount(
         cartItems,
         sortedDiscounts,
         preset
       );
 
+      // 프로모션 할인 추가
+      const totalDiscount = calculation.totalDiscount + totalPromotionDiscount;
+      const finalPrice = calculation.originalPrice - totalDiscount;
+
+      // discountBreakdown에 프로모션 추가 (상품별 상세 포함)
+      const promotionBreakdownMap = new Map<string, {
+        discountId: string;
+        discountName: string;
+        category: string;
+        amount: number;
+        steps: any[];
+      }>();
+
+      // 프로모션을 ID별로 그룹화하고 상품 정보 추가
+      itemsWithPromotions
+        .filter(iwp => iwp.promotion && iwp.promotionDiscount > 0)
+        .forEach(iwp => {
+          const promoId = String(iwp.promotion!._id);
+          const config = iwp.promotion!.config as any;
+
+          // 프로모션 상세 설명 생성
+          let promotionDetail = '';
+          if (config.giftSelectionType === 'combo') {
+            // 콤보 프로모션 (크로스 증정)
+            promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} 구매 시 다른 상품 증정`;
+          } else {
+            // Same/Cross 프로모션
+            const quantity = iwp.item.quantity;
+            const buyQty = config.buyQuantity || 1;
+            const getQty = config.getQuantity || 1;
+            const sets = Math.floor(quantity / (buyQty + getQty));
+            const freeItems = sets * getQty;
+
+            promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} ${quantity}개 중 ${freeItems}개 증정`;
+          }
+
+          if (!promotionBreakdownMap.has(promoId)) {
+            promotionBreakdownMap.set(promoId, {
+              discountId: promoId,
+              discountName: iwp.promotion!.name,
+              category: 'promotion',
+              amount: 0,
+              steps: [],
+            });
+          }
+
+          const entry = promotionBreakdownMap.get(promoId)!;
+          entry.amount += iwp.promotionDiscount;
+          entry.steps.push({
+            category: 'promotion',
+            discountId: promoId,
+            discountName: iwp.promotion!.name,
+            baseAmount: iwp.item.unitPrice * iwp.item.quantity,
+            isOriginalPriceBased: true,
+            discountAmount: iwp.promotionDiscount,
+            amountAfterDiscount: iwp.priceAfterPromotion,
+            calculationDetails: promotionDetail,
+          });
+        });
+
+      const discountBreakdown = [
+        ...(calculation.discountBreakdown || []),
+        ...Array.from(promotionBreakdownMap.values()),
+      ];
+
       results.push({
-        discountIds: sortedDiscounts.map((d) => String(d._id)),
-        totalDiscount: calculation.totalDiscount,
-        totalDiscountRate: calculation.totalDiscountRate,
-        finalPrice: calculation.finalPrice,
+        discountIds: [
+          ...sortedDiscounts.map(d => String(d._id)),
+          ...itemsWithPromotions.filter(iwp => iwp.promotion).map(iwp => String(iwp.promotion!._id)),
+        ],
+        totalDiscount,
+        totalDiscountRate: totalDiscount / calculation.originalPrice,
+        finalPrice,
         originalPrice: calculation.originalPrice,
-        isOptimal: false, // 나중에 설정
-        warnings: calculation.warnings,
-        discountBreakdown: calculation.discountBreakdown,
+        isOptimal: false,
+        warnings: [...(calculation.warnings || []), ...promotionWarnings],
+        discountBreakdown,
       });
     } catch (error) {
       console.error('Error calculating combination:', error);
-      // 계산 오류 발생 시 해당 조합은 건너뜀
     }
   }
 
@@ -441,16 +624,20 @@ export function findOptimalDiscountCombination(
     };
   }
 
-  // 5. 의미 있는 조합만 필터링
-  // - 실제로 할인이 적용되는 조합만 포함
-  // - discountBreakdown에서 모든 할인의 amount가 0인 조합 제외
-  const meaningfulResults = results.filter((result) => {
+  // ========================================================================
+  // 4단계: 최적 조합 선정
+  // ========================================================================
+  console.log('\n[4단계] 최적 조합 선정');
+
+  // 의미 있는 조합만 필터링
+  const meaningfulResults = results.filter(result => {
     if (!result.discountBreakdown || result.discountBreakdown.length === 0) {
       return result.totalDiscount > 0;
     }
-    // 최소 하나 이상의 할인이 실제로 적용되었는지 확인
-    return result.discountBreakdown.some((breakdown) => breakdown.amount > 0);
+    return result.discountBreakdown.some(breakdown => breakdown.amount > 0);
   });
+
+  console.log(`의미 있는 조합: ${meaningfulResults.length}개`);
 
   if (meaningfulResults.length === 0) {
     return {
@@ -459,14 +646,18 @@ export function findOptimalDiscountCombination(
     };
   }
 
-  // 6. 결과 정렬 (할인액 기준 내림차순)
+  // 결과 정렬 (할인액 기준 내림차순)
   meaningfulResults.sort((a, b) => b.totalDiscount - a.totalDiscount);
 
-  // 7. 최적 조합 선정
+  // 최적 조합 선정
   const optimal = meaningfulResults[0];
   optimal.isOptimal = true;
 
-  // 8. 대안 조합 추출 (중복 제거)
+  console.log(`\n✅ 최적 조합: ${optimal.totalDiscount.toLocaleString()}원 할인`);
+  console.log(`   할인율: ${(optimal.totalDiscountRate * 100).toFixed(1)}%`);
+  console.log(`   최종 가격: ${optimal.finalPrice.toLocaleString()}원`);
+
+  // 대안 조합 추출
   let alternatives: DiscountCombination[] = [];
 
   if (includeAlternatives && meaningfulResults.length > 1) {
@@ -476,13 +667,16 @@ export function findOptimalDiscountCombination(
     for (let i = 1; i < meaningfulResults.length && alternatives.length < maxAlternatives; i++) {
       const candidate = meaningfulResults[i];
 
-      // 동일한 할인액을 가진 조합은 건너뛰기 (중복 제거)
       if (!seenDiscounts.has(candidate.totalDiscount)) {
         alternatives.push(candidate);
         seenDiscounts.add(candidate.totalDiscount);
       }
     }
+
+    console.log(`대안 조합: ${alternatives.length}개`);
   }
+
+  console.log('========================================\n');
 
   return {
     optimal,
