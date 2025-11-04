@@ -14,12 +14,16 @@ interface PromotionValidationModalProps {
   isOpen: boolean;
   onClose: () => void;
   userAddress: string | null;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  onRefresh?: () => void;
 }
 
 export default function PromotionValidationModal({
   isOpen,
   onClose,
   userAddress,
+  onShowToast,
+  onRefresh,
 }: PromotionValidationModalProps) {
   const [targetDate, setTargetDate] = useState(() => {
     const today = new Date();
@@ -31,10 +35,12 @@ export default function PromotionValidationModal({
   const [totalPromotions, setTotalPromotions] = useState(0);
   const [validated, setValidated] = useState(false);
   const [rebuildStats, setRebuildStats] = useState<any>(null);
+  const [processingIssue, setProcessingIssue] = useState<number | null>(null);
+  const [selectedPromotions, setSelectedPromotions] = useState<Map<number, '1' | '2'>>(new Map());
 
   const handleValidate = async () => {
     if (!userAddress) {
-      alert('지갑 연결이 필요합니다.');
+      onShowToast('지갑 연결이 필요합니다.', 'error');
       return;
     }
 
@@ -65,21 +71,201 @@ export default function PromotionValidationModal({
         setIssues(data.issues);
         setTotalPromotions(data.totalPromotions);
         setValidated(true);
-        alert(`검증 완료!\n전체 ${data.totalPromotions}개 프로모션 중 ${data.issues.length}개 문제 발견`);
+        setSelectedPromotions(new Map()); // 선택 초기화
+        if (data.issues.length === 0) {
+          onShowToast(`✅ 검증 완료! 전체 ${data.totalPromotions}개 프로모션 - 문제 없음`, 'success');
+        } else {
+          onShowToast(`⚠️ 검증 완료! 전체 ${data.totalPromotions}개 프로모션 중 ${data.issues.length}개 문제 발견`, 'info');
+        }
       } else {
-        alert(`오류: ${data.error}`);
+        onShowToast(`오류: ${data.error}`, 'error');
       }
     } catch (error) {
       console.error('Validation error:', error);
-      alert('검증 중 오류가 발생했습니다.');
+      onShowToast('검증 중 오류가 발생했습니다.', 'error');
     } finally {
       setValidating(false);
     }
   };
 
+  const handleFixIssue = async (issueIndex: number) => {
+    if (!userAddress) {
+      onShowToast('지갑 연결이 필요합니다.', 'error');
+      return;
+    }
+
+    const selected = selectedPromotions.get(issueIndex);
+    if (!selected) {
+      onShowToast('프로모션을 선택해주세요.', 'error');
+      return;
+    }
+
+    const issue = issues[issueIndex];
+    const selectedPromo = selected === '1' ? issue.promotion1 : issue.promotion2;
+    const otherPromo = selected === '1' ? issue.promotion2 : issue.promotion1;
+
+    setProcessingIssue(issueIndex);
+
+    try {
+      // 로직 결정
+      let action: 'delete' | 'modify' = 'delete';
+      let targetPromo = selectedPromo;
+      let newProducts: string[] = [];
+
+      if (issue.type === 'duplicate') {
+        // 중복: 선택한 것 삭제
+        action = 'delete';
+      } else if (issue.type === 'subset') {
+        // promotion1이 promotion2에 포함됨
+        if (selected === '1') {
+          // promotion1 선택 → 삭제
+          action = 'delete';
+        } else {
+          // promotion2 선택 → promotion2에서 promotion1의 상품들 제거
+          action = 'modify';
+          const products1Set = new Set(issue.promotion1.applicableProducts);
+          newProducts = issue.promotion2.applicableProducts.filter((p: string) => !products1Set.has(p));
+        }
+      } else if (issue.type === 'superset') {
+        // promotion1이 promotion2를 포함
+        if (selected === '1') {
+          // promotion1 선택 → promotion1에서 promotion2의 상품들 제거
+          action = 'modify';
+          const products2Set = new Set(issue.promotion2.applicableProducts);
+          newProducts = issue.promotion1.applicableProducts.filter((p: string) => !products2Set.has(p));
+        } else {
+          // promotion2 선택 → 삭제
+          action = 'delete';
+        }
+      }
+
+      if (action === 'delete') {
+        // 삭제
+        if (!confirm(`"${targetPromo.name}" 프로모션을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+          setProcessingIssue(null);
+          return;
+        }
+
+        const { signature, timestamp } = await signWithTimestamp({
+          action: 'delete_promotion',
+          promotionId: targetPromo._id,
+        });
+
+        const response = await fetch(`/api/promotions/${targetPromo._id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signature,
+            timestamp,
+            address: userAddress,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          onShowToast(`✅ "${targetPromo.name}" 프로모션이 삭제되었습니다.`, 'success');
+
+          // 삭제된 프로모션이 포함된 모든 issues 제거
+          setIssues(prevIssues =>
+            prevIssues.filter(issue =>
+              issue.promotion1._id !== targetPromo._id &&
+              issue.promotion2._id !== targetPromo._id
+            )
+          );
+        } else {
+          onShowToast(`오류: ${data.error}`, 'error');
+          setProcessingIssue(null);
+          return;
+        }
+      } else {
+        // 수정
+        if (!confirm(`"${targetPromo.name}" 프로모션에서 "${otherPromo.name}"의 상품들을 제거하시겠습니까?\n\n제거 후 ${newProducts.length}개 상품이 남습니다.`)) {
+          setProcessingIssue(null);
+          return;
+        }
+
+        const { signature, timestamp } = await signWithTimestamp({
+          action: 'edit_promotion',
+          promotionId: targetPromo._id,
+          updates: { applicableProducts: newProducts },
+          comment: `무결성 검증: ${otherPromo.name}과(와) 중복되는 상품 제거`,
+        });
+
+        const response = await fetch(`/api/promotions/${targetPromo._id}/edit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            updates: { applicableProducts: newProducts },
+            comment: `무결성 검증: ${otherPromo.name}과(와) 중복되는 상품 제거`,
+            signature,
+            timestamp,
+            address: userAddress,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          onShowToast(`✅ "${targetPromo.name}" 프로모션이 수정되었습니다. (${newProducts.length}개 상품 남음)`, 'success');
+
+          // DB에서 최신 프로모션 정보 가져오기
+          const updatedPromoResponse = await fetch(`/api/promotions/${targetPromo._id}`);
+          const updatedPromoData = await updatedPromoResponse.json();
+
+          if (updatedPromoData.success) {
+            const updatedPromo = updatedPromoData.promotion;
+
+            // issues에서 수정된 프로모션이 포함된 모든 issue 업데이트
+            setIssues(prevIssues =>
+              prevIssues.map(issue => {
+                if (issue.promotion1._id === targetPromo._id) {
+                  return { ...issue, promotion1: updatedPromo };
+                } else if (issue.promotion2._id === targetPromo._id) {
+                  return { ...issue, promotion2: updatedPromo };
+                }
+                return issue;
+              }).filter(issue => {
+                // 수정 후 문제가 해결된 issue는 제거
+                const products1 = new Set(issue.promotion1.applicableProducts || []);
+                const products2 = new Set(issue.promotion2.applicableProducts || []);
+
+                // 둘 중 하나가 빈 배열이면 제거
+                if (products1.size === 0 || products2.size === 0) {
+                  return false;
+                }
+
+                // 교집합이 없으면 제거
+                const intersection = [...products1].filter(p => products2.has(p));
+                return intersection.length > 0;
+              })
+            );
+          }
+        } else {
+          onShowToast(`오류: ${data.error}`, 'error');
+          setProcessingIssue(null);
+          return;
+        }
+      }
+
+      // 선택 상태 초기화
+      setSelectedPromotions(new Map());
+
+      // 부모 컴포넌트 새로고침
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Fix issue error:', error);
+      onShowToast('문제 해결 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setProcessingIssue(null);
+    }
+  };
+
   const handleRebuildIndex = async () => {
     if (!userAddress) {
-      alert('지갑 연결이 필요합니다.');
+      onShowToast('지갑 연결이 필요합니다.', 'error');
       return;
     }
 
@@ -110,13 +296,13 @@ export default function PromotionValidationModal({
 
       if (data.success) {
         setRebuildStats(data.stats);
-        alert(`PromotionIndex 재구축 완료!\n\n처리된 프로모션: ${data.stats.promotionsProcessed}개\n인덱싱된 바코드: ${data.stats.barcodesIndexed}개`);
+        onShowToast(`✅ PromotionIndex 재구축 완료! 처리: ${data.stats.promotionsProcessed}개, 인덱싱: ${data.stats.barcodesIndexed}개`, 'success');
       } else {
-        alert(`오류: ${data.error}`);
+        onShowToast(`오류: ${data.error}`, 'error');
       }
     } catch (error) {
       console.error('Rebuild error:', error);
-      alert('인덱스 재구축 중 오류가 발생했습니다.');
+      onShowToast('인덱스 재구축 중 오류가 발생했습니다.', 'error');
     } finally {
       setRebuilding(false);
     }
@@ -250,13 +436,35 @@ export default function PromotionValidationModal({
                           {getIssueIcon(issue.type)}
                         </div>
                         <div className="flex-1">
-                          <div className="font-semibold text-gray-900 mb-2">
+                          <div className="font-semibold text-gray-900 mb-3">
                             {issue.description}
                           </div>
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="bg-white rounded-lg p-3">
-                              <div className="font-medium text-gray-700 mb-1">
-                                프로모션 1:
+                          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                            <button
+                              onClick={() => {
+                                setSelectedPromotions(prev => {
+                                  const newMap = new Map(prev);
+                                  if (newMap.get(index) === '1') {
+                                    newMap.delete(index);
+                                  } else {
+                                    newMap.set(index, '1');
+                                  }
+                                  return newMap;
+                                });
+                              }}
+                              className={`bg-white rounded-lg p-3 border-2 text-left transition-all ${
+                                selectedPromotions.get(index) === '1'
+                                  ? 'border-purple-500 bg-purple-50 shadow-lg'
+                                  : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="font-medium text-gray-700">
+                                  프로모션 1:
+                                </div>
+                                {selectedPromotions.get(index) === '1' && (
+                                  <div className="text-purple-600 text-lg">✓</div>
+                                )}
                               </div>
                               <div className="text-gray-900 font-semibold">
                                 {issue.promotion1.name}
@@ -267,10 +475,32 @@ export default function PromotionValidationModal({
                               <div className="text-xs text-gray-600 mt-1">
                                 상품 {issue.promotion1.applicableProducts?.length || 0}개
                               </div>
-                            </div>
-                            <div className="bg-white rounded-lg p-3">
-                              <div className="font-medium text-gray-700 mb-1">
-                                프로모션 2:
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedPromotions(prev => {
+                                  const newMap = new Map(prev);
+                                  if (newMap.get(index) === '2') {
+                                    newMap.delete(index);
+                                  } else {
+                                    newMap.set(index, '2');
+                                  }
+                                  return newMap;
+                                });
+                              }}
+                              className={`bg-white rounded-lg p-3 border-2 text-left transition-all ${
+                                selectedPromotions.get(index) === '2'
+                                  ? 'border-purple-500 bg-purple-50 shadow-lg'
+                                  : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="font-medium text-gray-700">
+                                  프로모션 2:
+                                </div>
+                                {selectedPromotions.get(index) === '2' && (
+                                  <div className="text-purple-600 text-lg">✓</div>
+                                )}
                               </div>
                               <div className="text-gray-900 font-semibold">
                                 {issue.promotion2.name}
@@ -281,6 +511,27 @@ export default function PromotionValidationModal({
                               <div className="text-xs text-gray-600 mt-1">
                                 상품 {issue.promotion2.applicableProducts?.length || 0}개
                               </div>
+                            </button>
+                          </div>
+
+                          {/* 문제 해결 버튼 */}
+                          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-3 border border-purple-200">
+                            <div className="text-xs font-medium text-gray-700 mb-2">
+                              💡 위에서 처리할 프로모션을 선택하세요
+                            </div>
+                            <button
+                              onClick={() => handleFixIssue(index)}
+                              disabled={processingIssue === index || !selectedPromotions.has(index)}
+                              className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+                            >
+                              {processingIssue === index ? '처리 중...' : '문제 해결'}
+                            </button>
+                            <div className="text-xs text-gray-600 mt-2">
+                              {issue.type === 'duplicate' && '→ 선택한 프로모션이 삭제됩니다'}
+                              {issue.type === 'subset' && selectedPromotions.get(index) === '1' && '→ 프로모션 1이 삭제됩니다 (2에 포함됨)'}
+                              {issue.type === 'subset' && selectedPromotions.get(index) === '2' && '→ 프로모션 2에서 1의 상품들이 제거됩니다'}
+                              {issue.type === 'superset' && selectedPromotions.get(index) === '1' && '→ 프로모션 1에서 2의 상품들이 제거됩니다'}
+                              {issue.type === 'superset' && selectedPromotions.get(index) === '2' && '→ 프로모션 2가 삭제됩니다 (1에 포함됨)'}
                             </div>
                           </div>
                         </div>

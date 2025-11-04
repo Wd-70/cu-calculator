@@ -17,16 +17,18 @@ export type DiscountCategory =
   | 'voucher'          // 금액권 (CU 상품권, 포인트)
   | 'payment_instant'  // 결제 할인(독립형) - 네플, 즉시할인 카드
   | 'payment_compound' // 결제 할인(누적형) - 오키클럽, 청구할인 카드
+  | 'event'            // 이벤트 할인 (행사 기간 한정 할인)
   | 'promotion';       // 프로모션 할인 (1+1, 2+1 등)
 
 export const DISCOUNT_CATEGORY_ORDER: Record<DiscountCategory, number> = {
   promotion: 1,        // 프로모션(1+1, 2+1)이 가장 먼저 적용
   coupon: 2,
   telecom: 3,
-  payment_event: 4,    // 결제행사는 프로모션 이후 적용
-  voucher: 5,
-  payment_instant: 6,
-  payment_compound: 7,
+  event: 4,            // 이벤트 할인
+  payment_event: 5,    // 결제행사는 프로모션 이후 적용
+  voucher: 6,
+  payment_instant: 7,
+  payment_compound: 8,
 };
 
 export const DISCOUNT_CATEGORY_NAMES: Record<DiscountCategory, string> = {
@@ -36,6 +38,7 @@ export const DISCOUNT_CATEGORY_NAMES: Record<DiscountCategory, string> = {
   voucher: '금액권',
   payment_instant: '결제 할인(독립형)',
   payment_compound: '결제 할인(누적형)',
+  event: '이벤트 할인',
   promotion: '프로모션',
 };
 
@@ -150,6 +153,25 @@ export interface PaymentCompoundDiscount {
 }
 
 // ============================================================================
+// 이벤트 할인
+// ============================================================================
+
+export interface EventDiscount {
+  category: 'event';
+  valueType: 'percentage' | 'fixed_amount';
+
+  // 퍼센트 방식
+  percentage?: number; // 퍼센트 할인 (예: 20%)
+
+  // 고정 금액 방식
+  fixedAmount?: number; // 고정 금액 할인 (예: 1000원)
+
+  // 이벤트 정보
+  eventName?: string; // 행사 이름 (예: "배러10입 단품 할인")
+  eventDescription?: string; // 행사 설명
+}
+
+// ============================================================================
 // 프로모션 할인 (1+1, 2+1 등)
 // ============================================================================
 
@@ -179,6 +201,7 @@ export type DiscountConfig =
   | VoucherDiscount
   | PaymentInstantDiscount
   | PaymentCompoundDiscount
+  | EventDiscount
   | PromotionDiscount;
 
 // ============================================================================
@@ -216,7 +239,7 @@ export interface PaymentMethodRequirement {
   cardRequirements?: CardIssuerRequirement[];
 
   // 간편결제인 경우 제약
-  allowedChannels?: ('card' | 'money')[];
+  allowedChannels?: ('card' | 'money' | 'account')[];
 
   // 제외되는 간편결제 (카카오페이, 페이코 등)
   excludedSimplePayments?: string[];
@@ -237,8 +260,8 @@ export interface PaymentMethodException {
   // 결제수단
   method: PaymentMethod;
 
-  // 간편결제 채널 (카드/머니)
-  channel?: 'direct_card' | 'card' | 'money';
+  // 간편결제 채널 (카드/머니/계좌)
+  channel?: 'direct_card' | 'card' | 'money' | 'account';
 
   // 카드사
   cardIssuer?: 'shinhan' | 'bc' | 'samsung' | 'hana' | 'woori' | 'kb' | 'hyundai' | 'nh' | 'ibk' | 'suhyup';

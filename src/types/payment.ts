@@ -6,6 +6,8 @@ export const PAYMENT_METHODS = {
   CU_PAY: "cu_pay",
   KAKAO_PAY: "kakao_pay",
   NAVER_PAY: "naver_pay",
+  TOSS_PAY: "toss_pay",
+  CU_PLUS_T_MONEY: "cu_plus_t_money",
   POINT_MEMBERSHIP: "point_membership",
   CASH: "cash"
 } as const;
@@ -18,6 +20,8 @@ export const PAYMENT_METHOD_NAMES: Record<PaymentMethod, string> = {
   [PAYMENT_METHODS.CU_PAY]: "CU페이",
   [PAYMENT_METHODS.KAKAO_PAY]: "카카오페이",
   [PAYMENT_METHODS.NAVER_PAY]: "네이버페이",
+  [PAYMENT_METHODS.TOSS_PAY]: "토스페이",
+  [PAYMENT_METHODS.CU_PLUS_T_MONEY]: "CU플러스티머니",
   [PAYMENT_METHODS.POINT_MEMBERSHIP]: "멤버십포인트",
   [PAYMENT_METHODS.CASH]: "현금"
 };

@@ -586,6 +586,8 @@ export default function PromotionsTab() {
           isOpen={showValidationModal}
           onClose={() => setShowValidationModal(false)}
           userAddress={userAddress}
+          onShowToast={(message, type) => setToast({ show: true, message, type })}
+          onRefresh={() => loadPromotions()}
         />
       )}
 

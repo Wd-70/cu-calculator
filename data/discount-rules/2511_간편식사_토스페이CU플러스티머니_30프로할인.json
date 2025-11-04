@@ -1,0 +1,46 @@
+{
+  "name": "2511간편식사토스페이30",
+  "description": "간편식사 전 상품 30% 할인 (토스페이 머니/계좌 또는 CU플러스티머니 결제 시, 최대 4,000원)",
+  "config": {
+    "category": "payment_event",
+    "valueType": "percentage",
+    "percentage": 30,
+    "baseAmountType": "original_price",
+    "requiresQR": false,
+    "eventName": "간편식사 토스페이/CU플러스티머니 할인"
+  },
+  "applicationMethod": "cart_total",
+  "applicableProducts": [],
+  "applicableCategories": ["간편식사"],
+  "applicableBrands": [],
+  "requiredPaymentMethods": ["toss_pay", "cu_plus_t_money"],
+  "paymentMethodNames": ["토스페이 (머니/계좌)", "CU플러스티머니"],
+  "paymentMethodRequirements": [
+    {
+      "method": "toss_pay",
+      "allowedChannels": ["money", "account"],
+      "allowMixedPayment": false
+    },
+    {
+      "method": "cu_plus_t_money",
+      "allowMixedPayment": false
+    }
+  ],
+  "constraints": {
+    "maxDiscountAmount": 4000,
+    "minPurchaseAmount": null,
+    "minQuantity": null
+  },
+  "cannotCombineWithCategories": [],
+  "cannotCombineWithIds": [],
+  "eventMonth": "2025-11",
+  "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+  "isRecurring": false,
+  "validFrom": "2025-10-31T15:00:00.000Z",
+  "validTo": "2025-11-30T14:59:59.000Z",
+  "sourceUrl": "",
+  "priority": 100,
+  "isActive": true,
+  "createdBy": "admin",
+  "lastModifiedBy": "admin"
+}

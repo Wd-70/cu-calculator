@@ -23,6 +23,7 @@ export default function CartsPage() {
   const [availableDiscounts, setAvailableDiscounts] = useState<IDiscountRule[]>([]);
   const [availablePromotions, setAvailablePromotions] = useState<any[]>([]);
   const [isLoadingDiscounts, setIsLoadingDiscounts] = useState(false);
+  const [isLoadingPromotions, setIsLoadingPromotions] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState<number>(-1);
 
@@ -82,6 +83,7 @@ export default function CartsPage() {
 
   // 프로모션 로드
   const loadPromotions = async () => {
+    setIsLoadingPromotions(true);
     console.log('[장바구니] 프로모션 로드 시작...');
     try {
       const response = await fetch('/api/promotions');
@@ -132,6 +134,8 @@ export default function CartsPage() {
       }
     } catch (error) {
       console.error('[장바구니] 프로모션 로드 에러:', error);
+    } finally {
+      setIsLoadingPromotions(false);
     }
   };
 
@@ -327,14 +331,37 @@ export default function CartsPage() {
   }, [selectedCart, selectedPreset, availableDiscounts, availablePromotions]);
 
   // 장바구니나 프리셋 변경 시 자동 재계산
+  // 단, 할인규칙과 프로모션이 모두 로드된 후에만 계산
   useEffect(() => {
-    if (selectedCart && selectedPreset && selectedCart.items.length > 0) {
-      calculateDiscount();
-    } else {
+    // 데이터가 아직 로딩 중이면 계산하지 않음
+    if (isLoadingDiscounts || isLoadingPromotions) {
+      console.log('[장바구니] 데이터 로딩 중... 계산 대기');
+      return;
+    }
+
+    // 장바구니, 프리셋, 상품이 있어야 함
+    if (!selectedCart || !selectedPreset || selectedCart.items.length === 0) {
       setOptimalCombination(null);
       setAlternatives([]);
+      return;
     }
-  }, [selectedCart?.items.length, selectedPreset, calculateDiscount]);
+
+    // 할인규칙이나 프로모션이 하나라도 있을 때만 계산
+    // (둘 다 없으면 데이터가 없는 상태)
+    if (availableDiscounts.length > 0 || availablePromotions.length > 0) {
+      calculateDiscount();
+    } else {
+      console.log('[장바구니] 할인규칙과 프로모션이 모두 없어 계산하지 않음');
+    }
+  }, [
+    selectedCart?.items.length,
+    selectedPreset,
+    availableDiscounts.length,
+    availablePromotions.length,
+    isLoadingDiscounts,
+    isLoadingPromotions,
+    calculateDiscount,
+  ]);
 
   // 적용된 할인 정보 변환
   const getAppliedDiscounts = () => {
@@ -349,6 +376,7 @@ export default function CartsPage() {
         category: breakdown.category,
         steps: breakdown.steps, // 계산 과정 단계 추가
         baseAmount: breakdown.baseAmount, // 기준 금액 추가
+        appliedProducts: breakdown.appliedProducts, // 적용된 상품 목록 추가
       }));
     }
 

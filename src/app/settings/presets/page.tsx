@@ -270,11 +270,12 @@ function PresetCard({
             {preset.paymentMethods.map((pm, idx) => {
               const details = [];
 
-              // 채널 정보 (카드/머니/포인트)
+              // 채널 정보 (카드/머니/포인트/계좌)
               if (pm.channel) {
                 const channelNames: Record<string, string> = {
                   card: '카드',
                   money: '머니/포인트',
+                  account: '계좌',
                 };
                 details.push(channelNames[pm.channel] || pm.channel);
               }
@@ -774,6 +775,7 @@ function PaymentMethodsTab({
                     {PAYMENT_METHOD_NAMES[pm.method]}
                     {pm.channel && pm.channel === 'card' && ' · 카드'}
                     {pm.channel && pm.channel === 'money' && ' · 머니/포인트'}
+                    {pm.channel && pm.channel === 'account' && ' · 계좌'}
                     {pm.cardIssuer && ` · ${
                       pm.cardIssuer === 'shinhan' ? '신한' :
                       pm.cardIssuer === 'bc' ? 'BC' :
@@ -844,11 +846,12 @@ function AddPaymentMethodModal({
   // 일반 카드 선택 (카드사를 별도로 선택)
   const isGeneralCard = method === 'card';
 
-  // 페이 앱 선택 (삼성/네이버/카카오페이)
+  // 페이 앱 선택 (삼성/네이버/카카오/토스페이)
   const isSamsungPay = method === 'samsung_pay';
   const isNaverPay = method === 'naver_pay';
   const isKakaoPay = method === 'kakao_pay';
-  const isPayApp = isSamsungPay || isNaverPay || isKakaoPay;
+  const isTossPay = method === 'toss_pay';
+  const isPayApp = isSamsungPay || isNaverPay || isKakaoPay || isTossPay;
 
   const handleSubmit = () => {
     if (!method) {
@@ -962,7 +965,7 @@ function AddPaymentMethodModal({
             </>
           )}
 
-          {/* 페이 앱 선택 시 (삼성페이, 네이버페이, 카카오페이) */}
+          {/* 페이 앱 선택 시 (삼성페이, 네이버페이, 카카오페이, 토스페이) */}
           {isPayApp && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">결제 방법 *</label>
@@ -977,11 +980,13 @@ function AddPaymentMethodModal({
                 <option value="">선택하세요</option>
                 <option value="card">등록된 카드</option>
                 <option value="money">머니/포인트</option>
+                {isTossPay && <option value="account">계좌</option>}
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 {isSamsungPay && '삼성페이에 등록된 카드 또는 삼성페이 머니'}
                 {isNaverPay && '네이버페이에 등록된 카드 또는 네이버페이 포인트'}
                 {isKakaoPay && '카카오페이에 등록된 카드 또는 카카오페이 머니'}
+                {isTossPay && '토스페이에 등록된 카드, 토스페이 머니, 또는 연결된 계좌'}
               </p>
             </div>
           )}

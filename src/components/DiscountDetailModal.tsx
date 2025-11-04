@@ -127,6 +127,9 @@ export default function DiscountDetailModal({
 
     switch (config.category) {
       case 'coupon':
+        if (config.valueType === 'fixed_amount' && config.fixedAmount) {
+          return `${config.fixedAmount.toLocaleString()}원 할인`;
+        }
         return `${config.percentage}% 할인`;
       case 'telecom':
         if (config.valueType === 'percentage') {
@@ -146,6 +149,11 @@ export default function DiscountDetailModal({
       case 'payment_instant':
       case 'payment_compound':
         return `${config.percentage}% 할인`;
+      case 'event':
+        if (config.valueType === 'fixed_amount' && config.fixedAmount) {
+          return `${config.fixedAmount.toLocaleString()}원 할인`;
+        }
+        return `${config.percentage}% 할인`;
       default:
         return '할인';
     }
@@ -158,14 +166,21 @@ export default function DiscountDetailModal({
     voucher: { bg: 'bg-green-50', text: 'text-green-700', badge: 'bg-green-100' },
     payment_instant: { bg: 'bg-orange-50', text: 'text-orange-700', badge: 'bg-orange-100' },
     payment_compound: { bg: 'bg-pink-50', text: 'text-pink-700', badge: 'bg-pink-100' },
+    event: { bg: 'bg-amber-50', text: 'text-amber-700', badge: 'bg-amber-100' },
     promotion: { bg: 'bg-yellow-50', text: 'text-yellow-700', badge: 'bg-yellow-100' },
   };
 
   const colors = categoryColors[displayDiscount.config.category] || { bg: 'bg-gray-50', text: 'text-gray-700', badge: 'bg-gray-100' };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-4xl w-full my-8">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-4xl w-full my-8"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* 헤더 */}
         <div className={`${colors.bg} rounded-t-2xl p-6 border-b border-gray-200`}>
           <div className="flex items-start justify-between">
@@ -378,7 +393,7 @@ function BasicInfoTab({ discount, isEditing, editedDiscount, setEditedDiscount }
             )}
             {discount.minPurchaseAmount && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500">최소 구매:</span>
+                <span className="text-gray-500">최소 구매 금액:</span>
                 {isEditing && editedDiscount ? (
                   <input
                     type="number"
@@ -391,6 +406,18 @@ function BasicInfoTab({ discount, isEditing, editedDiscount, setEditedDiscount }
                 ) : (
                   <span className="text-gray-900 font-medium">{discount.minPurchaseAmount.toLocaleString()}원</span>
                 )}
+              </div>
+            )}
+            {discount.constraints?.minPurchaseAmount && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500">최소 구매 금액:</span>
+                <span className="text-gray-900 font-medium">{discount.constraints.minPurchaseAmount.toLocaleString()}원</span>
+              </div>
+            )}
+            {discount.constraints?.minQuantity && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500">최소 구매 수량:</span>
+                <span className="text-gray-900 font-medium">{discount.constraints.minQuantity}개</span>
               </div>
             )}
           </div>

@@ -5,21 +5,25 @@ import path from 'path';
 import connectDB from '@/lib/mongodb';
 import Promotion from '@/lib/models/Promotion';
 import PromotionIndex from '@/lib/models/PromotionIndex';
+import DiscountRule from '@/lib/models/DiscountRule';
 import { isAdmin } from '@/lib/adminAuth';
 import mongoose from 'mongoose';
 
 interface ConversionData {
   batchId: string;
   createdAt: string;
-  totalPromotions: number;
+  totalPromotions?: number;
+  totalDiscountRules?: number;
   conversions: Array<{
-    sourcePromotionId: string;
+    sourcePromotionId?: string;
+    sourceSessionId?: string;
     sourcePhotoPath: string;
-    action: 'update_and_merge' | 'create_new' | 'skip';
+    action: 'update_and_merge' | 'create_new' | 'skip' | 'create_discount_rule' | 'update_discount_rule';
+    itemType?: 'promotion' | 'discount_rule';
     confidence: 'high' | 'medium' | 'low';
     extractedData: {
       posScreenData: any;
-      promotionUpdate: {
+      promotionUpdate?: {
         name: string;
         description: string;
         promotionType: string;
@@ -34,6 +38,22 @@ interface ConversionData {
         status: string;
         isActive: boolean;
       };
+      discountRuleUpdate?: {
+        name: string;
+        description: string;
+        config: any;
+        applicableProducts: string[];
+        applicableCategories: string[];
+        applicableType: string;
+        requiredPaymentMethods: any[];
+        paymentMethodNames: string[];
+        constraints: any;
+        validFrom: string;
+        validTo: string;
+        status: string;
+        isActive: boolean;
+        priority?: number;
+      };
     };
     mergeStrategy?: any;
     warnings: string[];
@@ -43,7 +63,10 @@ interface ConversionData {
     processed: number;
     succeeded: number;
     failed: number;
+    skipped?: number;
     warnings: number;
+    promotions?: number;
+    discountRules?: number;
   };
 }
 
@@ -73,6 +96,7 @@ export async function POST(request: NextRequest) {
 
     const data = conversionData as ConversionData;
     const updatedPromotionIds: string[] = [];
+    const createdDiscountRuleIds: string[] = [];
     const errors: string[] = [];
 
     // 트랜잭션 시작
@@ -80,21 +104,130 @@ export async function POST(request: NextRequest) {
 
     try {
       for (const conversion of data.conversions) {
-        const { sourcePromotionId, action, extractedData } = conversion;
+        const { sourcePromotionId, sourceSessionId, action, itemType, extractedData } = conversion;
 
         if (action === 'skip') {
           continue;
         }
 
-        // 프로모션 찾기
+        // 할인규칙 처리
+        if (itemType === 'discount_rule' && (action === 'create_discount_rule' || action === 'update_discount_rule')) {
+          const { discountRuleUpdate } = extractedData;
+
+          if (!discountRuleUpdate) {
+            errors.push(`할인규칙 데이터가 없습니다: ${sourceSessionId}`);
+            continue;
+          }
+
+          // 새 할인규칙 생성
+          const newDiscountRule = new DiscountRule({
+            name: discountRuleUpdate.name,
+            description: discountRuleUpdate.description,
+            config: discountRuleUpdate.config,
+            applicableProducts: discountRuleUpdate.applicableProducts,
+            applicableCategories: discountRuleUpdate.applicableCategories || [],
+            applicableType: discountRuleUpdate.applicableType,
+            requiredPaymentMethods: discountRuleUpdate.requiredPaymentMethods || [],
+            paymentMethodNames: discountRuleUpdate.paymentMethodNames || [],
+            constraints: discountRuleUpdate.constraints,
+            validFrom: new Date(discountRuleUpdate.validFrom),
+            validTo: new Date(discountRuleUpdate.validTo),
+            status: discountRuleUpdate.status,
+            isActive: discountRuleUpdate.isActive,
+            priority: discountRuleUpdate.priority || 100,
+            eventName: conversion.extractedData.posScreenData?.eventName,
+            sourceUrl: `photo:${conversion.sourcePhotoPath}`,
+            createdBy: accountAddress,
+            lastModifiedBy: accountAddress,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          await newDiscountRule.save({ session });
+          createdDiscountRuleIds.push(newDiscountRule._id.toString());
+
+          continue;
+        }
+
+        // 프로모션 처리
+        const { promotionUpdate } = extractedData;
+
+        if (!promotionUpdate) {
+          errors.push(`프로모션 데이터가 없습니다: ${sourceSessionId || sourcePromotionId}`);
+          continue;
+        }
+
+        // 새 프로모션 생성
+        if (action === 'create_new') {
+          // 동일한 이름의 프로모션이 이미 있는지 확인
+          const existingPromotion = await Promotion.findOne({
+            name: promotionUpdate.name,
+            status: 'active'
+          }).session(session);
+
+          if (existingPromotion) {
+            errors.push(`프로모션 "${promotionUpdate.name}"이(가) 이미 존재합니다.`);
+            continue;
+          }
+
+          // 새 프로모션 생성
+          const newPromotion = new Promotion({
+            name: promotionUpdate.name,
+            description: promotionUpdate.description,
+            promotionType: promotionUpdate.promotionType,
+            buyQuantity: promotionUpdate.buyQuantity,
+            getQuantity: promotionUpdate.getQuantity,
+            applicableType: promotionUpdate.applicableType,
+            applicableProducts: promotionUpdate.applicableProducts,
+            giftSelectionType: promotionUpdate.giftSelectionType,
+            giftProducts: promotionUpdate.giftProducts || [],
+            giftConstraints: {
+              mustBeSameProduct: promotionUpdate.giftSelectionType === 'same'
+            },
+            validFrom: new Date(promotionUpdate.validFrom),
+            validTo: new Date(promotionUpdate.validTo),
+            status: promotionUpdate.status,
+            isActive: promotionUpdate.isActive,
+            priority: 100,
+            verificationCount: 1,
+            eventName: conversion.extractedData.posScreenData?.eventName,
+            sourceUrl: `photo:${conversion.sourcePhotoPath}`,
+            createdBy: accountAddress,
+            lastModifiedBy: accountAddress,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          await newPromotion.save({ session });
+
+          // PromotionIndex 업데이트
+          for (const barcode of promotionUpdate.applicableProducts) {
+            await PromotionIndex.updateOne(
+              { barcode },
+              {
+                $addToSet: { promotionIds: newPromotion._id },
+                $set: { lastUpdated: new Date() },
+              },
+              { upsert: true, session }
+            );
+          }
+
+          updatedPromotionIds.push(newPromotion._id.toString());
+          continue;
+        }
+
+        // 기존 프로모션 업데이트 (update_and_merge)
+        if (!sourcePromotionId) {
+          errors.push(`프로모션 ID가 없습니다: ${sourceSessionId}`);
+          continue;
+        }
+
         const promotion = await Promotion.findById(sourcePromotionId).session(session);
 
         if (!promotion) {
           errors.push(`프로모션 ${sourcePromotionId}을(를) 찾을 수 없습니다.`);
           continue;
         }
-
-        const { promotionUpdate } = extractedData;
 
         // 기존 상품 목록과 새 상품 목록 병합
         const existingProducts = promotion.applicableProducts || [];
@@ -259,7 +392,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         updatedCount: updatedPromotionIds.length,
+        createdDiscountRulesCount: createdDiscountRuleIds.length,
         updatedPromotions: updatedPromotionIds,
+        createdDiscountRules: createdDiscountRuleIds,
         errors: errors.length > 0 ? errors : undefined,
         batchId: data.batchId,
       });

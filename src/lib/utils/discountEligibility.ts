@@ -82,7 +82,82 @@ export function checkSubscriptionRequirement(
   // 할인 결합 규칙 가져오기
   const rules = getCombinationRules(discount);
 
-  // 할인 규칙에 특정 구독이 필요한 경우
+  // ========================================================================
+  // 1. 이 할인 자체가 구독/멤버십/통신사 할인인 경우
+  // → 프리셋에 이 할인이 구독으로 등록되어 있어야 함
+  // ========================================================================
+  const isSubscriptionBasedDiscount =
+    discount.config.category === 'telecom' ||
+    (discount.config.category === 'coupon' && discount.name.includes('구독')) ||
+    discount.config.category === 'payment_instant' && (discount.config as any).isNaverPlus;
+
+  if (isSubscriptionBasedDiscount) {
+    if (!preset.subscriptions || preset.subscriptions.length === 0) {
+      return {
+        isEligible: false,
+        reason: `'${discount.name}' 구독이 프리셋에 등록되지 않았습니다.`,
+      };
+    }
+
+    // 프리셋의 구독 목록에 이 할인 ID가 있는지 확인
+    const subscription = preset.subscriptions.find(
+      (sub) => String(sub.discountId) === String(discount._id)
+    );
+
+    if (!subscription) {
+      return {
+        isEligible: false,
+        reason: `'${discount.name}' 구독이 프리셋에 등록되지 않았습니다.`,
+      };
+    }
+
+    if (!subscription.isActive) {
+      return {
+        isEligible: false,
+        reason: `${subscription.name} 구독이 비활성화되어 있습니다.`,
+      };
+    }
+
+    // 유효 기간 확인
+    if (subscription.validFrom && currentDate < subscription.validFrom) {
+      return {
+        isEligible: false,
+        reason: `${subscription.name} 구독이 아직 시작되지 않았습니다.`,
+      };
+    }
+
+    if (subscription.validTo && currentDate > subscription.validTo) {
+      return {
+        isEligible: false,
+        reason: `${subscription.name} 구독이 만료되었습니다.`,
+      };
+    }
+
+    // 사용 횟수 제한 확인
+    if (
+      subscription.dailyUsageRemaining !== undefined &&
+      subscription.dailyUsageRemaining <= 0
+    ) {
+      return {
+        isEligible: false,
+        reason: `${subscription.name} 오늘의 사용 가능 횟수를 모두 소진했습니다.`,
+      };
+    }
+
+    if (
+      subscription.totalUsageRemaining !== undefined &&
+      subscription.totalUsageRemaining <= 0
+    ) {
+      return {
+        isEligible: false,
+        reason: `${subscription.name} 전체 사용 가능 횟수를 모두 소진했습니다.`,
+      };
+    }
+  }
+
+  // ========================================================================
+  // 2. 할인 규칙에 다른 특정 구독이 필요한 경우
+  // ========================================================================
   if (rules.requiresDiscountId) {
     if (!preset.subscriptions || preset.subscriptions.length === 0) {
       return {

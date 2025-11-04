@@ -1,7 +1,11 @@
-# CU POS 프로모션 사진 변환 가이드
+# CU POS 프로모션/할인규칙 사진 변환 가이드
 
 ## 📌 목적
-이 문서는 `data/promotions/` 폴더에 수집된 CU POS기 프로모션 화면 사진들을 구조화된 JSON 데이터로 변환하기 위한 영구적인 작업 지시서입니다.
+이 문서는 `data/promotions/` 폴더에 수집된 CU POS기 프로모션 및 할인규칙 화면 사진들을 구조화된 JSON 데이터로 변환하기 위한 영구적인 작업 지시서입니다.
+
+**지원 항목**:
+- ✅ 프로모션 (1+1, 2+1 등)
+- ✅ 할인규칙 (결제수단 할인, 조건부 할인 등)
 
 ## 📂 파일 구조
 
@@ -48,6 +52,32 @@ data/
   "conversionStatus": "pending"
 }
 ```
+
+## 🔍 프로모션 vs 할인규칙 구분
+
+POS 화면을 분석할 때 **프로모션**과 **할인규칙**을 구분해야 합니다:
+
+### 프로모션 (Promotion)
+- **형태**: `1+1`, `2+1`, `2+2` 등
+- **특징**: 상품 구매 시 무료 증정
+- **예시**: "멘토스 2종 1+1", "아이스크림 3,000원 30종 2+1"
+
+### 할인규칙 (DiscountRule)
+- **형태**: 금액 할인, 퍼센트 할인, 조건부 할인
+- **특징**:
+  - "17,500원 할인"
+  - "CU페이 결제 시 추가 할인"
+  - "5종 구매 시..."
+  - "1천원당 300원"
+- **예시**: "배러10입 5종 구매 시 17,500원 할인"
+
+### ⚠️ 복합 화면 처리
+**한 POS 화면에 여러 할인이 혼재**할 수 있습니다:
+- 프로모션 + 결제수단 할인
+- 여러 개의 프로모션
+- 여러 개의 할인규칙
+
+→ 각각을 별도의 conversion 항목으로 분리하여 처리하세요.
 
 ## 📸 POS 화면 사진 읽는 방법
 
@@ -146,8 +176,8 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
           ],
           "giftSelectionType": "cross",
           "giftProducts": [],
-          "validFrom": "2025-10-01T00:00:00.000Z",
-          "validTo": "2025-10-31T23:59:59.999Z",
+          "validFrom": "2025-09-30T15:00:00.000Z",
+          "validTo": "2025-10-31T14:59:59.000Z",
           "status": "active",
           "isActive": true
         }
@@ -200,8 +230,8 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
             "8801114160909",
             "8801114164402"
           ],
-          "validFrom": "2025-10-01T00:00:00.000Z",
-          "validTo": "2025-10-31T23:59:59.999Z",
+          "validFrom": "2025-09-30T15:00:00.000Z",
+          "validTo": "2025-10-31T14:59:59.000Z",
           "status": "active",
           "isActive": true
         }
@@ -212,13 +242,75 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
       },
       "warnings": [],
       "notes": "풀무원 국탕 3종이 서로 교차 증정 가능."
+    },
+    {
+      "sourceSessionId": "session_2025-11-03T08-12-39",
+      "sourcePhotoPath": "data/photos/session_2025-11-03T08-12-39/photo_2025-11-03T08-12-59-659Z.jpg",
+      "action": "create_discount_rule",
+      "confidence": "high",
+      "extractedData": {
+        "posScreenData": {
+          "productBarcode": "8806016185296",
+          "productName": "배러푸룬10입",
+          "eventCode": "2511",
+          "eventName": "배러애사비10입단품할",
+          "eventDescription": "-CU페이 결제 시 추가 할인",
+          "additionalInfo": "동화)배러10입 5종 구매 시, 17,500원 할인",
+          "eventPeriod": {
+            "start": "2025-11-01",
+            "end": "2025-11-30"
+          },
+          "targetProducts": [
+            { "barcode": "8806016185272", "name": "배러레스트10입" },
+            { "barcode": "8806016185296", "name": "배러푸룬10입" },
+            { "barcode": "8806016186125", "name": "배러라이트10입" },
+            { "barcode": "8806016186163", "name": "배러애사비10입" },
+            { "barcode": "8806016186187", "name": "배러텐션10입" }
+          ]
+        },
+        "discountRuleUpdate": {
+          "name": "배러10입5종단품할인",
+          "description": "배러10입 5종 (레스트/푸룬/라이트/애사비/텐션) 단품 구매 시 17,500원 할인",
+          "config": {
+            "category": "coupon",
+            "valueType": "fixed_amount",
+            "fixedAmount": 17500
+          },
+          "applicableProducts": [
+            "8806016185272",
+            "8806016185296",
+            "8806016186125",
+            "8806016186163",
+            "8806016186187"
+          ],
+          "applicableType": "products",
+          "constraints": {
+            "minQuantity": 1,
+            "minPurchaseAmount": null
+          },
+          "validFrom": "2025-10-31T15:00:00.000Z",
+          "validTo": "2025-11-30T14:59:59.000Z",
+          "status": "active",
+          "isActive": true
+        }
+      },
+      "mergeStrategy": {
+        "type": "create_new",
+        "description": "배러10입 5종 단품 할인 규칙 신규 생성"
+      },
+      "warnings": [
+        "POS 화면에 CU페이 결제 조건이 표시되어 있으나 별도의 할인으로 보임"
+      ],
+      "notes": "배러10입 5종 (레스트/푸룬/라이트/애사비/텐션) 중 하나라도 구매 시 17,500원 고정 할인. 단품 할인 행사."
     }
   ],
   "summary": {
-    "processed": 4,
-    "succeeded": 4,
+    "processed": 5,
+    "succeeded": 5,
     "failed": 0,
-    "warnings": 0
+    "warnings": 1,
+    "promotions": 4,
+    "discountRules": 1
   }
 }
 ```
@@ -249,15 +341,65 @@ CU POS기의 "상품별 행사정보" 화면에서 다음 정보를 추출:
   - `giftProducts` 필드 생략
 
 ### 4. 날짜 처리
-- **입력 형식**: `YYYY-MM-DD`
-- **출력 형식**: ISO 8601 (`YYYY-MM-DDTHH:mm:ss.sssZ`)
-- `validFrom`: 시작일 00:00:00
-- `validTo`: 종료일 23:59:59
+
+**⚠️ 중요: 한국 시간대(KST, UTC+9) 정확히 맞추기**
+
+POS 화면의 날짜는 한국 시간(KST)이므로, UTC로 변환 시 **9시간을 빼야** 합니다.
+
+#### 변환 규칙
+- **입력 형식**: `YYYY-MM-DD` (POS 화면, 한국 시간 기준)
+- **출력 형식**: ISO 8601 UTC (`YYYY-MM-DDTHH:mm:ss.sssZ`)
+
+#### 계산 방법
+
+**validFrom (시작일 00:00:00 KST)**:
+- POS: `2025-10-01` → KST: `2025-10-01 00:00:00`
+- UTC 변환: 9시간을 뺌
+- 결과: `2025-09-30T15:00:00.000Z`
+
+**validTo (종료일 23:59:59 KST)**:
+- POS: `2025-10-31` → KST: `2025-10-31 23:59:59`
+- UTC 변환: 9시간을 뺌
+- 결과: `2025-10-31T14:59:59.000Z`
+
+#### 예시
+
+POS 화면에 `행사기간 : 2025-11-01 ~ 2025-11-30`이라고 표시된 경우:
+
+```json
+{
+  "validFrom": "2025-10-31T15:00:00.000Z",  // 2025-11-01 00:00:00 KST
+  "validTo": "2025-11-30T14:59:59.000Z"     // 2025-11-30 23:59:59 KST
+}
+```
+
+#### JavaScript 변환 코드 (참고)
+
+```javascript
+// POS 날짜 문자열: "2025-11-01"
+const startDateKST = "2025-11-01";
+const endDateKST = "2025-11-30";
+
+// validFrom: 시작일 00:00:00 KST → UTC
+const validFrom = new Date(`${startDateKST}T00:00:00+09:00`).toISOString();
+// 결과: "2025-10-31T15:00:00.000Z"
+
+// validTo: 종료일 23:59:59 KST → UTC
+const validTo = new Date(`${endDateKST}T23:59:59+09:00`).toISOString();
+// 결과: "2025-11-30T14:59:59.000Z"
+```
 
 ### 5. action 필드 결정
+
+**프로모션용**:
 - `"update_and_merge"`: 기존 프로모션 업데이트 및 상품 병합 (대부분의 경우)
-- `"create_new"`: 완전히 새로운 프로모션 생성 (거의 없음)
+- `"create_new"`: 완전히 새로운 프로모션 생성
 - `"skip"`: 이미 완벽한 데이터, 업데이트 불필요
+
+**할인규칙용**:
+- `"create_discount_rule"`: 새로운 할인규칙 생성
+- `"update_discount_rule"`: 기존 할인규칙 업데이트
+- `"skip"`: 할인규칙이 이미 존재하거나 처리 불필요
 
 ### 6. confidence 필드
 - `"high"`: 모든 정보가 명확하게 보임

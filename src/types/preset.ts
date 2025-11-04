@@ -14,7 +14,7 @@ export interface PaymentMethodInfo {
   method: PaymentMethod;
 
   // 상세 정보
-  channel?: 'direct_card' | 'samsung_pay' | 'naver_pay' | 'kakao_pay' | 'cu_pay' | 'cash';
+  channel?: 'direct_card' | 'samsung_pay' | 'naver_pay' | 'kakao_pay' | 'cu_pay' | 'toss_pay' | 'money' | 'account' | 'cash';
   cardIssuer?: 'shinhan' | 'bc' | 'samsung' | 'hana' | 'woori' | 'kb' | 'hyundai' | 'nh' | 'ibk' | 'suhyup';
   cardType?: 'personal_credit' | 'personal_check' | 'corporate' | 'prepaid' | 'gift';
 

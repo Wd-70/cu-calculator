@@ -9,7 +9,7 @@ const DiscountConfigSchema = new Schema({
   category: {
     type: String,
     required: true,
-    enum: ['coupon', 'telecom', 'payment_event', 'voucher', 'payment_instant', 'payment_compound', 'promotion'],
+    enum: ['coupon', 'telecom', 'payment_event', 'voucher', 'payment_instant', 'payment_compound', 'event', 'promotion'],
   },
   valueType: {
     type: String,
@@ -28,6 +28,10 @@ const DiscountConfigSchema = new Schema({
   canCombineWithMembership: Boolean,
 
   // 결제행사 할인
+  baseAmountType: {
+    type: String,
+    enum: ['original_price', 'current_amount'],
+  },
   requiresQR: Boolean,
   eventName: String,
   restrictedProviders: [String],
@@ -57,7 +61,7 @@ const DiscountConfigSchema = new Schema({
   giftProducts: [String],
   giftCategories: [String],
   giftBrands: [String],
-}, { _id: false });
+}, { _id: false, strict: false });
 
 /**
  * 할인 결합 규칙 서브스키마

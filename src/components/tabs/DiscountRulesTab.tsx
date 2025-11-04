@@ -12,6 +12,7 @@ export default function DiscountRulesTab() {
   const [discounts, setDiscounts] = useState<IDiscountRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showExpired, setShowExpired] = useState(false);
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<IDiscountRule | null>(null);
@@ -48,10 +49,23 @@ export default function DiscountRulesTab() {
     }
   };
 
-  // 카테고리별 필터링
-  const filteredDiscounts = selectedCategory === 'all'
+  // 현재 유효한 할인인지 확인
+  const isDiscountValid = (discount: IDiscountRule): boolean => {
+    const now = new Date();
+    const validFrom = new Date(discount.validFrom);
+    const validTo = new Date(discount.validTo);
+    return now >= validFrom && now <= validTo;
+  };
+
+  // 카테고리별 필터링 + 날짜 필터링
+  let filteredDiscounts = selectedCategory === 'all'
     ? discounts
     : discounts.filter(d => d.config.category === selectedCategory);
+
+  // 만료된 할인 제외 (showExpired가 false인 경우)
+  if (!showExpired) {
+    filteredDiscounts = filteredDiscounts.filter(isDiscountValid);
+  }
 
   // 카테고리별 그룹화
   const groupedDiscounts = filteredDiscounts.reduce((acc, discount) => {
@@ -71,6 +85,7 @@ export default function DiscountRulesTab() {
     voucher: { bg: 'bg-green-50', text: 'text-green-700', badge: 'bg-green-100' },
     payment_instant: { bg: 'bg-orange-50', text: 'text-orange-700', badge: 'bg-orange-100' },
     payment_compound: { bg: 'bg-pink-50', text: 'text-pink-700', badge: 'bg-pink-100' },
+    event: { bg: 'bg-amber-50', text: 'text-amber-700', badge: 'bg-amber-100' },
   };
 
   // 할인 값 표시 함수
@@ -79,6 +94,9 @@ export default function DiscountRulesTab() {
 
     switch (config.category) {
       case 'coupon':
+        if (config.valueType === 'fixed_amount' && config.fixedAmount) {
+          return `${config.fixedAmount.toLocaleString()}원 할인`;
+        }
         if (config.isSubscription) {
           return `${config.percentage}% 할인`;
         }
@@ -97,6 +115,11 @@ export default function DiscountRulesTab() {
         return `${config.amount.toLocaleString()}원권`;
       case 'payment_instant':
       case 'payment_compound':
+        return `${config.percentage}% 할인`;
+      case 'event':
+        if (config.valueType === 'fixed_amount' && config.fixedAmount) {
+          return `${config.fixedAmount.toLocaleString()}원 할인`;
+        }
         return `${config.percentage}% 할인`;
       default:
         return '할인';
@@ -132,36 +155,60 @@ export default function DiscountRulesTab() {
       </div>
 
       {/* 카테고리 필터 */}
-      <div className="mb-8 overflow-x-auto">
-        <div className="flex gap-3 min-w-max pb-2">
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={`px-6 py-3 rounded-full font-semibold transition-all ${
-              selectedCategory === 'all'
-                ? 'bg-gray-900 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            전체 ({discounts.length})
-          </button>
-          {Object.entries(DISCOUNT_CATEGORY_NAMES).map(([key, name]) => {
-            const count = discounts.filter(d => d.config.category === key).length;
-            if (count === 0) return null;
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={showExpired}
+                onChange={(e) => setShowExpired(e.target.checked)}
+                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                만료된 할인 포함
+              </span>
+            </label>
+            <div className="text-sm text-gray-500">
+              {showExpired ? (
+                <>전체 <span className="font-semibold text-gray-700">{filteredDiscounts.length}</span>개</>
+              ) : (
+                <>현재 유효 <span className="font-semibold text-blue-600">{filteredDiscounts.length}</span>개</>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <div className="flex gap-3 min-w-max pb-2">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-6 py-3 rounded-full font-semibold transition-all ${
+                selectedCategory === 'all'
+                  ? 'bg-gray-900 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              전체 ({filteredDiscounts.length})
+            </button>
+            {Object.entries(DISCOUNT_CATEGORY_NAMES).map(([key, name]) => {
+              const count = filteredDiscounts.filter(d => d.config.category === key).length;
+              if (count === 0) return null;
 
-            return (
-              <button
-                key={key}
-                onClick={() => setSelectedCategory(key)}
-                className={`px-6 py-3 rounded-full font-semibold transition-all whitespace-nowrap ${
-                  selectedCategory === key
-                    ? `${(categoryColors[key] || { badge: 'bg-gray-100', text: 'text-gray-700' }).badge} ${(categoryColors[key] || { badge: 'bg-gray-100', text: 'text-gray-700' }).text} shadow-lg`
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {name} ({count})
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedCategory(key)}
+                  className={`px-6 py-3 rounded-full font-semibold transition-all whitespace-nowrap ${
+                    selectedCategory === key
+                      ? `${(categoryColors[key] || { badge: 'bg-gray-100', text: 'text-gray-700' }).badge} ${(categoryColors[key] || { badge: 'bg-gray-100', text: 'text-gray-700' }).text} shadow-lg`
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {name} ({count})
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -284,12 +331,42 @@ export default function DiscountRulesTab() {
                           </div>
                         )}
 
+                        {/* 적용 상품 수 */}
+                        {discount.applicableProducts && discount.applicableProducts.length > 0 && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-500">대상 상품:</span>
+                            <span className="text-gray-700 font-medium">
+                              {discount.applicableProducts.length}개 상품
+                            </span>
+                          </div>
+                        )}
+
+                        {/* 최소 구매 수량 */}
+                        {discount.constraints?.minQuantity && discount.constraints.minQuantity > 1 && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-500">최소 수량:</span>
+                            <span className="text-gray-700 font-medium">
+                              {discount.constraints.minQuantity}개 이상
+                            </span>
+                          </div>
+                        )}
+
                         {/* 최소 구매 금액 */}
                         {discount.minPurchaseAmount && (
                           <div className="flex items-start gap-2">
-                            <span className="text-gray-500">최소:</span>
+                            <span className="text-gray-500">최소 금액:</span>
                             <span className="text-gray-700 font-medium">
                               {discount.minPurchaseAmount.toLocaleString()}원 이상
+                            </span>
+                          </div>
+                        )}
+
+                        {/* constraints의 minPurchaseAmount */}
+                        {discount.constraints?.minPurchaseAmount && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-500">최소 금액:</span>
+                            <span className="text-gray-700 font-medium">
+                              {discount.constraints.minPurchaseAmount.toLocaleString()}원 이상
                             </span>
                           </div>
                         )}
