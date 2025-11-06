@@ -1,0 +1,30 @@
+{
+  "deactivatedItems": {
+    "session_2025-11-03T08-12-39": {
+      "deactivatedAt": "2025-11-06T10:12:18.291Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-03T09-45-50": {
+      "deactivatedAt": "2025-11-06T10:12:24.317Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-03T09-46-24": {
+      "deactivatedAt": "2025-11-06T10:12:31.095Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-03T09-46-51": {
+      "deactivatedAt": "2025-11-06T10:12:57.044Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-03T09-47-23": {
+      "deactivatedAt": "2025-11-06T10:20:50.516Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    }
+  },
+  "lastUpdated": "2025-11-06T10:20:50.516Z"
+}

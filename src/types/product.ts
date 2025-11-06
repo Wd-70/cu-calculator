@@ -8,7 +8,7 @@ export interface CategoryTag {
 
 export interface IProduct {
   _id: Types.ObjectId;
-  barcode: string;
+  barcode?: string; // Optional: 바코드 없이 등록 후 나중에 추가 가능
   name: string;
   price: number;
   categoryTags?: CategoryTag[]; // 모든 카테고리 태그 (계층 구조 포함)

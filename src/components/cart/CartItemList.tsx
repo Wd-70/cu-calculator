@@ -78,7 +78,10 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, on
                 <div className="flex items-center gap-2 mt-3">
                   <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                     <button
-                      onClick={() => onUpdateQuantity(item.barcode, item.quantity - 1)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateQuantity(item.barcode, item.quantity - 1);
+                      }}
                       disabled={item.quantity <= 1}
                       className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
@@ -96,10 +99,14 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, on
                           onUpdateQuantity(item.barcode, value);
                         }
                       }}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-12 text-center py-1.5 border-x border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:z-10"
                     />
                     <button
-                      onClick={() => onUpdateQuantity(item.barcode, item.quantity + 1)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateQuantity(item.barcode, item.quantity + 1);
+                      }}
                       className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
                       <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +120,10 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, on
                   </div>
 
                   <button
-                    onClick={() => onRemoveItem(item.barcode)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveItem(item.barcode);
+                    }}
                     className="ml-auto p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="삭제"
                   >

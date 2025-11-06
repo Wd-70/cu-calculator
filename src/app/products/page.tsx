@@ -7,6 +7,10 @@ import * as clientDb from '@/lib/clientDb';
 import { ICart } from '@/types/cart';
 import Toast from '@/components/Toast';
 import ProductDetailModal from '@/components/ProductDetailModal';
+import { UNIFIED_CATEGORIES, CATEGORY_MAPPING, getUnifiedCategories, type UnifiedCategory } from '@/lib/constants/categoryMapping';
+import { getCurrentUserAddress } from '@/lib/userAuth';
+import { checkIsAdminClient } from '@/lib/adminAuth';
+import CategoryManagementModal from '@/components/CategoryManagementModal';
 
 interface CategoryTag {
   name: string;
@@ -32,12 +36,16 @@ export default function ProductsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('전체');
-  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<UnifiedCategory>('전체');
+  const [originalCategories, setOriginalCategories] = useState<string[]>([]); // DB에서 가져온 원본 카테고리들
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     // 초기 로드
@@ -46,6 +54,7 @@ export default function ProductsPage() {
     fetchProducts(true);
     loadCarts();
     fetchCategories();
+    checkUserStatus();
 
     // URL 파라미터에서 검색어 가져오기
     const searchQuery = searchParams.get('search');
@@ -53,6 +62,15 @@ export default function ProductsPage() {
       setSearchTerm(searchQuery);
     }
   }, [searchParams]);
+
+  const checkUserStatus = async () => {
+    const address = getCurrentUserAddress();
+    setUserAddress(address);
+    if (address) {
+      const adminStatus = await checkIsAdminClient(address);
+      setIsAdmin(adminStatus);
+    }
+  };
 
   // 검색어나 카테고리가 변경되면 재검색
   useEffect(() => {
@@ -87,12 +105,24 @@ export default function ProductsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loading, loadingMore, hasMore, products.length]);
 
+  // 맨 위로 가기 버튼 표시 여부
+  useEffect(() => {
+    const handleScroll = () => {
+      // 200px 이상 스크롤하면 버튼 표시
+      setShowScrollTop(window.scrollY > 200);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const fetchCategories = async () => {
     try {
       const response = await fetch('/api/products/categories');
       const data = await response.json();
       if (data.success) {
-        setAllCategories(data.data);
+        // DB에서 가져온 원본 카테고리 저장
+        setOriginalCategories(data.data);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -121,7 +151,25 @@ export default function ProductsPage() {
       }
 
       if (selectedCategory !== '전체') {
-        params.append('category', selectedCategory);
+        // "기타" 카테고리는 특수 처리 (모든 카테고리가 미매핑인 상품)
+        if (selectedCategory === '기타') {
+          params.append('categories', '기타');
+        } else {
+          // 통합 카테고리를 원본 카테고리들로 변환
+          const originalCategoriesForUnified = Object.entries(CATEGORY_MAPPING)
+            .filter(([_, unified]) => unified === selectedCategory)
+            .map(([original, _]) => original);
+
+          // 변환된 원본 카테고리들을 모두 검색 조건에 추가
+          if (originalCategoriesForUnified.length > 0) {
+            originalCategoriesForUnified.forEach(cat => {
+              params.append('categories', cat); // 복수형으로 변경
+            });
+          } else {
+            // 매핑된 카테고리가 없으면 존재하지 않는 더미 카테고리로 검색 (빈 결과 반환)
+            params.append('categories', '__EMPTY_CATEGORY__');
+          }
+        }
       }
 
       const response = await fetch(`/api/products?${params.toString()}`);
@@ -277,7 +325,16 @@ export default function ProductsPage() {
     }
   };
 
-  const categories = ['전체', ...allCategories];
+  // 맨 위로 스크롤
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
+  // '+1 행사상품' 카테고리는 제외 (아직 구현되지 않음)
+  const categories = UNIFIED_CATEGORIES.filter(cat => cat !== '+1 행사상품') as UnifiedCategory[];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -349,6 +406,18 @@ export default function ProductsPage() {
               </button>
             ))}
           </div>
+
+          {/* 관리자 기능 */}
+          {isAdmin && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all text-sm"
+              >
+                📂 카테고리 관리
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 결과 수 */}
@@ -506,6 +575,25 @@ export default function ProductsPage() {
           type={toast.type}
           onClose={() => setToast(null)}
         />
+      )}
+
+      {/* 카테고리 관리 모달 */}
+      <CategoryManagementModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+      />
+
+      {/* 맨 위로 가기 버튼 */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-20 right-4 md:bottom-8 z-50 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+          aria-label="맨 위로 가기"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
       )}
 
       {/* 하단 네비게이션 */}

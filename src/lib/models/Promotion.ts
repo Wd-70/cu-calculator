@@ -136,7 +136,7 @@ const PromotionSchema = new Schema<IPromotion>(
     // 증정 방식
     giftSelectionType: {
       type: String,
-      enum: ['same', 'cross'],
+      enum: ['same', 'cross', 'combo'],
       required: true,
       default: 'same',
     },

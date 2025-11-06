@@ -21,8 +21,9 @@ const ProductSchema = new Schema<IProduct>(
   {
     barcode: {
       type: String,
-      required: true,
-      unique: true,
+      required: false, // Optional: 바코드 없이도 등록 가능
+      sparse: true, // sparse index: 바코드가 있는 경우만 unique 체크
+      unique: true, // 바코드가 있으면 중복 불가
     },
     name: {
       type: String,

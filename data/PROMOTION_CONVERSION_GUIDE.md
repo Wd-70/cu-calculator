@@ -438,6 +438,51 @@ const validTo = new Date(`${endDateKST}T23:59:59+09:00`).toISOString();
 }
 ```
 
+## 🔄 변환 완료 후 비활성화
+
+### 자동 비활성화
+변환된 항목을 `data/promotions/conversion-queue-status.json` 파일에 기록하여 다음 변환 요청 시 제외되도록 합니다.
+
+**변환 완료 시 Claude가 해야 할 작업**:
+1. `batch_{timestamp}.json` 파일 생성 후
+2. 각 변환된 항목의 ID (promotionId 또는 sessionId)를 별도 목록으로 작성
+3. 사용자에게 다음과 같이 안내:
+
+```
+✅ 변환이 완료되었습니다!
+
+변환된 항목 (10개):
+- session_2025-11-06T07-39-24
+- session_2025-11-06T07-38-12
+- session_2025-11-06T07-37-41
+...
+
+이 항목들을 비활성화하려면 프로모션 페이지의 "변환 대기" 탭에서 각 항목의 "✗ 비활성화" 버튼을 클릭하세요.
+또는 수동으로 처리할 수도 있습니다.
+```
+
+### 수동 비활성화
+사용자는 프로모션 페이지의 "📷 사진 데이터 변환" 모달에서:
+1. "📋 변환 대기" 탭 선택
+2. 각 항목의 "✗ 비활성화" 버튼 클릭
+3. 비활성화된 항목은 기본적으로 숨겨짐
+4. "비활성 항목 표시" 토글로 다시 볼 수 있음
+5. "✓ 활성화" 버튼으로 다시 활성화 가능
+
+### queue-status.json 구조
+```json
+{
+  "deactivatedItems": {
+    "session_2025-11-06T07-39-24": {
+      "deactivatedAt": "2025-11-06T08:00:00.000Z",
+      "deactivatedBy": "0x1234...5678",
+      "reason": "Converted in batch_2025-11-06_08-00-00"
+    }
+  },
+  "lastUpdated": "2025-11-06T08:00:00.000Z"
+}
+```
+
 ## 🚀 작업 요청 방법
 
 ### Claude에게 요청할 때:
@@ -451,6 +496,7 @@ const validTo = new Date(`${endDateKST}T23:59:59+09:00`).toISOString();
 4. 해당 프로모션의 사진들을 읽어주세요
 5. 가이드에 따라 `batch_{timestamp}.json` 파일을 생성해주세요
 6. `data/promotions/conversion-batches/` 폴더에 저장해주세요
+7. 변환된 항목 목록을 사용자에게 안내해주세요 (비활성화를 위해)
 ```
 
 ## 📊 변환 후 데이터 흐름

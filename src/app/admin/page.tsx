@@ -26,12 +26,20 @@ export default function AdminPage() {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
   const [pagesPerCategory, setPagesPerCategory] = useState(3);
+  const [onlyWithBarcode, setOnlyWithBarcode] = useState(false); // 바코드 있는 것만 크롤링
   const [crawlProgress, setCrawlProgress] = useState({
     message: '',
     categoryProgress: { current: 0, total: 7 },
     pageProgress: { current: 0, total: 0 },
     productCount: 0
   });
+
+  // 바코드 없는 상품 관리
+  const [productsWithoutBarcode, setProductsWithoutBarcode] = useState<any[]>([]);
+  const [loadingWithoutBarcode, setLoadingWithoutBarcode] = useState(false);
+  const [updatingBarcode, setUpdatingBarcode] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [newBarcode, setNewBarcode] = useState('');
   const [updatingCategories, setUpdatingCategories] = useState(false);
   const [maxCategoryUpdates, setMaxCategoryUpdates] = useState(999999); // 전체 업데이트
   const [checkingDetailUrls, setCheckingDetailUrls] = useState(false);
@@ -114,7 +122,8 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           accountAddress: userAddress,
-          pagesPerCategory
+          pagesPerCategory,
+          onlyWithBarcode
         }),
       });
 
@@ -338,6 +347,95 @@ export default function AdminPage() {
     }
   };
 
+  const loadProductsWithoutBarcode = async () => {
+    if (!userAddress) {
+      setToast({ message: '계정이 필요합니다.', type: 'error' });
+      return;
+    }
+
+    try {
+      setLoadingWithoutBarcode(true);
+
+      const response = await fetch(`/api/admin/products/without-barcode?accountAddress=${userAddress}&limit=50`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setProductsWithoutBarcode(data.data);
+        setToast({
+          message: `바코드 없는 상품 ${data.total}개를 불러왔습니다.`,
+          type: 'success'
+        });
+      } else {
+        setToast({
+          message: data.error || '상품 조회에 실패했습니다.',
+          type: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load products without barcode:', error);
+      setToast({
+        message: '상품 조회 중 오류가 발생했습니다.',
+        type: 'error'
+      });
+    } finally {
+      setLoadingWithoutBarcode(false);
+    }
+  };
+
+  const handleUpdateBarcode = async (productId: string) => {
+    if (!userAddress) {
+      setToast({ message: '계정이 필요합니다.', type: 'error' });
+      return;
+    }
+
+    if (!/^\d{13}$/.test(newBarcode)) {
+      setToast({ message: '바코드는 13자리 숫자여야 합니다.', type: 'error' });
+      return;
+    }
+
+    try {
+      setUpdatingBarcode(true);
+
+      const response = await fetch('/api/admin/products/update-barcode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountAddress: userAddress,
+          productId,
+          barcode: newBarcode
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setToast({
+          message: '바코드가 등록되었습니다!',
+          type: 'success'
+        });
+        setEditingProduct(null);
+        setNewBarcode('');
+        // 목록 새로고침
+        loadProductsWithoutBarcode();
+      } else {
+        setToast({
+          message: data.error || '바코드 등록에 실패했습니다.',
+          type: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update barcode:', error);
+      setToast({
+        message: '바코드 등록 중 오류가 발생했습니다.',
+        type: 'error'
+      });
+    } finally {
+      setUpdatingBarcode(false);
+    }
+  };
+
   const handleCrawlPromotions = async () => {
     if (!userAddress) {
       setToast({ message: '계정이 필요합니다.', type: 'error' });
@@ -523,31 +621,47 @@ export default function AdminPage() {
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">CU 상품 크롤링</h2>
 
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                카테고리별 크롤링 페이지 수
-              </label>
-              <input
-                type="number"
-                value={pagesPerCategory}
-                onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 3)}
-                min="1"
-                max="20"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                각 카테고리에서 앞쪽 페이지만 크롤링합니다 (신상품 우선)
-              </p>
+          <div className="space-y-4">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  카테고리별 크롤링 페이지 수
+                </label>
+                <input
+                  type="number"
+                  value={pagesPerCategory}
+                  onChange={(e) => setPagesPerCategory(parseInt(e.target.value) || 3)}
+                  min="1"
+                  max="20"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  각 카테고리에서 앞쪽 페이지만 크롤링합니다 (신상품 우선)
+                </p>
+              </div>
+
+              <button
+                onClick={handleCrawl}
+                disabled={crawling || !userAddress}
+                className="px-6 py-3 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {crawling ? '크롤링 중...' : 'CU 사이트에서 크롤링'}
+              </button>
             </div>
 
-            <button
-              onClick={handleCrawl}
-              disabled={crawling || !userAddress}
-              className="px-6 py-3 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              {crawling ? '크롤링 중...' : 'CU 사이트에서 크롤링'}
-            </button>
+            {/* 바코드 필터 옵션 */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="onlyWithBarcode"
+                checked={onlyWithBarcode}
+                onChange={(e) => setOnlyWithBarcode(e.target.checked)}
+                className="w-4 h-4 text-[#7C3FBF] border-gray-300 rounded focus:ring-[#7C3FBF]"
+              />
+              <label htmlFor="onlyWithBarcode" className="text-sm font-medium text-gray-700 cursor-pointer">
+                바코드가 있는 상품만 크롤링 (바코드 없는 상품 제외)
+              </label>
+            </div>
           </div>
 
           {/* 크롤링 진행 상황 */}
@@ -704,6 +818,126 @@ export default function AdminPage() {
               <li>• 예상 크롤링 상품 수: 약 {pagesPerTab * 2 * 40}개 (탭당 페이지당 약 40개)</li>
             </ul>
           </div>
+        </div>
+
+        {/* 바코드 없는 상품 관리 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">바코드 없는 상품 관리</h2>
+            <button
+              onClick={loadProductsWithoutBarcode}
+              disabled={loadingWithoutBarcode || !userAddress}
+              className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {loadingWithoutBarcode ? '조회 중...' : '바코드 없는 상품 조회'}
+            </button>
+          </div>
+
+          <div className="mb-4 p-4 bg-yellow-50 rounded-xl">
+            <p className="text-sm text-yellow-800 mb-2">
+              ℹ️ 바코드 없이 등록된 상품들을 확인하고 바코드를 등록할 수 있습니다.
+            </p>
+            <ul className="text-xs text-yellow-700 space-y-1 ml-4">
+              <li>• 크롤링 시 바코드를 추출하지 못한 상품들입니다</li>
+              <li>• 바코드를 등록하면 일반 사용자도 해당 상품을 조회할 수 있습니다</li>
+              <li>• 바코드는 13자리 숫자여야 합니다</li>
+            </ul>
+          </div>
+
+          {productsWithoutBarcode.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                총 {productsWithoutBarcode.length}개의 상품
+              </p>
+              <div className="max-h-[500px] overflow-y-auto space-y-3">
+                {productsWithoutBarcode.map((product) => (
+                  <div
+                    key={product._id}
+                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      {product.imageUrl && (
+                        <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/100x100?text=No+Image';
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 mb-2">{product.name}</h3>
+                        <div className="space-y-1 text-sm text-gray-600 mb-3">
+                          <p>
+                            <span className="font-semibold">가격:</span> {product.price?.toLocaleString()}원
+                          </p>
+                          {product.categoryTags && product.categoryTags.length > 0 && (
+                            <p>
+                              <span className="font-semibold">카테고리:</span>{' '}
+                              {product.categoryTags.map((tag: any) => tag.name).join(', ')}
+                            </p>
+                          )}
+                        </div>
+
+                        {editingProduct === product._id ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newBarcode}
+                              onChange={(e) => setNewBarcode(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                              placeholder="13자리 바코드 입력"
+                              maxLength={13}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
+                            />
+                            <button
+                              onClick={() => handleUpdateBarcode(product._id)}
+                              disabled={updatingBarcode || newBarcode.length !== 13}
+                              className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {updatingBarcode ? '등록 중...' : '등록'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingProduct(null);
+                                setNewBarcode('');
+                              }}
+                              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setEditingProduct(product._id);
+                              setNewBarcode('');
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-lg font-bold hover:shadow-lg transition-all"
+                          >
+                            바코드 등록
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {productsWithoutBarcode.length === 0 && !loadingWithoutBarcode && (
+            <div className="text-center py-12 text-gray-500">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p>바코드 없는 상품이 없습니다.</p>
+              <p className="text-sm mt-2">위 버튼을 클릭하여 조회하세요.</p>
+            </div>
+          )}
         </div>
 
         {/* 실시간 카테고리 업데이트 및 충돌 해결 */}

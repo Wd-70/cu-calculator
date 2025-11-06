@@ -17,6 +17,17 @@ interface PendingPhoto {
   lastUpdated?: string;
 }
 
+interface QueueStatus {
+  deactivatedItems: {
+    [key: string]: {
+      deactivatedAt: string;
+      deactivatedBy: string;
+      reason?: string;
+    };
+  };
+  lastUpdated: string;
+}
+
 interface PhotoConversionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,10 +58,17 @@ export default function PhotoConversionModal({
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
+  // 항목 상태 관리
+  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
+  const [showDeactivated, setShowDeactivated] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<PendingPhoto | null>(null);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       loadPendingPhotos();
       loadBatchFiles();
+      loadQueueStatus();
       // 새 세션 ID 생성
       if (!currentSessionId) {
         setCurrentSessionId(generateSessionId());
@@ -110,6 +128,69 @@ export default function PhotoConversionModal({
       console.error('Error loading batch files:', error);
     } finally {
       setLoadingBatches(false);
+    }
+  };
+
+  const loadQueueStatus = async () => {
+    if (!userAddress) return;
+
+    try {
+      const response = await fetch(`/api/admin/photos/queue-status?accountAddress=${userAddress}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setQueueStatus(data.status);
+      }
+    } catch (error) {
+      console.error('Error loading queue status:', error);
+    }
+  };
+
+  const toggleItemStatus = async (itemId: string, currentlyDeactivated: boolean) => {
+    if (!userAddress) return;
+
+    try {
+      const response = await fetch('/api/admin/photos/queue-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress: userAddress,
+          itemId,
+          action: currentlyDeactivated ? 'activate' : 'deactivate',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setQueueStatus(data.status);
+      }
+    } catch (error) {
+      console.error('Error toggling item status:', error);
+      alert('상태 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  const isItemDeactivated = (itemId: string | undefined): boolean => {
+    if (!itemId || !queueStatus) return false;
+    return !!queueStatus.deactivatedItems[itemId];
+  };
+
+  const getFilteredPhotos = () => {
+    if (showDeactivated) {
+      return pendingPhotos;
+    }
+    return pendingPhotos.filter(photo => {
+      const itemId = photo.promotionId || photo.sessionId;
+      return !isItemDeactivated(itemId);
+    });
+  };
+
+  const getPhotoPath = (photo: PendingPhoto, filename: string): string => {
+    if (photo.promotionId) {
+      return `data/promotions/${photo.promotionId}/${filename}`;
+    } else {
+      return `data/photos/${photo.sessionId}/${filename}`;
     }
   };
 
@@ -180,14 +261,16 @@ export default function PhotoConversionModal({
   };
 
   const handleCopyTaskInfo = () => {
+    const filteredPhotos = getFilteredPhotos(); // 활성화된 항목만
+
     const taskInfo = `
 # 프로모션 사진 변환 요청
 
 data/PROMOTION_CONVERSION_GUIDE.md 파일을 읽고, 다음 사진들을 변환해주세요.
 
-## 변환 대기 중인 사진 (${pendingPhotos.length}개)
+## 변환 대기 중인 사진 (${filteredPhotos.length}개)
 
-${pendingPhotos.map((p, idx) => {
+${filteredPhotos.map((p, idx) => {
   if (p.promotionId) {
     return `
 ### ${idx + 1}. ${p.promotionName} (프로모션)
@@ -431,49 +514,109 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
               ) : (
                 <>
                   <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 className="font-semibold text-blue-900 mb-2">📸 변환 대기 중</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-blue-900">📸 변환 대기 중</h3>
+                      <button
+                        onClick={() => setShowDeactivated(!showDeactivated)}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                          showDeactivated
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-blue-700 border border-blue-300 hover:bg-blue-100'
+                        }`}
+                      >
+                        {showDeactivated ? '✓ 비활성 항목 표시 중' : '비활성 항목 표시'}
+                      </button>
+                    </div>
                     <p className="text-blue-800 text-sm">
-                      총 <strong>{pendingPhotos.length}개</strong> 항목의 사진이 변환을 기다리고 있습니다.
+                      총 <strong>{pendingPhotos.length}개</strong> 항목 중{' '}
+                      <strong>{getFilteredPhotos().length}개</strong>가 활성화되어 있습니다.
                     </p>
                   </div>
 
                   <div className="space-y-3 mb-6">
-                    {pendingPhotos.map((photo, idx) => (
-                      <div
-                        key={photo.promotionId || photo.sessionId}
-                        className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-gray-900">
-                                {photo.promotionName || photo.sessionName}
-                              </h4>
-                              {photo.promotionId ? (
-                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
-                                  프로모션
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 text-xs rounded-full">
-                                  독립 촬영
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 font-mono mt-1">
-                              ID: {photo.promotionId || photo.sessionId}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-2">
-                              📷 {photo.photoCount}장의 사진
-                            </p>
-                            {photo.lastUpdated && (
-                              <p className="text-xs text-gray-400 mt-1">
-                                마지막 업데이트: {new Date(photo.lastUpdated).toLocaleString('ko-KR')}
+                    {getFilteredPhotos().map((photo, idx) => {
+                      const itemId = photo.promotionId || photo.sessionId || '';
+                      const deactivated = isItemDeactivated(itemId);
+
+                      return (
+                        <div
+                          key={itemId}
+                          className={`p-4 rounded-lg border transition-all ${
+                            deactivated
+                              ? 'bg-gray-100 border-gray-300 opacity-60'
+                              : 'bg-gray-50 border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900">
+                                  {photo.promotionName || photo.sessionName}
+                                </h4>
+                                {photo.promotionId ? (
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                    프로모션
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 text-xs rounded-full">
+                                    독립 촬영
+                                  </span>
+                                )}
+                                {deactivated && (
+                                  <span className="px-2 py-0.5 bg-gray-400 text-white text-xs rounded-full">
+                                    비활성
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 font-mono mt-1">
+                                ID: {itemId}
                               </p>
-                            )}
+                              <p className="text-sm text-gray-600 mt-2">
+                                📷 {photo.photoCount}장의 사진
+                              </p>
+                              {photo.lastUpdated && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  마지막 업데이트: {new Date(photo.lastUpdated).toLocaleString('ko-KR')}
+                                </p>
+                              )}
+
+                              {/* 사진 미리보기 */}
+                              <div className="flex gap-2 mt-3 overflow-x-auto">
+                                {photo.photos.slice(0, 3).map((p, photoIdx) => (
+                                  <img
+                                    key={photoIdx}
+                                    src={`/api/admin/photos/view?accountAddress=${userAddress}&path=${encodeURIComponent(getPhotoPath(photo, p.filename))}`}
+                                    alt={`Photo ${photoIdx + 1}`}
+                                    onClick={() => {
+                                      setSelectedPhoto(photo);
+                                      setShowPhotoPreview(true);
+                                    }}
+                                    className="w-20 h-20 object-cover rounded border border-gray-300 cursor-pointer hover:scale-110 transition-transform"
+                                  />
+                                ))}
+                                {photo.photoCount > 3 && (
+                                  <div className="w-20 h-20 bg-gray-200 rounded border border-gray-300 flex items-center justify-center text-gray-600 text-xs">
+                                    +{photo.photoCount - 3}장
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 활성/비활성화 버튼 */}
+                            <button
+                              onClick={() => toggleItemStatus(itemId, deactivated)}
+                              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                                deactivated
+                                  ? 'bg-green-500 text-white hover:bg-green-600'
+                                  : 'bg-red-500 text-white hover:bg-red-600'
+                              }`}
+                            >
+                              {deactivated ? '✓ 활성화' : '✗ 비활성화'}
+                            </button>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <div className="border-t border-gray-300 pt-4">
@@ -664,6 +807,46 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
           </button>
         </div>
       </div>
+
+      {/* 사진 미리보기 모달 */}
+      {showPhotoPreview && selectedPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col m-4">
+            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold">
+                📷 {selectedPhoto.promotionName || selectedPhoto.sessionName}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPhotoPreview(false);
+                  setSelectedPhoto(null);
+                }}
+                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedPhoto.photos.map((photo, idx) => (
+                  <div key={idx} className="border border-gray-300 rounded-lg overflow-hidden">
+                    <img
+                      src={`/api/admin/photos/view?accountAddress=${userAddress}&path=${encodeURIComponent(getPhotoPath(selectedPhoto, photo.filename))}`}
+                      alt={`Photo ${idx + 1}`}
+                      className="w-full h-auto"
+                    />
+                    <div className="p-2 bg-gray-50 text-xs text-gray-600 font-mono">
+                      {photo.filename}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
