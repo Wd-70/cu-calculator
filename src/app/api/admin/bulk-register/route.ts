@@ -45,42 +45,68 @@ export async function POST(request: NextRequest) {
     // 1단계: 필수 필드 검증 및 기존 상품 필터링
     const validProducts = [];
     const existingBarcodes = new Set<string>();
+    const existingNames = new Set<string>();
 
     console.log(`총 ${products.length}개 상품 처리 시작...`);
 
-    // 먼저 모든 바코드 수집
+    // 바코드가 있는 상품들의 바코드 수집
     const allBarcodes = products
       .filter(p => p.barcode && p.name && p.price)
       .map(p => p.barcode);
 
-    // 기존 상품들을 한 번에 조회
-    const existingProducts = await db.findProducts({
-      barcode: { $in: allBarcodes }
-    });
+    // 바코드가 없는 상품들의 이름 수집
+    const allNames = products
+      .filter(p => !p.barcode && p.name && p.price)
+      .map(p => p.name);
 
-    existingProducts.forEach(p => existingBarcodes.add(p.barcode));
-    console.log(`${existingBarcodes.size}개 기존 상품 발견`);
+    // 기존 상품들을 한 번에 조회 (바코드)
+    if (allBarcodes.length > 0) {
+      const existingProductsWithBarcode = await db.findProducts({
+        barcode: { $in: allBarcodes }
+      });
+      existingProductsWithBarcode.forEach(p => existingBarcodes.add(p.barcode));
+    }
+
+    // 기존 상품들을 한 번에 조회 (이름)
+    if (allNames.length > 0) {
+      const existingProductsWithoutBarcode = await db.findProducts({
+        name: { $in: allNames },
+        $or: [
+          { barcode: { $exists: false } },
+          { barcode: null },
+          { barcode: '' }
+        ]
+      });
+      existingProductsWithoutBarcode.forEach(p => existingNames.add(p.name));
+    }
+
+    console.log(`${existingBarcodes.size}개 기존 상품 발견 (바코드)`);
+    console.log(`${existingNames.size}개 기존 상품 발견 (이름)`);
 
     // 필터링 및 검증
     for (const product of products) {
       const { barcode, name, price, category, imageUrl, detailUrls } = product;
 
-      // 필수 필드 검증
-      if (!barcode || !name || !price) {
+      // 필수 필드 검증 (바코드는 선택 사항)
+      if (!name || !price) {
         results.failed++;
-        results.errors.push(`${name || barcode}: 필수 정보 누락`);
+        results.errors.push(`${name || '(이름 없음)'}: 필수 정보 누락`);
         continue;
       }
 
-      // 기존 상품 체크
-      if (existingBarcodes.has(barcode)) {
+      // 기존 상품 체크 (바코드가 있으면 바코드로, 없으면 이름으로)
+      if (barcode && existingBarcodes.has(barcode)) {
         results.skipped++;
         continue;
       }
 
-      // 새 상품 목록에 추가
-      validProducts.push({
-        barcode,
+      if (!barcode && existingNames.has(name)) {
+        results.skipped++;
+        continue;
+      }
+
+      // 새 상품 목록에 추가 (바코드가 없으면 필드 자체를 생략)
+      const productData: any = {
         name,
         price,
         category: category || null,
@@ -92,13 +118,31 @@ export async function POST(request: NextRequest) {
         isVerified: false,
         verificationCount: 0,
         reportCount: 0,
-      });
+      };
+
+      // 바코드가 있을 때만 추가 (sparse index를 위해)
+      // undefined, null, 빈 문자열 모두 제외
+      if (barcode && barcode.trim()) {
+        productData.barcode = barcode.trim();
+      }
+
+      validProducts.push(productData);
     }
 
     // 2단계: 벌크 삽입
     if (validProducts.length > 0) {
       try {
         console.log(`${validProducts.length}개 상품 벌크 삽입 시작...`);
+
+        // 디버깅: 바코드 없는 상품 확인
+        const productsWithoutBarcode = validProducts.filter(p => !p.barcode);
+        if (productsWithoutBarcode.length > 0) {
+          console.log(`바코드 없는 상품 ${productsWithoutBarcode.length}개:`);
+          productsWithoutBarcode.slice(0, 3).forEach(p => {
+            console.log(`  - ${p.name}: barcode=${JSON.stringify(p.barcode)}, hasOwnProperty=${p.hasOwnProperty('barcode')}`);
+          });
+        }
+
         const bulkResult = await db.bulkCreateProducts(validProducts);
         results.success = bulkResult.insertedCount;
         console.log(`✅ ${bulkResult.insertedCount}개 상품 삽입 완료`);

@@ -67,7 +67,15 @@ export class MongoDBAdapter implements IDatabase {
   async createProduct(
     data: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>
   ): Promise<IProduct> {
-    const product = await Product.create(data);
+    // undefined 필드를 제거 (sparse index를 위해)
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        cleaned[key] = value;
+      }
+    }
+
+    const product = await Product.create(cleaned);
     return product.toObject();
   }
 
@@ -78,7 +86,29 @@ export class MongoDBAdapter implements IDatabase {
       return { insertedCount: 0, insertedIds: [] };
     }
 
-    const result = await Product.insertMany(data, { ordered: false });
+    // undefined 필드를 제거 (MongoDB가 null로 변환하는 것을 방지)
+    // sparse index가 제대로 작동하려면 필드가 완전히 없어야 함
+    const cleanedData = data.map(item => {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(item)) {
+        if (value !== undefined) {
+          cleaned[key] = value;
+        }
+      }
+      return cleaned;
+    });
+
+    // 디버깅: MongoDB로 전송되는 데이터 확인
+    console.log('\n=== MongoDB로 전송할 데이터 샘플 (최대 3개) ===');
+    cleanedData.slice(0, 3).forEach((item, idx) => {
+      console.log(`\n[${idx + 1}] ${item.name}`);
+      console.log('  barcode:', JSON.stringify(item.barcode));
+      console.log('  hasOwnProperty(barcode):', item.hasOwnProperty('barcode'));
+      console.log('  전체 키:', Object.keys(item));
+    });
+    console.log('==========================================\n');
+
+    const result = await Product.insertMany(cleanedData, { ordered: false });
     return {
       insertedCount: result.length,
       insertedIds: result.map((doc) => doc._id.toString()),

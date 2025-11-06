@@ -250,9 +250,23 @@ export async function POST(request: NextRequest) {
             imageUrl = 'https:' + imageUrl;
           }
 
-          // 바코드 추출 (이미지 URL에서) - _W, _H 등 접미사 허용
-          const barcodeMatch = imageUrl.match(/\/(\d{13})(_[A-Z])?\./);
-          const barcode = barcodeMatch ? barcodeMatch[1] : '';
+          // 바코드 추출 (이미지 URL 파일명에서 13자리 또는 12자리 숫자)
+          let barcode = '';
+          const filename = imageUrl.split('/').pop() || '';
+          // 확장자 제거
+          const nameWithoutExt = filename.replace(/\.[^.]+$/, '');
+
+          // 13자리 숫자 찾기 (우선순위 - EAN-13 바코드)
+          const match13 = nameWithoutExt.match(/(\d{13})/);
+          if (match13) {
+            barcode = match13[1];
+          } else {
+            // 13자리가 없으면 12자리 찾기 (UPC-A 바코드)
+            const match12 = nameWithoutExt.match(/(\d{12})/);
+            if (match12) {
+              barcode = match12[1];
+            }
+          }
 
           // 상세 페이지 URL 추출 (onclick="view(25489);" 형식)
           let detailUrl = '';
@@ -296,14 +310,20 @@ export async function POST(request: NextRequest) {
           const shouldSave = (onlyWithBarcodeOption && barcode) || (!onlyWithBarcodeOption && name && price > 0);
 
           if (shouldSave && name && price > 0) {
-            results.push({
+            const productData: any = {
               name: name.trim(), // 원본 이름 유지
               price,
               imageUrl,
-              barcode: barcode || undefined, // 바코드 없으면 undefined
               detailUrl,
               promotion
-            });
+            };
+
+            // 바코드가 있을 때만 추가 (undefined 방지)
+            if (barcode) {
+              productData.barcode = barcode;
+            }
+
+            results.push(productData);
           } else {
             // 누락된 상품 정보 수집
             skippedCount++;
@@ -391,12 +411,10 @@ export async function POST(request: NextRequest) {
             console.warn(`   - 바코드 없음: ${categoryProducts.skippedReasons.noBarcode}개`);
             console.warn(`   - 가격 오류: ${categoryProducts.skippedReasons.invalidPrice}개`);
 
-            // 누락된 상품 상세 정보 출력 (최대 10개)
-            const maxDisplay = 10;
-            const displayCount = Math.min(categoryProducts.skippedProducts.length, maxDisplay);
-            console.warn(`\n   누락된 상품 상세 정보 (${displayCount}/${categoryProducts.skippedProducts.length}개 표시):`);
+            // 누락된 상품 상세 정보 출력 (전체)
+            console.warn(`\n   누락된 상품 상세 정보 (전체 ${categoryProducts.skippedProducts.length}개):`);
 
-            for (let i = 0; i < displayCount; i++) {
+            for (let i = 0; i < categoryProducts.skippedProducts.length; i++) {
               const skipped = categoryProducts.skippedProducts[i];
               console.warn(`\n   [${i + 1}] index: ${skipped.index}, reason: ${skipped.reason}`);
               console.warn(`       이름: ${skipped.name}`);
@@ -405,10 +423,6 @@ export async function POST(request: NextRequest) {
               console.warn(`       이미지: ${skipped.imageUrl}`);
               console.warn(`       URL: ${skipped.detailUrl}`);
               console.warn(`       프로모션: ${skipped.promotion}`);
-            }
-
-            if (categoryProducts.skippedProducts.length > maxDisplay) {
-              console.warn(`\n   ... 외 ${categoryProducts.skippedProducts.length - maxDisplay}개 더 있음`);
             }
             console.warn(''); // 빈 줄
           }

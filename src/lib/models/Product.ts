@@ -70,8 +70,8 @@ const ProductSchema = new Schema<IProduct>(
   }
 );
 
-// Indexes for better query performance (defined once)
-ProductSchema.index({ barcode: 1 });
+// Indexes for better query performance
+// Note: barcode index is already defined in the schema with unique and sparse options
 ProductSchema.index({ name: 'text' });
 
 const Product: Model<IProduct> =

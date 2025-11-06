@@ -6,7 +6,8 @@
       "mcp__playwright__playwright_evaluate",
       "mcp__playwright__playwright_navigate",
       "mcp__playwright__playwright_click",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__playwright__playwright_close"
     ],
     "deny": [],
     "ask": []
