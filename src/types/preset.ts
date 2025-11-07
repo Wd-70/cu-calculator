@@ -48,11 +48,17 @@ export interface UserSubscription {
   validFrom?: Date;
   validTo?: Date;
 
-  // 사용 제한
+  // 사용 제한 (횟수 기준 - 레거시)
   dailyUsageRemaining?: number;   // 오늘 남은 횟수
   totalUsageRemaining?: number;   // 전체 남은 횟수
   dailyUsageLimit?: number;        // 하루 최대 사용 횟수
   totalUsageLimit?: number;        // 전체 최대 사용 횟수
+
+  // 상품 개수 제한 (개별 상품 단위)
+  dailyItemRemaining?: number;     // 오늘 남은 상품 개수
+  totalItemRemaining?: number;     // 전체 남은 상품 개수
+  dailyItemLimit?: number;         // 하루 최대 상품 개수
+  totalItemLimit?: number;         // 전체 최대 상품 개수
 
   // 활성화 여부
   isActive: boolean;

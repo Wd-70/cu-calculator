@@ -66,8 +66,13 @@ export interface CouponDiscount {
   isSubscription?: boolean; // 구독 쿠폰 여부
   subscriptionCost?: number; // 구독료 (원)
   subscriptionPeriodDays?: number; // 구독 기간 (일)
-  dailyUsageLimit?: number; // 하루 사용 횟수 제한
-  totalUsageLimit?: number; // 구독 기간 내 총 사용 가능 횟수
+  dailyUsageLimit?: number; // 하루 사용 횟수 제한 (레거시, 호환성 유지)
+  totalUsageLimit?: number; // 구독 기간 내 총 사용 가능 횟수 (레거시, 호환성 유지)
+
+  // 일일 상품 개수 제한 (개별 상품 단위 제한)
+  itemLimitPerDay?: number; // 하루에 할인 적용 가능한 최대 상품 개수
+  totalItemLimit?: number; // 구독 기간 동안 할인 적용 가능한 총 상품 개수
+  itemSelectionMethod?: 'highest_price' | 'most_expensive' | 'cheapest' | 'first_come'; // 상품 선택 방식
 }
 
 // ============================================================================
@@ -308,9 +313,14 @@ export interface DiscountConstraints {
   maxDiscountPerItem?: number; // 상품당 최대 할인 금액 (원)
 
   // 사용 횟수 제한
-  dailyUsageLimit?: number; // 일일 사용 횟수 제한 (예: 1)
-  totalUsageLimit?: number; // 총 사용 횟수 제한
+  dailyUsageLimit?: number; // 일일 사용 횟수 제한 (예: 1) - 레거시
+  totalUsageLimit?: number; // 총 사용 횟수 제한 - 레거시
   usageResetTime?: string; // 사용 횟수 리셋 시간 (예: "00:00")
+
+  // 상품 개수 제한 (개별 상품 단위)
+  dailyItemLimit?: number; // 하루에 할인 적용 가능한 최대 상품 개수
+  totalItemLimit?: number; // 구독 기간 동안 할인 적용 가능한 총 상품 개수
+  itemSelectionStrategy?: 'most_expensive' | 'highest_price' | 'cheapest' | 'first_come'; // 상품 선택 전략
 }
 
 // ============================================================================

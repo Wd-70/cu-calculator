@@ -422,8 +422,40 @@ function calculateCombinationDiscountWithFiltering(
     } else if (applicationMethod === 'per_item') {
       // 상품별 개별 적용 방식
       let totalDiscountForThisRule = 0;
+      const actuallyAppliedItems: typeof applicableItems = [];
 
-      applicableItems.forEach(item => {
+      // 구독 할인의 경우 일일 상품 개수 제한 확인
+      const configAny = discount.config as any;
+      const dailyItemLimit = constraints.dailyItemLimit || configAny.itemLimitPerDay;
+      const itemSelectionStrategy = constraints.itemSelectionStrategy || configAny.itemSelectionMethod;
+
+      let itemsToApply = applicableItems;
+
+      // 일일 상품 개수 제한이 있는 경우
+      if (dailyItemLimit && dailyItemLimit > 0 && applicableItems.length > dailyItemLimit) {
+        console.log(`[${discount.name}] 일일 상품 제한: ${dailyItemLimit}개`);
+        console.log(`  적용 가능한 상품: ${applicableItems.length}개`);
+
+        // 선택 전략에 따라 정렬
+        if (itemSelectionStrategy === 'most_expensive' || itemSelectionStrategy === 'highest_price') {
+          // 비싼 순서로 정렬 (현재 가격 기준)
+          const sortedItems = [...applicableItems].sort((a, b) => {
+            const priceA = itemPrices.get(a.barcode) || 0;
+            const priceB = itemPrices.get(b.barcode) || 0;
+            return priceB - priceA; // 내림차순
+          });
+
+          // 상위 N개만 선택
+          itemsToApply = sortedItems.slice(0, dailyItemLimit);
+          console.log(`  선택된 상품 (비싼 순서 ${dailyItemLimit}개):`);
+          itemsToApply.forEach(item => {
+            const price = itemPrices.get(item.barcode) || 0;
+            console.log(`    - ${item.name}: ${price.toLocaleString()}원`);
+          });
+        }
+      }
+
+      itemsToApply.forEach(item => {
         const currentPrice = itemPrices.get(item.barcode) || 0;
         if (currentPrice === 0) return;
 
@@ -437,11 +469,12 @@ function calculateCombinationDiscountWithFiltering(
           const newPrice = Math.max(0, currentPrice - discountAmount);
           itemPrices.set(item.barcode, newPrice);
           totalDiscountForThisRule += discountAmount;
+          actuallyAppliedItems.push(item);
         }
       });
 
       if (totalDiscountForThisRule > 0) {
-        const totalApplicableAmount = applicableItems.reduce((sum, item) =>
+        const totalApplicableAmount = actuallyAppliedItems.reduce((sum, item) =>
           sum + item.price * item.quantity, 0
         );
 
@@ -451,7 +484,7 @@ function calculateCombinationDiscountWithFiltering(
           category: discount.config.category,
           amount: totalDiscountForThisRule,
           baseAmount: totalApplicableAmount,
-          appliedProducts: applicableItems.map(item => ({
+          appliedProducts: actuallyAppliedItems.map(item => ({
             productId: String(item.productId),
             barcode: item.barcode,
             name: item.name,
