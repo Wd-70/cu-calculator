@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getCurrentUserAddress } from '@/lib/userAuth';
 import Toast from '@/components/Toast';
 import ConflictResolutionPanel from '@/components/ConflictResolutionPanel';
+import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 
 interface CrawledProduct {
   name: string;
@@ -42,6 +43,8 @@ export default function AdminPage() {
   // 바코드 없는 상품 관리
   const [productsWithoutBarcode, setProductsWithoutBarcode] = useState<any[]>([]);
   const [loadingWithoutBarcode, setLoadingWithoutBarcode] = useState(false);
+  const [loadingMoreWithoutBarcode, setLoadingMoreWithoutBarcode] = useState(false);
+  const [totalWithoutBarcode, setTotalWithoutBarcode] = useState(0);
   const [updatingBarcode, setUpdatingBarcode] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [newBarcode, setNewBarcode] = useState('');
@@ -52,6 +55,14 @@ export default function AdminPage() {
   const [checkingDetailUrls, setCheckingDetailUrls] = useState(false);
   const [detailUrlStats, setDetailUrlStats] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  // 이미지 모달
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [imageModalUrl, setImageModalUrl] = useState('');
+  const [imageModalName, setImageModalName] = useState('');
+
+  // 바코드 스캐너
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // 프로모션 크롤링 상태
   const [crawlingPromotions, setCrawlingPromotions] = useState(false);
@@ -360,24 +371,61 @@ export default function AdminPage() {
     }
   };
 
-  const loadProductsWithoutBarcode = async () => {
+  const loadProductsWithoutBarcode = async (loadMore: boolean = false) => {
     if (!userAddress) {
       setToast({ message: '계정이 필요합니다.', type: 'error' });
       return;
     }
 
     try {
-      setLoadingWithoutBarcode(true);
+      if (loadMore) {
+        setLoadingMoreWithoutBarcode(true);
+      } else {
+        setLoadingWithoutBarcode(true);
+      }
 
-      const response = await fetch(`/api/admin/products/without-barcode?accountAddress=${userAddress}&limit=50`);
+      const offset = loadMore ? productsWithoutBarcode.length : 0;
+      console.log(`📦 바코드 없는 상품 로딩: offset=${offset}, limit=50`);
+
+      const response = await fetch(`/api/admin/products/without-barcode?accountAddress=${userAddress}&limit=50&offset=${offset}`);
       const data = await response.json();
 
+      console.log(`📥 API 응답: 받은 상품 ${data.data?.length || 0}개, 전체 ${data.total}개`);
+
       if (response.ok && data.success) {
-        setProductsWithoutBarcode(data.data);
-        setToast({
-          message: `바코드 없는 상품 ${data.total}개를 불러왔습니다.`,
-          type: 'success'
-        });
+        if (loadMore) {
+          // 중복 제거: 이미 존재하는 _id는 추가하지 않음
+          const existingIds = new Set(productsWithoutBarcode.map(p => p._id));
+          const newProducts = data.data.filter((p: any) => !existingIds.has(p._id));
+
+          console.log(`🔍 중복 확인: 받은 ${data.data.length}개 중 새로운 상품 ${newProducts.length}개`);
+          if (newProducts.length < data.data.length) {
+            console.warn(`⚠️ 중복된 상품 ${data.data.length - newProducts.length}개 발견!`);
+            console.log('중복 상품 ID:', data.data.filter((p: any) => existingIds.has(p._id)).map((p: any) => p._id));
+          }
+
+          setProductsWithoutBarcode(prev => [...prev, ...newProducts]);
+
+          // 실제로 추가된 개수 표시
+          if (newProducts.length > 0) {
+            setToast({
+              message: `${newProducts.length}개의 상품을 추가로 불러왔습니다.`,
+              type: 'success'
+            });
+          } else {
+            setToast({
+              message: '모두 중복된 상품입니다. API 오류일 수 있습니다.',
+              type: 'error'
+            });
+          }
+        } else {
+          setProductsWithoutBarcode(data.data);
+          setToast({
+            message: `바코드 없는 상품 ${data.total}개 중 ${Math.min(50, data.total)}개를 불러왔습니다.`,
+            type: 'success'
+          });
+        }
+        setTotalWithoutBarcode(data.total);
       } else {
         setToast({
           message: data.error || '상품 조회에 실패했습니다.',
@@ -391,7 +439,11 @@ export default function AdminPage() {
         type: 'error'
       });
     } finally {
-      setLoadingWithoutBarcode(false);
+      if (loadMore) {
+        setLoadingMoreWithoutBarcode(false);
+      } else {
+        setLoadingWithoutBarcode(false);
+      }
     }
   };
 
@@ -447,6 +499,14 @@ export default function AdminPage() {
     } finally {
       setUpdatingBarcode(false);
     }
+  };
+
+  // 바코드 스캔 핸들러
+  const handleBarcodeScan = async (barcode: string): Promise<boolean> => {
+    // 스캔된 바코드를 입력란에 설정
+    setNewBarcode(barcode);
+    setIsScannerOpen(false);
+    return true;
   };
 
   const handleFixNullBarcodes = async () => {
@@ -973,7 +1033,7 @@ export default function AdminPage() {
           {productsWithoutBarcode.length > 0 && (
             <div className="space-y-3">
               <p className="text-sm text-gray-600">
-                총 {productsWithoutBarcode.length}개의 상품
+                총 {totalWithoutBarcode.toLocaleString()}개 중 {productsWithoutBarcode.length.toLocaleString()}개 표시
               </p>
               <div className="max-h-[500px] overflow-y-auto space-y-3">
                 {productsWithoutBarcode.map((product) => (
@@ -983,7 +1043,15 @@ export default function AdminPage() {
                   >
                     <div className="flex items-start gap-4">
                       {product.imageUrl && (
-                        <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                        <div
+                          className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 cursor-pointer hover:ring-4 hover:ring-purple-300 transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImageModalUrl(product.imageUrl);
+                            setImageModalName(product.name);
+                            setImageModalOpen(true);
+                          }}
+                        >
                           <img
                             src={product.imageUrl}
                             alt={product.name}
@@ -1010,31 +1078,45 @@ export default function AdminPage() {
                         </div>
 
                         {editingProduct === product._id ? (
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={newBarcode}
-                              onChange={(e) => setNewBarcode(e.target.value.replace(/\D/g, '').slice(0, 13))}
-                              placeholder="13자리 바코드 입력"
-                              maxLength={13}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
-                            />
-                            <button
-                              onClick={() => handleUpdateBarcode(product._id)}
-                              disabled={updatingBarcode || newBarcode.length !== 13}
-                              className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {updatingBarcode ? '등록 중...' : '등록'}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingProduct(null);
-                                setNewBarcode('');
-                              }}
-                              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                              취소
-                            </button>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={newBarcode}
+                                onChange={(e) => setNewBarcode(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                                placeholder="13자리 바코드 입력"
+                                maxLength={13}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
+                              />
+                              <button
+                                onClick={() => setIsScannerOpen(true)}
+                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                                title="바코드 스캔"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                </svg>
+                                스캔
+                              </button>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleUpdateBarcode(product._id)}
+                                disabled={updatingBarcode || newBarcode.length !== 13}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {updatingBarcode ? '등록 중...' : '등록'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingProduct(null);
+                                  setNewBarcode('');
+                                }}
+                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                              >
+                                취소
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <button
@@ -1052,6 +1134,26 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
+
+              {/* 더 보기 버튼 */}
+              {productsWithoutBarcode.length < totalWithoutBarcode && (
+                <div className="text-center pt-4">
+                  <button
+                    onClick={() => loadProductsWithoutBarcode(true)}
+                    disabled={loadingMoreWithoutBarcode}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMoreWithoutBarcode ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        불러오는 중...
+                      </span>
+                    ) : (
+                      `더 보기 (${totalWithoutBarcode - productsWithoutBarcode.length}개 남음)`
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1261,6 +1363,51 @@ export default function AdminPage() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* 이미지 확대 모달 */}
+      {imageModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setImageModalOpen(false)}
+        >
+          <div
+            className="relative max-w-4xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setImageModalOpen(false)}
+              className="absolute -top-12 right-0 w-10 h-10 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+            >
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-2xl">
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-200">
+                <h3 className="font-bold text-gray-900">{imageModalName}</h3>
+              </div>
+              <div className="flex items-center justify-center bg-gray-100" style={{ minHeight: '400px', maxHeight: '70vh' }}>
+                <img
+                  src={imageModalUrl}
+                  alt={imageModalName}
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://via.placeholder.com/400x400?text=No+Image';
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 바코드 스캐너 모달 */}
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleBarcodeScan}
+        cartId="admin-barcode-registration"
+      />
     </div>
   );
 }

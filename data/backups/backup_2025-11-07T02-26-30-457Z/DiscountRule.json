@@ -1,0 +1,2917 @@
+[
+  {
+    "_id": "68f3a04c1547be5b17cc9372",
+    "name": "실속한끼 구독",
+    "description": "도시락 카테고리 25% 할인 (하루 5회, 총 15회)",
+    "config": {
+      "category": "coupon",
+      "valueType": "percentage",
+      "percentage": 25,
+      "restrictedProviders": [],
+      "subscriptionCost": 4900
+    },
+    "applicableProducts": [],
+    "applicableCategories": [
+      "도시락"
+    ],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [],
+    "paymentMethodNames": [],
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "eventMonth": "2025-10",
+    "eventName": "실속한끼 구독",
+    "isRecurring": false,
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "3000-10-31T14:59:59.000Z",
+    "priority": 0,
+    "isActive": true,
+    "createdAt": "2025-10-18T14:12:28.167Z",
+    "updatedAt": "2025-11-02T09:00:13.612Z",
+    "__v": 0,
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42"
+  },
+  {
+    "_id": "68f3a04c1547be5b17cc9375",
+    "name": "간편식사 구독",
+    "description": "간편식 카테고리 25% 할인 (하루 5회, 총 15회)",
+    "config": {
+      "category": "coupon",
+      "valueType": "percentage",
+      "percentage": 25,
+      "restrictedProviders": [],
+      "subscriptionCost": 4900
+    },
+    "applicableProducts": [],
+    "applicableCategories": [
+      "라면",
+      "도시락"
+    ],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [],
+    "paymentMethodNames": [],
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "eventMonth": "2025-10",
+    "eventName": "간편식사 구독",
+    "isRecurring": false,
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "3000-10-31T14:59:59.000Z",
+    "priority": 0,
+    "isActive": true,
+    "createdAt": "2025-10-18T14:12:28.444Z",
+    "updatedAt": "2025-11-02T09:00:20.166Z",
+    "__v": 0,
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42"
+  },
+  {
+    "_id": "68f3a04c1547be5b17cc9378",
+    "name": "get 아메리카노 구독",
+    "description": "음료 카테고리 30% 할인 (하루 5회, 총 15회)",
+    "config": {
+      "category": "coupon",
+      "valueType": "percentage",
+      "percentage": 30,
+      "restrictedProviders": [],
+      "subscriptionCost": 9900
+    },
+    "applicableProducts": [],
+    "applicableCategories": [
+      "음료"
+    ],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [],
+    "paymentMethodNames": [],
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "eventMonth": "2025-10",
+    "eventName": "get 아메리카노 구독",
+    "isRecurring": false,
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "3000-10-31T14:59:59.000Z",
+    "priority": 0,
+    "isActive": true,
+    "createdAt": "2025-10-18T14:12:28.646Z",
+    "updatedAt": "2025-11-02T09:00:27.968Z",
+    "__v": 0,
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42"
+  },
+  {
+    "_id": "68f3a04c1547be5b17cc937b",
+    "name": "우주패스 (1천원당 300원)",
+    "description": "우주패스 가입자 할인",
+    "config": {
+      "category": "telecom",
+      "valueType": "tiered_amount",
+      "tierUnit": 1000,
+      "tierAmount": 300,
+      "provider": "우주패스",
+      "canCombineWithMembership": false,
+      "restrictedProviders": [
+        "KT알뜰"
+      ],
+      "giftProducts": [],
+      "giftCategories": [],
+      "giftBrands": []
+    },
+    "applicableProducts": [],
+    "applicableCategories": [],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [],
+    "paymentMethodNames": [],
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "isRecurring": false,
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "2025-11-30T14:59:59.000Z",
+    "priority": 0,
+    "isActive": true,
+    "createdAt": "2025-10-18T14:12:28.750Z",
+    "updatedAt": "2025-11-02T19:41:48.774Z",
+    "__v": 0,
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+    "modificationHistory": [
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-02T19:33:50.247Z",
+        "changes": {
+          "before": {
+            "_id": "68f3a04c1547be5b17cc937b",
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ]
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "isRecurring": false,
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true,
+            "createdAt": "2025-10-18T14:12:28.750Z",
+            "updatedAt": "2025-11-02T19:29:59.355Z",
+            "__v": 0,
+            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "modificationHistory": []
+          },
+          "after": {
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ]
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "combinationRules": {
+              "cannotCombineWithPromotionGiftTypes": [
+                "same",
+                "cross"
+              ]
+            },
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "6907b21ef9b4a6ca35e258d5"
+      },
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-02T19:34:00.174Z",
+        "changes": {
+          "before": {
+            "_id": "68f3a04c1547be5b17cc937b",
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ]
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "isRecurring": false,
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true,
+            "createdAt": "2025-10-18T14:12:28.750Z",
+            "updatedAt": "2025-11-02T19:33:50.249Z",
+            "__v": 0,
+            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "modificationHistory": [
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                "changes": {
+                  "before": {
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": []
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b21ef9b4a6ca35e258d5"
+              }
+            ]
+          },
+          "after": {
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ]
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "combinationRules": {
+              "cannotCombineWithPromotionGiftTypes": [
+                "same",
+                "cross"
+              ]
+            },
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "6907b228f9b4a6ca35e258db"
+      },
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-02T19:36:45.853Z",
+        "changes": {
+          "before": {
+            "applicationMethod": "cart_total",
+            "cannotCombineWithPromotionGiftTypes": [],
+            "_id": "68f3a04c1547be5b17cc937b",
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "isRecurring": false,
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true,
+            "createdAt": "2025-10-18T14:12:28.750Z",
+            "updatedAt": "2025-11-02T19:34:00.175Z",
+            "__v": 0,
+            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "modificationHistory": [
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                "changes": {
+                  "before": {
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": []
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b21ef9b4a6ca35e258d5"
+              },
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:34:00.174Z",
+                "changes": {
+                  "before": {
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:33:50.249Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": [
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:33:50.247Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:29:59.355Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": []
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b21ef9b4a6ca35e258d5"
+                      }
+                    ]
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b228f9b4a6ca35e258db"
+              }
+            ]
+          },
+          "after": {
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ]
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "combinationRules": {
+              "cannotCombineWithPromotionGiftTypes": [
+                "same",
+                "cross"
+              ]
+            },
+            "constraints": {
+              "minPurchaseAmount": 1000
+            },
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "6907b2cde4875e1db12db7aa"
+      },
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-02T19:38:32.752Z",
+        "changes": {
+          "before": {
+            "applicationMethod": "cart_total",
+            "cannotCombineWithPromotionGiftTypes": [],
+            "_id": "68f3a04c1547be5b17cc937b",
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "isRecurring": false,
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true,
+            "createdAt": "2025-10-18T14:12:28.750Z",
+            "updatedAt": "2025-11-02T19:36:45.855Z",
+            "__v": 0,
+            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "modificationHistory": [
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                "changes": {
+                  "before": {
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": []
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b21ef9b4a6ca35e258d5"
+              },
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:34:00.174Z",
+                "changes": {
+                  "before": {
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:33:50.249Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": [
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:33:50.247Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:29:59.355Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": []
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b21ef9b4a6ca35e258d5"
+                      }
+                    ]
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b228f9b4a6ca35e258db"
+              },
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:36:45.853Z",
+                "changes": {
+                  "before": {
+                    "applicationMethod": "cart_total",
+                    "cannotCombineWithPromotionGiftTypes": [],
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ],
+                      "giftProducts": [],
+                      "giftCategories": [],
+                      "giftBrands": []
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:34:00.175Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": [
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:33:50.247Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:29:59.355Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": []
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b21ef9b4a6ca35e258d5"
+                      },
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:34:00.174Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:33:50.249Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": [
+                              {
+                                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                                "changes": {
+                                  "before": {
+                                    "_id": "68f3a04c1547be5b17cc937b",
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "cannotCombineWithCategories": [],
+                                    "cannotCombineWithIds": [],
+                                    "isRecurring": false,
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true,
+                                    "createdAt": "2025-10-18T14:12:28.750Z",
+                                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                                    "__v": 0,
+                                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                    "modificationHistory": []
+                                  },
+                                  "after": {
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "combinationRules": {
+                                      "cannotCombineWithPromotionGiftTypes": [
+                                        "same",
+                                        "cross"
+                                      ]
+                                    },
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true
+                                  }
+                                },
+                                "comment": "관리자 JSON 편집",
+                                "_id": "6907b21ef9b4a6ca35e258d5"
+                              }
+                            ]
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b228f9b4a6ca35e258db"
+                      }
+                    ]
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "constraints": {
+                      "minPurchaseAmount": 1000
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b2cde4875e1db12db7aa"
+              }
+            ],
+            "combinationRules": {
+              "cannotCombineWithCategories": [],
+              "cannotCombineWithIds": [],
+              "cannotCombineWithPromotionGiftTypes": [
+                "same",
+                "cross"
+              ]
+            },
+            "constraints": {
+              "minPurchaseAmount": 1000
+            }
+          },
+          "after": {
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ]
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "combinationRules": {
+              "cannotCombineWithPromotionGiftTypes": [
+                "same",
+                "cross"
+              ]
+            },
+            "constraints": {
+              "minPurchaseAmount": 1000
+            },
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "6907b338e4875e1db12db7b4"
+      },
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-02T19:41:48.771Z",
+        "changes": {
+          "before": {
+            "applicationMethod": "cart_total",
+            "cannotCombineWithPromotionGiftTypes": [],
+            "_id": "68f3a04c1547be5b17cc937b",
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "isRecurring": false,
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true,
+            "createdAt": "2025-10-18T14:12:28.750Z",
+            "updatedAt": "2025-11-02T19:38:32.754Z",
+            "__v": 0,
+            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "modificationHistory": [
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                "changes": {
+                  "before": {
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": []
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b21ef9b4a6ca35e258d5"
+              },
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:34:00.174Z",
+                "changes": {
+                  "before": {
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:33:50.249Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": [
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:33:50.247Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:29:59.355Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": []
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b21ef9b4a6ca35e258d5"
+                      }
+                    ]
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b228f9b4a6ca35e258db"
+              },
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:36:45.853Z",
+                "changes": {
+                  "before": {
+                    "applicationMethod": "cart_total",
+                    "cannotCombineWithPromotionGiftTypes": [],
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ],
+                      "giftProducts": [],
+                      "giftCategories": [],
+                      "giftBrands": []
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:34:00.175Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": [
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:33:50.247Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:29:59.355Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": []
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b21ef9b4a6ca35e258d5"
+                      },
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:34:00.174Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:33:50.249Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": [
+                              {
+                                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                                "changes": {
+                                  "before": {
+                                    "_id": "68f3a04c1547be5b17cc937b",
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "cannotCombineWithCategories": [],
+                                    "cannotCombineWithIds": [],
+                                    "isRecurring": false,
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true,
+                                    "createdAt": "2025-10-18T14:12:28.750Z",
+                                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                                    "__v": 0,
+                                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                    "modificationHistory": []
+                                  },
+                                  "after": {
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "combinationRules": {
+                                      "cannotCombineWithPromotionGiftTypes": [
+                                        "same",
+                                        "cross"
+                                      ]
+                                    },
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true
+                                  }
+                                },
+                                "comment": "관리자 JSON 편집",
+                                "_id": "6907b21ef9b4a6ca35e258d5"
+                              }
+                            ]
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b228f9b4a6ca35e258db"
+                      }
+                    ]
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "constraints": {
+                      "minPurchaseAmount": 1000
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b2cde4875e1db12db7aa"
+              },
+              {
+                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                "modifiedAt": "2025-11-02T19:38:32.752Z",
+                "changes": {
+                  "before": {
+                    "applicationMethod": "cart_total",
+                    "cannotCombineWithPromotionGiftTypes": [],
+                    "_id": "68f3a04c1547be5b17cc937b",
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ],
+                      "giftProducts": [],
+                      "giftCategories": [],
+                      "giftBrands": []
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "cannotCombineWithCategories": [],
+                    "cannotCombineWithIds": [],
+                    "isRecurring": false,
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true,
+                    "createdAt": "2025-10-18T14:12:28.750Z",
+                    "updatedAt": "2025-11-02T19:36:45.855Z",
+                    "__v": 0,
+                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                    "modificationHistory": [
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:33:50.247Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:29:59.355Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": []
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b21ef9b4a6ca35e258d5"
+                      },
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:34:00.174Z",
+                        "changes": {
+                          "before": {
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:33:50.249Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": [
+                              {
+                                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                                "changes": {
+                                  "before": {
+                                    "_id": "68f3a04c1547be5b17cc937b",
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "cannotCombineWithCategories": [],
+                                    "cannotCombineWithIds": [],
+                                    "isRecurring": false,
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true,
+                                    "createdAt": "2025-10-18T14:12:28.750Z",
+                                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                                    "__v": 0,
+                                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                    "modificationHistory": []
+                                  },
+                                  "after": {
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "combinationRules": {
+                                      "cannotCombineWithPromotionGiftTypes": [
+                                        "same",
+                                        "cross"
+                                      ]
+                                    },
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true
+                                  }
+                                },
+                                "comment": "관리자 JSON 편집",
+                                "_id": "6907b21ef9b4a6ca35e258d5"
+                              }
+                            ]
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b228f9b4a6ca35e258db"
+                      },
+                      {
+                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                        "modifiedAt": "2025-11-02T19:36:45.853Z",
+                        "changes": {
+                          "before": {
+                            "applicationMethod": "cart_total",
+                            "cannotCombineWithPromotionGiftTypes": [],
+                            "_id": "68f3a04c1547be5b17cc937b",
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ],
+                              "giftProducts": [],
+                              "giftCategories": [],
+                              "giftBrands": []
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "cannotCombineWithCategories": [],
+                            "cannotCombineWithIds": [],
+                            "isRecurring": false,
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true,
+                            "createdAt": "2025-10-18T14:12:28.750Z",
+                            "updatedAt": "2025-11-02T19:34:00.175Z",
+                            "__v": 0,
+                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                            "modificationHistory": [
+                              {
+                                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                "modifiedAt": "2025-11-02T19:33:50.247Z",
+                                "changes": {
+                                  "before": {
+                                    "_id": "68f3a04c1547be5b17cc937b",
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "cannotCombineWithCategories": [],
+                                    "cannotCombineWithIds": [],
+                                    "isRecurring": false,
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true,
+                                    "createdAt": "2025-10-18T14:12:28.750Z",
+                                    "updatedAt": "2025-11-02T19:29:59.355Z",
+                                    "__v": 0,
+                                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                    "modificationHistory": []
+                                  },
+                                  "after": {
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "combinationRules": {
+                                      "cannotCombineWithPromotionGiftTypes": [
+                                        "same",
+                                        "cross"
+                                      ]
+                                    },
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true
+                                  }
+                                },
+                                "comment": "관리자 JSON 편집",
+                                "_id": "6907b21ef9b4a6ca35e258d5"
+                              },
+                              {
+                                "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                "modifiedAt": "2025-11-02T19:34:00.174Z",
+                                "changes": {
+                                  "before": {
+                                    "_id": "68f3a04c1547be5b17cc937b",
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "cannotCombineWithCategories": [],
+                                    "cannotCombineWithIds": [],
+                                    "isRecurring": false,
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true,
+                                    "createdAt": "2025-10-18T14:12:28.750Z",
+                                    "updatedAt": "2025-11-02T19:33:50.249Z",
+                                    "__v": 0,
+                                    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                    "modificationHistory": [
+                                      {
+                                        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                        "modifiedAt": "2025-11-02T19:33:50.247Z",
+                                        "changes": {
+                                          "before": {
+                                            "_id": "68f3a04c1547be5b17cc937b",
+                                            "name": "우주패스 (1천원당 300원)",
+                                            "description": "우주패스 가입자 할인",
+                                            "config": {
+                                              "category": "telecom",
+                                              "valueType": "tiered_amount",
+                                              "tierUnit": 1000,
+                                              "tierAmount": 300,
+                                              "provider": "우주패스",
+                                              "canCombineWithMembership": false,
+                                              "restrictedProviders": [
+                                                "KT알뜰"
+                                              ]
+                                            },
+                                            "applicableProducts": [],
+                                            "applicableCategories": [],
+                                            "applicableBrands": [],
+                                            "requiredPaymentMethods": [],
+                                            "paymentMethodNames": [],
+                                            "cannotCombineWithCategories": [],
+                                            "cannotCombineWithIds": [],
+                                            "isRecurring": false,
+                                            "validFrom": "2025-09-30T15:00:00.000Z",
+                                            "validTo": "2025-11-30T14:59:59.000Z",
+                                            "priority": 0,
+                                            "isActive": true,
+                                            "createdAt": "2025-10-18T14:12:28.750Z",
+                                            "updatedAt": "2025-11-02T19:29:59.355Z",
+                                            "__v": 0,
+                                            "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+                                            "modificationHistory": []
+                                          },
+                                          "after": {
+                                            "name": "우주패스 (1천원당 300원)",
+                                            "description": "우주패스 가입자 할인",
+                                            "config": {
+                                              "category": "telecom",
+                                              "valueType": "tiered_amount",
+                                              "tierUnit": 1000,
+                                              "tierAmount": 300,
+                                              "provider": "우주패스",
+                                              "canCombineWithMembership": false,
+                                              "restrictedProviders": [
+                                                "KT알뜰"
+                                              ]
+                                            },
+                                            "applicableProducts": [],
+                                            "applicableCategories": [],
+                                            "applicableBrands": [],
+                                            "requiredPaymentMethods": [],
+                                            "paymentMethodNames": [],
+                                            "combinationRules": {
+                                              "cannotCombineWithPromotionGiftTypes": [
+                                                "same",
+                                                "cross"
+                                              ]
+                                            },
+                                            "validFrom": "2025-09-30T15:00:00.000Z",
+                                            "validTo": "2025-11-30T14:59:59.000Z",
+                                            "priority": 0,
+                                            "isActive": true
+                                          }
+                                        },
+                                        "comment": "관리자 JSON 편집",
+                                        "_id": "6907b21ef9b4a6ca35e258d5"
+                                      }
+                                    ]
+                                  },
+                                  "after": {
+                                    "name": "우주패스 (1천원당 300원)",
+                                    "description": "우주패스 가입자 할인",
+                                    "config": {
+                                      "category": "telecom",
+                                      "valueType": "tiered_amount",
+                                      "tierUnit": 1000,
+                                      "tierAmount": 300,
+                                      "provider": "우주패스",
+                                      "canCombineWithMembership": false,
+                                      "restrictedProviders": [
+                                        "KT알뜰"
+                                      ]
+                                    },
+                                    "applicableProducts": [],
+                                    "applicableCategories": [],
+                                    "applicableBrands": [],
+                                    "requiredPaymentMethods": [],
+                                    "paymentMethodNames": [],
+                                    "combinationRules": {
+                                      "cannotCombineWithPromotionGiftTypes": [
+                                        "same",
+                                        "cross"
+                                      ]
+                                    },
+                                    "validFrom": "2025-09-30T15:00:00.000Z",
+                                    "validTo": "2025-11-30T14:59:59.000Z",
+                                    "priority": 0,
+                                    "isActive": true
+                                  }
+                                },
+                                "comment": "관리자 JSON 편집",
+                                "_id": "6907b228f9b4a6ca35e258db"
+                              }
+                            ]
+                          },
+                          "after": {
+                            "name": "우주패스 (1천원당 300원)",
+                            "description": "우주패스 가입자 할인",
+                            "config": {
+                              "category": "telecom",
+                              "valueType": "tiered_amount",
+                              "tierUnit": 1000,
+                              "tierAmount": 300,
+                              "provider": "우주패스",
+                              "canCombineWithMembership": false,
+                              "restrictedProviders": [
+                                "KT알뜰"
+                              ]
+                            },
+                            "applicableProducts": [],
+                            "applicableCategories": [],
+                            "applicableBrands": [],
+                            "requiredPaymentMethods": [],
+                            "paymentMethodNames": [],
+                            "combinationRules": {
+                              "cannotCombineWithPromotionGiftTypes": [
+                                "same",
+                                "cross"
+                              ]
+                            },
+                            "constraints": {
+                              "minPurchaseAmount": 1000
+                            },
+                            "validFrom": "2025-09-30T15:00:00.000Z",
+                            "validTo": "2025-11-30T14:59:59.000Z",
+                            "priority": 0,
+                            "isActive": true
+                          }
+                        },
+                        "comment": "관리자 JSON 편집",
+                        "_id": "6907b2cde4875e1db12db7aa"
+                      }
+                    ],
+                    "combinationRules": {
+                      "cannotCombineWithCategories": [],
+                      "cannotCombineWithIds": [],
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "constraints": {
+                      "minPurchaseAmount": 1000
+                    }
+                  },
+                  "after": {
+                    "name": "우주패스 (1천원당 300원)",
+                    "description": "우주패스 가입자 할인",
+                    "config": {
+                      "category": "telecom",
+                      "valueType": "tiered_amount",
+                      "tierUnit": 1000,
+                      "tierAmount": 300,
+                      "provider": "우주패스",
+                      "canCombineWithMembership": false,
+                      "restrictedProviders": [
+                        "KT알뜰"
+                      ]
+                    },
+                    "applicableProducts": [],
+                    "applicableCategories": [],
+                    "applicableBrands": [],
+                    "requiredPaymentMethods": [],
+                    "paymentMethodNames": [],
+                    "combinationRules": {
+                      "cannotCombineWithPromotionGiftTypes": [
+                        "same",
+                        "cross"
+                      ]
+                    },
+                    "constraints": {
+                      "minPurchaseAmount": 1000
+                    },
+                    "validFrom": "2025-09-30T15:00:00.000Z",
+                    "validTo": "2025-11-30T14:59:59.000Z",
+                    "priority": 0,
+                    "isActive": true
+                  }
+                },
+                "comment": "관리자 JSON 편집",
+                "_id": "6907b338e4875e1db12db7b4"
+              }
+            ],
+            "combinationRules": {
+              "cannotCombineWithCategories": [],
+              "cannotCombineWithIds": [],
+              "cannotCombineWithPromotionGiftTypes": [
+                "same",
+                "cross"
+              ]
+            },
+            "constraints": {
+              "minPurchaseAmount": 1000
+            }
+          },
+          "after": {
+            "name": "우주패스 (1천원당 300원)",
+            "description": "우주패스 가입자 할인",
+            "config": {
+              "category": "telecom",
+              "valueType": "tiered_amount",
+              "tierUnit": 1000,
+              "tierAmount": 300,
+              "provider": "우주패스",
+              "canCombineWithMembership": false,
+              "restrictedProviders": [
+                "KT알뜰"
+              ]
+            },
+            "applicableProducts": [],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "combinationRules": {
+              "cannotCombineWithPromotionGiftTypes": [
+                "same",
+                "cross"
+              ]
+            },
+            "constraints": {
+              "minPurchaseAmount": 1000
+            },
+            "validFrom": "2025-09-30T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "priority": 0,
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "6907b3fca27e47aec3dea406"
+      }
+    ],
+    "combinationRules": {
+      "cannotCombineWithCategories": [],
+      "cannotCombineWithIds": [],
+      "cannotCombineWithPromotionGiftTypes": [
+        "same",
+        "cross"
+      ]
+    },
+    "constraints": {
+      "minPurchaseAmount": 1000
+    }
+  },
+  {
+    "_id": "68f3a04c1547be5b17cc937e",
+    "name": "KT알뜰 (20% 할인, 월 5천원 한도)",
+    "description": "KT알뜰 요금제 가입자 20% 할인 (월 최대 5,000원)",
+    "config": {
+      "category": "telecom",
+      "valueType": "percentage",
+      "percentage": 20,
+      "provider": "KT알뜰",
+      "canCombineWithMembership": false,
+      "restrictedProviders": [
+        "우주패스"
+      ]
+    },
+    "applicableProducts": [],
+    "applicableCategories": [],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [],
+    "paymentMethodNames": [],
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "isRecurring": false,
+    "validFrom": "2025-09-30T15:00:00.000Z",
+    "validTo": "3000-10-31T14:59:59.000Z",
+    "priority": 0,
+    "isActive": true,
+    "createdAt": "2025-10-18T14:12:28.804Z",
+    "updatedAt": "2025-11-02T08:58:29.448Z",
+    "__v": 0,
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42"
+  },
+  {
+    "_id": "68ff60550e3932b99fb047f5",
+    "name": "CU가 엄선한 2차 실속 행사",
+    "description": "포켓CU 멤버십 QR 스캔 후 지정 카드로 결제 시 25% 추가할인 (1+1, 2+1 행사 상품도 추가할인 적용)",
+    "config": {
+      "category": "payment_event",
+      "valueType": "percentage",
+      "percentage": 25,
+      "requiresQR": true,
+      "eventName": "CU가 엄선한 2차 실속 행사",
+      "restrictedProviders": []
+    },
+    "applicableProducts": [
+      "8801007512259",
+      "8801007037783",
+      "8801062011315",
+      "8801062010578",
+      "8801111922517",
+      "8801111944519",
+      "8801117686505",
+      "8801045014869",
+      "8801045501895",
+      "8801045233444",
+      "8801007281247",
+      "8801007281223",
+      "8801007216317",
+      "8801007256238",
+      "8801007684567",
+      "8801007216294",
+      "8801047181040",
+      "8801047859376",
+      "8801047859352",
+      "8801047859369",
+      "8801260608805"
+    ],
+    "applicableCategories": [],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [
+      "card",
+      "samsung_pay",
+      "naver_pay"
+    ],
+    "paymentMethodNames": [
+      "BC카드",
+      "삼성카드",
+      "신한카드",
+      "하나카드",
+      "우리카드"
+    ],
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "maxDiscountAmount": 6000,
+    "eventMonth": "2024-09",
+    "eventName": "CU가 엄선한 2차 실속 행사",
+    "isRecurring": false,
+    "validFrom": "2025-09-21T15:00:00.000Z",
+    "validTo": "2025-10-31T14:59:59.000Z",
+    "priority": 0,
+    "isActive": true,
+    "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+    "modificationHistory": [],
+    "createdAt": "2025-10-27T12:06:45.239Z",
+    "updatedAt": "2025-11-02T08:59:53.815Z",
+    "__v": 0
+  },
+  {
+    "_id": "6909a17c8ea0e89906620ea7",
+    "name": "2511배러10입5종단품할인",
+    "description": "배러10입 5종 (레스트/푸룬/라이트/애사비/텐션) 단품 구매 시 17,500원 할인",
+    "config": {
+      "category": "event",
+      "valueType": "fixed_amount",
+      "fixedAmount": 17500,
+      "restrictedProviders": [],
+      "giftProducts": [],
+      "giftCategories": [],
+      "giftBrands": []
+    },
+    "applicationMethod": "cart_total",
+    "applicableProducts": [
+      "8806016185272",
+      "8806016185296",
+      "8806016186125",
+      "8806016186163",
+      "8806016186187"
+    ],
+    "applicableCategories": [],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [],
+    "paymentMethodNames": [],
+    "constraints": {
+      "minPurchaseAmount": null,
+      "minQuantity": 1
+    },
+    "eventName": "배러애사비10입단품할",
+    "isRecurring": false,
+    "validFrom": "2025-10-31T15:00:00.000Z",
+    "validTo": "2025-11-30T14:59:59.000Z",
+    "sourceUrl": "photo:data/photos/session_2025-11-03T08-12-39/photo_2025-11-03T08-12-59-659Z.jpg",
+    "priority": 100,
+    "isActive": true,
+    "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "cannotCombineWithPromotionGiftTypes": [],
+    "createdAt": "2025-11-04T06:47:24.279Z",
+    "updatedAt": "2025-11-04T07:05:47.054Z",
+    "modificationHistory": [
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-04T07:05:47.053Z",
+        "changes": {
+          "before": {
+            "_id": "6909a17c8ea0e89906620ea7",
+            "name": "2511배러10입5종단품할인",
+            "description": "배러10입 5종 (레스트/푸룬/라이트/애사비/텐션) 단품 구매 시 17,500원 할인",
+            "config": {
+              "category": "coupon",
+              "valueType": "fixed_amount",
+              "fixedAmount": 17500,
+              "restrictedProviders": [],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicationMethod": "cart_total",
+            "applicableProducts": [
+              "8806016185272",
+              "8806016185296",
+              "8806016186125",
+              "8806016186163",
+              "8806016186187"
+            ],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "constraints": {
+              "minPurchaseAmount": null,
+              "minQuantity": 1
+            },
+            "eventName": "배러애사비10입단품할",
+            "isRecurring": false,
+            "validFrom": "2025-10-31T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "sourceUrl": "photo:data/photos/session_2025-11-03T08-12-39/photo_2025-11-03T08-12-59-659Z.jpg",
+            "priority": 100,
+            "isActive": true,
+            "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "cannotCombineWithPromotionGiftTypes": []
+          },
+          "after": {
+            "name": "2511배러10입5종단품할인",
+            "description": "배러10입 5종 (레스트/푸룬/라이트/애사비/텐션) 단품 구매 시 17,500원 할인",
+            "config": {
+              "category": "event",
+              "valueType": "fixed_amount",
+              "fixedAmount": 17500,
+              "restrictedProviders": [],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicableProducts": [
+              "8806016185272",
+              "8806016185296",
+              "8806016186125",
+              "8806016186163",
+              "8806016186187"
+            ],
+            "applicableCategories": [],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [],
+            "paymentMethodNames": [],
+            "constraints": {
+              "minPurchaseAmount": null,
+              "minQuantity": 1
+            },
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "eventName": "배러애사비10입단품할",
+            "isRecurring": false,
+            "validFrom": "2025-10-31T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "sourceUrl": "photo:data/photos/session_2025-11-03T08-12-39/photo_2025-11-03T08-12-59-659Z.jpg",
+            "priority": 100,
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "6909a5cb8ea0e89906620eef"
+      }
+    ],
+    "__v": 0
+  },
+  {
+    "_id": "6909e8af8ea0e89906620f09",
+    "name": "2511간편식사토스페이30",
+    "description": "간편식사 전 상품 30% 할인 (토스페이 머니/계좌 또는 CU플러스티머니 결제 시, 최대 4,000원)",
+    "config": {
+      "category": "payment_event",
+      "valueType": "percentage",
+      "percentage": 30,
+      "baseAmountType": "original_price",
+      "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+      "restrictedProviders": [],
+      "giftProducts": [],
+      "giftCategories": [],
+      "giftBrands": []
+    },
+    "applicationMethod": "cart_total",
+    "applicableProducts": [],
+    "applicableCategories": [
+      "간편식사"
+    ],
+    "applicableBrands": [],
+    "requiredPaymentMethods": [
+      "toss_pay",
+      "cu_plus_t_money"
+    ],
+    "paymentMethodNames": [
+      "토스페이 (머니/계좌)",
+      "CU플러스티머니"
+    ],
+    "constraints": {
+      "maxDiscountAmount": 4000
+    },
+    "eventMonth": "2025-11",
+    "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+    "isRecurring": false,
+    "validFrom": "2025-10-31T15:00:00.000Z",
+    "validTo": "2025-11-30T14:59:59.000Z",
+    "sourceUrl": "",
+    "priority": 100,
+    "isActive": true,
+    "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+    "lastModifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+    "cannotCombineWithCategories": [],
+    "cannotCombineWithIds": [],
+    "cannotCombineWithPromotionGiftTypes": [],
+    "modificationHistory": [
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-04T13:49:11.083Z",
+        "changes": {
+          "before": {
+            "_id": "6909e8af8ea0e89906620f09",
+            "name": "2511간편식사토스페이30",
+            "description": "간편식사 전 상품 30% 할인 (토스페이 머니/계좌 또는 CU플러스티머니 결제 시, 최대 4,000원)",
+            "config": {
+              "category": "payment_event",
+              "valueType": "percentage",
+              "percentage": 30,
+              "requiresQR": false,
+              "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+              "restrictedProviders": [],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicationMethod": "cart_total",
+            "applicableProducts": [],
+            "applicableCategories": [
+              "간편식사"
+            ],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [
+              "toss_pay",
+              "cu_plus_t_money"
+            ],
+            "paymentMethodNames": [
+              "토스페이 (머니/계좌)",
+              "CU플러스티머니"
+            ],
+            "constraints": {
+              "minPurchaseAmount": null,
+              "minQuantity": null,
+              "maxDiscountAmount": 4000
+            },
+            "eventMonth": "2025-11",
+            "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+            "isRecurring": false,
+            "validFrom": "2025-10-31T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "sourceUrl": "",
+            "priority": 100,
+            "isActive": true,
+            "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "cannotCombineWithPromotionGiftTypes": []
+          },
+          "after": {
+            "name": "2511간편식사토스페이30",
+            "description": "간편식사 전 상품 30% 할인 (토스페이 머니/계좌 또는 CU플러스티머니 결제 시, 최대 4,000원)",
+            "config": {
+              "category": "payment_event",
+              "valueType": "percentage",
+              "percentage": 30,
+              "baseAmountType": "original_price",
+              "requiresQR": false,
+              "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+              "restrictedProviders": [],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicableProducts": [],
+            "applicableCategories": [
+              "간편식사"
+            ],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [
+              "toss_pay",
+              "cu_plus_t_money"
+            ],
+            "paymentMethodNames": [
+              "토스페이 (머니/계좌)",
+              "CU플러스티머니"
+            ],
+            "constraints": {
+              "minPurchaseAmount": null,
+              "minQuantity": null,
+              "maxDiscountAmount": 4000
+            },
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "eventMonth": "2025-11",
+            "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+            "isRecurring": false,
+            "validFrom": "2025-10-31T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "sourceUrl": "",
+            "priority": 100,
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "690a0457582081b067b0eda9"
+      },
+      {
+        "modifiedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+        "modifiedAt": "2025-11-04T13:52:19.868Z",
+        "changes": {
+          "before": {
+            "_id": "6909e8af8ea0e89906620f09",
+            "name": "2511간편식사토스페이30",
+            "description": "간편식사 전 상품 30% 할인 (토스페이 머니/계좌 또는 CU플러스티머니 결제 시, 최대 4,000원)",
+            "config": {
+              "category": "payment_event",
+              "valueType": "percentage",
+              "percentage": 30,
+              "requiresQR": false,
+              "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+              "restrictedProviders": [],
+              "giftProducts": [],
+              "giftCategories": [],
+              "giftBrands": []
+            },
+            "applicationMethod": "cart_total",
+            "applicableProducts": [],
+            "applicableCategories": [
+              "간편식사"
+            ],
+            "applicableBrands": [],
+            "requiredPaymentMethods": [
+              "toss_pay",
+              "cu_plus_t_money"
+            ],
+            "paymentMethodNames": [
+              "토스페이 (머니/계좌)",
+              "CU플러스티머니"
+            ],
+            "constraints": {
+              "minPurchaseAmount": null,
+              "minQuantity": null,
+              "maxDiscountAmount": 4000
+            },
+            "eventMonth": "2025-11",
+            "eventName": "간편식사 토스페이/CU플러스티머니 할인",
+            "isRecurring": false,
+            "validFrom": "2025-10-31T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "sourceUrl": "",
+            "priority": 100,
+            "isActive": true,
+            "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+            "cannotCombineWithCategories": [],
+            "cannotCombineWithIds": [],
+            "cannotCombineWithPromotionGiftTypes": []
+          },
+          "after": {
+            "name": "2511간편식사토스페이30",
+            "description": "간편식사 전 상품 30% 할인 (토스페이 머니/계좌 또는 CU플러스티머니 결제 시, 최대 4,000원)",
+            "config": {
+              "category": "payment_event",
+              "valueType": "percentage",
+              "percentage": 30,
+              "baseAmountType": "original_price",
+              "eventName": "간편식사 토스페이/CU플러스티머니 할인"
+            },
+            "applicationMethod": "cart_total",
+            "applicableCategories": [
+              "간편식사"
+            ],
+            "requiredPaymentMethods": [
+              "toss_pay",
+              "cu_plus_t_money"
+            ],
+            "paymentMethodNames": [
+              "토스페이 (머니/계좌)",
+              "CU플러스티머니"
+            ],
+            "constraints": {
+              "maxDiscountAmount": 4000
+            },
+            "eventMonth": "2025-11",
+            "validFrom": "2025-10-31T15:00:00.000Z",
+            "validTo": "2025-11-30T14:59:59.000Z",
+            "isActive": true
+          }
+        },
+        "comment": "관리자 JSON 편집",
+        "_id": "690a051335e26fa567002909"
+      }
+    ],
+    "createdAt": "2025-11-04T11:51:11.647Z",
+    "updatedAt": "2025-11-04T13:52:19.869Z",
+    "__v": 0
+  }
+]

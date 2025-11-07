@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     const products = await db.findProducts(filter, {
       limit,
       skip: offset,
-      sort: { createdAt: -1 },
+      sort: { createdAt: -1, _id: 1 }, // 안정적인 정렬을 위해 _id 추가
     });
 
     return NextResponse.json({

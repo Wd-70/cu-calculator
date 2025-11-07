@@ -1,0 +1,12 @@
+{
+  "createdAt": "2025-11-07T02:26:32.596Z",
+  "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+  "collections": [
+    "Promotion",
+    "PromotionIndex",
+    "Product",
+    "DiscountRule"
+  ],
+  "totalDocuments": 13025,
+  "description": "백업 생성: backup_2025-11-07T02-26-30-457Z"
+}

@@ -10,11 +10,15 @@ import path from 'path';
 import Promotion from '@/lib/models/Promotion';
 import PromotionIndex from '@/lib/models/PromotionIndex';
 import Product from '@/lib/models/Product';
+import DiscountRule from '@/lib/models/DiscountRule';
+import ModificationHistory from '@/lib/models/ModificationHistory';
 
 const MODELS: Record<string, any> = {
   Promotion,
   PromotionIndex,
   Product,
+  DiscountRule,
+  ModificationHistory,
 };
 
 interface BackupMetadata {
