@@ -379,6 +379,7 @@ function calculateCombinationDiscountWithFiltering(
 
       // 3. 할인액을 각 상품에 비율로 분배
       let distributedTotal = 0;
+      let actualDiscountTotal = 0; // 10원 단위 내림 후 실제 할인액
       const itemDiscounts: Array<{ barcode: string; discount: number }> = [];
 
       applicableItems.forEach((item, index) => {
@@ -397,18 +398,58 @@ function calculateCombinationDiscountWithFiltering(
         }
 
         distributedTotal += itemDiscount;
-        itemDiscounts.push({ barcode: item.barcode, discount: itemDiscount });
 
-        const newPrice = Math.max(0, currentPrice - itemDiscount);
+        let newPrice = Math.max(0, currentPrice - itemDiscount);
+        // 10원 단위로 내림 (고객에게 유리)
+        newPrice = Math.floor(newPrice / 10) * 10;
+
+        // 실제 할인액 계산 (10원 단위 내림 후)
+        let actualDiscount = currentPrice - newPrice;
+
+        // 최대 할인 금액 체크: 전체 할인액이 이미 제한되었으므로 전체 합이 초과하지 않도록
+        // (cart_total 방식이므로 전체 할인액은 이미 maxDiscountAmount 내에 있음)
+        actualDiscountTotal += actualDiscount;
+
+        itemDiscounts.push({ barcode: item.barcode, discount: actualDiscount });
         itemPrices.set(item.barcode, newPrice);
       });
 
-      // 4. 할인 내역 기록
+      // cart_total 방식에서는 전체 할인액이 이미 maxDiscountAmount로 제한되어 있음
+      // 하지만 10원 단위 내림으로 인해 총 할인액이 증가할 수 있으므로 체크
+      if (maxDiscountAmount && actualDiscountTotal > maxDiscountAmount) {
+        console.log(`[경고] ${discount.name}: 10원 단위 내림으로 인해 할인액 초과 (${actualDiscountTotal}원 → ${maxDiscountAmount}원으로 제한)`);
+
+        // 초과분을 비례 배분하여 차감
+        const excess = actualDiscountTotal - maxDiscountAmount;
+        let excessRemaining = excess;
+
+        applicableItems.forEach((item, index) => {
+          const currentPrice = itemPrices.get(item.barcode) || 0;
+          const itemDiscount = itemDiscounts[index].discount;
+
+          // 마지막 상품에서 남은 초과분 모두 차감
+          if (index === applicableItems.length - 1) {
+            itemPrices.set(item.barcode, currentPrice + excessRemaining);
+            itemDiscounts[index].discount -= excessRemaining;
+          } else {
+            // 비례 배분
+            const ratio = itemDiscount / actualDiscountTotal;
+            const itemExcess = Math.floor(excess * ratio);
+            itemPrices.set(item.barcode, currentPrice + itemExcess);
+            itemDiscounts[index].discount -= itemExcess;
+            excessRemaining -= itemExcess;
+          }
+        });
+
+        actualDiscountTotal = maxDiscountAmount;
+      }
+
+      // 4. 할인 내역 기록 (10원 단위 내림 후 실제 할인액 사용)
       discountBreakdown.push({
         discountId: String(discount._id),
         discountName: discount.name,
         category: discount.config.category,
-        amount: discountAmount,
+        amount: actualDiscountTotal,
         baseAmount: totalApplicableAmount,
         appliedProducts: applicableItems.map(item => ({
           productId: String(item.productId),
@@ -466,9 +507,22 @@ function calculateCombinationDiscountWithFiltering(
         );
 
         if (discountAmount > 0) {
-          const newPrice = Math.max(0, currentPrice - discountAmount);
+          let newPrice = Math.max(0, currentPrice - discountAmount);
+          // 10원 단위로 내림 (고객에게 유리)
+          newPrice = Math.floor(newPrice / 10) * 10;
+
+          // 실제 할인액 계산 (10원 단위 내림 후)
+          let actualDiscount = currentPrice - newPrice;
+
+          // 최대 할인 금액 체크: 10원 단위 내림으로 maxDiscountAmount 초과 방지
+          if (maxDiscountAmount && actualDiscount > maxDiscountAmount) {
+            console.log(`[경고] ${discount.name}: 10원 단위 내림으로 할인액 초과 (${actualDiscount}원 → ${maxDiscountAmount}원으로 제한)`);
+            actualDiscount = maxDiscountAmount;
+            newPrice = currentPrice - maxDiscountAmount;
+          }
+
           itemPrices.set(item.barcode, newPrice);
-          totalDiscountForThisRule += discountAmount;
+          totalDiscountForThisRule += actualDiscount;
           actuallyAppliedItems.push(item);
         }
       });
