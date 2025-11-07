@@ -954,25 +954,21 @@ export function findOptimalDiscountCombination(
       steps: any[];
     }>();
 
+    // Same/Cross 프로모션 (자체 할인이 있는 경우)
     itemsWithPromotions
       .filter(iwp => iwp.promotion && iwp.promotionDiscount > 0)
       .forEach(iwp => {
         const promoId = String(iwp.promotion!._id);
         const config = iwp.promotion!.config as any;
 
-        // 프로모션 상세 설명 생성
-        let promotionDetail = '';
-        if (config.giftSelectionType === 'combo') {
-          promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} 구매 시 다른 상품 증정`;
-        } else {
-          const quantity = iwp.item.quantity;
-          const buyQty = config.buyQuantity || 1;
-          const getQty = config.getQuantity || 1;
-          const sets = Math.floor(quantity / (buyQty + getQty));
-          const freeItems = sets * getQty;
+        // Same/Cross 프로모션
+        const quantity = iwp.item.quantity;
+        const buyQty = config.buyQuantity || 1;
+        const getQty = config.getQuantity || 1;
+        const sets = Math.floor(quantity / (buyQty + getQty));
+        const freeItems = sets * getQty;
 
-          promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} ${quantity}개 중 ${freeItems}개 증정`;
-        }
+        const promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} ${quantity}개 중 ${freeItems}개 증정`;
 
         if (!promotionBreakdownMap.has(promoId)) {
           promotionBreakdownMap.set(promoId, {
@@ -998,10 +994,49 @@ export function findOptimalDiscountCombination(
         });
       });
 
+    // 콤보 프로모션 (crossPromotionPairs 사용)
+    crossPromotionPairs.forEach(pair => {
+      const promoId = String(pair.promotion._id);
+
+      const promotionDetail = `${pair.buyItem.productName || pair.buyItem.productBarcode} 구매 시 ${pair.giftItem.productName || pair.giftItem.productBarcode} 증정`;
+
+      if (!promotionBreakdownMap.has(promoId)) {
+        promotionBreakdownMap.set(promoId, {
+          discountId: promoId,
+          discountName: pair.promotion.name,
+          category: 'promotion',
+          amount: 0,
+          steps: [],
+        });
+      }
+
+      const entry = promotionBreakdownMap.get(promoId)!;
+      entry.amount += pair.giftDiscount;
+      entry.steps.push({
+        category: 'promotion',
+        discountId: promoId,
+        discountName: pair.promotion.name,
+        baseAmount: pair.giftItem.unitPrice * pair.giftItem.quantity,
+        isOriginalPriceBased: true,
+        discountAmount: pair.giftDiscount,
+        amountAfterDiscount: pair.giftItem.unitPrice * pair.giftItem.quantity - pair.giftDiscount,
+        calculationDetails: promotionDetail,
+      });
+    });
+
+    // 모든 프로모션 ID 수집 (중복 제거)
+    const allPromotionIds = new Set<string>();
+    itemsWithPromotions.forEach(iwp => {
+      if (iwp.promotion) {
+        allPromotionIds.add(String(iwp.promotion._id));
+      }
+    });
+    crossPromotionPairs.forEach(pair => {
+      allPromotionIds.add(String(pair.promotion._id));
+    });
+
     const promotionOnlyResult: DiscountCombination = {
-      discountIds: Array.from(new Set(itemsWithPromotions
-        .filter(iwp => iwp.promotion)
-        .map(iwp => String(iwp.promotion!._id)))),
+      discountIds: Array.from(allPromotionIds),
       totalDiscount: totalPromotionDiscount,
       totalDiscountRate: totalPromotionDiscount / totalAmount,
       finalPrice: totalAmount - totalPromotionDiscount,
@@ -1090,28 +1125,21 @@ export function findOptimalDiscountCombination(
         steps: any[];
       }>();
 
-      // 프로모션을 ID별로 그룹화하고 상품 정보 추가
+      // Same/Cross 프로모션 (자체 할인이 있는 경우)
       itemsWithPromotions
         .filter(iwp => iwp.promotion && iwp.promotionDiscount > 0)
         .forEach(iwp => {
           const promoId = String(iwp.promotion!._id);
           const config = iwp.promotion!.config as any;
 
-          // 프로모션 상세 설명 생성
-          let promotionDetail = '';
-          if (config.giftSelectionType === 'combo') {
-            // 콤보 프로모션 (크로스 증정)
-            promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} 구매 시 다른 상품 증정`;
-          } else {
-            // Same/Cross 프로모션
-            const quantity = iwp.item.quantity;
-            const buyQty = config.buyQuantity || 1;
-            const getQty = config.getQuantity || 1;
-            const sets = Math.floor(quantity / (buyQty + getQty));
-            const freeItems = sets * getQty;
+          // Same/Cross 프로모션
+          const quantity = iwp.item.quantity;
+          const buyQty = config.buyQuantity || 1;
+          const getQty = config.getQuantity || 1;
+          const sets = Math.floor(quantity / (buyQty + getQty));
+          const freeItems = sets * getQty;
 
-            promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} ${quantity}개 중 ${freeItems}개 증정`;
-          }
+          const promotionDetail = `${iwp.item.productName || iwp.item.productBarcode} ${quantity}개 중 ${freeItems}개 증정`;
 
           if (!promotionBreakdownMap.has(promoId)) {
             promotionBreakdownMap.set(promoId, {
@@ -1137,15 +1165,56 @@ export function findOptimalDiscountCombination(
           });
         });
 
+      // 콤보 프로모션 (crossPromotionPairs 사용)
+      crossPromotionPairs.forEach(pair => {
+        const promoId = String(pair.promotion._id);
+
+        const promotionDetail = `${pair.buyItem.productName || pair.buyItem.productBarcode} 구매 시 ${pair.giftItem.productName || pair.giftItem.productBarcode} 증정`;
+
+        if (!promotionBreakdownMap.has(promoId)) {
+          promotionBreakdownMap.set(promoId, {
+            discountId: promoId,
+            discountName: pair.promotion.name,
+            category: 'promotion',
+            amount: 0,
+            steps: [],
+          });
+        }
+
+        const entry = promotionBreakdownMap.get(promoId)!;
+        entry.amount += pair.giftDiscount;
+        entry.steps.push({
+          category: 'promotion',
+          discountId: promoId,
+          discountName: pair.promotion.name,
+          baseAmount: pair.giftItem.unitPrice * pair.giftItem.quantity,
+          isOriginalPriceBased: true,
+          discountAmount: pair.giftDiscount,
+          amountAfterDiscount: pair.giftItem.unitPrice * pair.giftItem.quantity - pair.giftDiscount,
+          calculationDetails: promotionDetail,
+        });
+      });
+
       const discountBreakdown = [
         ...(calculation.discountBreakdown || []),
         ...Array.from(promotionBreakdownMap.values()),
       ];
 
+      // 모든 프로모션 ID 수집 (중복 제거)
+      const allPromotionIds = new Set<string>();
+      itemsWithPromotions.forEach(iwp => {
+        if (iwp.promotion) {
+          allPromotionIds.add(String(iwp.promotion._id));
+        }
+      });
+      crossPromotionPairs.forEach(pair => {
+        allPromotionIds.add(String(pair.promotion._id));
+      });
+
       results.push({
         discountIds: [
           ...sortedDiscounts.map(d => String(d._id)),
-          ...itemsWithPromotions.filter(iwp => iwp.promotion).map(iwp => String(iwp.promotion!._id)),
+          ...Array.from(allPromotionIds),
         ],
         totalDiscount,
         totalDiscountRate: totalDiscount / calculation.originalPrice,
