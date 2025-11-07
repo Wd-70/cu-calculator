@@ -145,8 +145,8 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
       const localPresets = clientDb.getPresets();
       setPresets(localPresets);
 
-      // 서버 데이터 (할인 목록)
-      const discountsRes = await fetch('/api/discounts');
+      // 서버 데이터 (할인 목록) - 만료된 할인 제외
+      const discountsRes = await fetch('/api/discounts?excludeExpired=true');
       const discountsData = await discountsRes.json();
       if (discountsData.success) {
         setDiscounts(discountsData.data);

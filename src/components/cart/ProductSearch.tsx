@@ -5,6 +5,7 @@ import { IProduct } from '@/types/product';
 import { ICartItem } from '@/types/cart';
 import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 import ProductSearchModal from './ProductSearchModal';
+import { getUnifiedCategory } from '@/lib/constants/categoryMapping';
 
 interface ProductSearchProps {
   onAddItem: (item: ICartItem) => void;
@@ -53,6 +54,14 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
   };
 
   const handleAddProduct = (product: IProduct) => {
+    // categoryTags 배열에서 첫 번째 카테고리를 category로 사용 (하위 호환성)
+    const category = product.categoryTags && product.categoryTags.length > 0
+      ? product.categoryTags[0].name
+      : undefined;
+
+    // 모든 카테고리 이름 추출 (할인 적용 시 모든 카테고리 체크용)
+    const allCategories = product.categoryTags?.map(tag => tag.name) || [];
+
     const cartItem: ICartItem = {
       productId: product._id,
       barcode: product.barcode,
@@ -60,7 +69,7 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
       price: product.price,
       quantity: 1,
       imageUrl: product.imageUrl,
-      category: product.category,
+      category,
       categoryTags: product.categoryTags,
       brand: product.brand,
       selectedDiscountIds: [],

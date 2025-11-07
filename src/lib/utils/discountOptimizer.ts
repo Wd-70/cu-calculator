@@ -687,6 +687,7 @@ export function findOptimalDiscountCombination(
     productBarcode: item.barcode,
     productName: item.name,
     productCategory: item.category,
+    productCategories: item.categoryTags?.map(tag => tag.name) || [],
     productBrand: item.brand,
     unitPrice: item.price,
     quantity: item.quantity,
@@ -758,24 +759,66 @@ export function findOptimalDiscountCombination(
   for (const discount of eligibleDiscounts) {
     const applicableItems = itemsWithPromotions.filter(({ item, promotion }) => {
       // 1. 상품 적용 대상 체크 (바코드, 카테고리, 브랜드)
-      const isApplicableToProduct =
-        (discount.applicableProducts.length === 0 &&
+
+      // 전체 상품 대상인 경우
+      const isAllProducts = discount.applicableProducts.length === 0 &&
          discount.applicableCategories.length === 0 &&
-         (!discount.applicableBrands || discount.applicableBrands.length === 0)) ||
-        discount.applicableProducts.includes(item.productBarcode) ||
-        (item.productCategory && discount.applicableCategories.includes(item.productCategory)) ||
-        (item.productBrand && discount.applicableBrands?.includes(item.productBrand));
+         (!discount.applicableBrands || discount.applicableBrands.length === 0);
 
-      if (!isApplicableToProduct) {
-        return false;
+      if (isAllProducts) {
+        // 프로모션과 충돌 체크
+        if (promotion && checkDiscountConflict(discount, promotion)) {
+          return false;
+        }
+        return true;
       }
 
-      // 2. 프로모션과 충돌 체크
-      if (promotion && checkDiscountConflict(discount, promotion)) {
-        return false;
+      // 특정 상품 대상 (바코드)
+      if (discount.applicableProducts.includes(item.productBarcode)) {
+        // 프로모션과 충돌 체크
+        if (promotion && checkDiscountConflict(discount, promotion)) {
+          return false;
+        }
+        return true;
       }
 
-      return true;
+      // 특정 카테고리 대상
+      if (discount.applicableCategories.length > 0) {
+        // 디버깅: 상품의 모든 카테고리 출력
+        if (discount.name === "간편식사 구독") {
+          console.log(`    [DEBUG] ${item.productName}의 카테고리들:`, item.productCategories);
+          console.log(`    [DEBUG] 할인 대상 카테고리:`, discount.applicableCategories);
+        }
+
+        // 상품의 모든 카테고리 중 하나라도 할인 대상 카테고리에 포함되는지 확인
+        const hasMatchingCategory = item.productCategories?.some(category =>
+          discount.applicableCategories.includes(category)
+        ) || false;
+
+        if (hasMatchingCategory) {
+          // 프로모션과 충돌 체크
+          if (promotion && checkDiscountConflict(discount, promotion)) {
+            return false;
+          }
+          return true;
+        }
+      }
+
+      // 특정 브랜드 대상
+      if (discount.applicableBrands && discount.applicableBrands.length > 0) {
+        const hasMatchingBrand = item.productBrand &&
+          discount.applicableBrands.includes(item.productBrand);
+
+        if (hasMatchingBrand) {
+          // 프로모션과 충돌 체크
+          if (promotion && checkDiscountConflict(discount, promotion)) {
+            return false;
+          }
+          return true;
+        }
+      }
+
+      return false;
     });
 
     if (applicableItems.length > 0) {

@@ -53,11 +53,11 @@ export default function CartsPage() {
     }
   };
 
-  // 할인 규칙 로드
+  // 할인 규칙 로드 - 만료된 할인 제외
   const loadDiscounts = async () => {
     setIsLoadingDiscounts(true);
     try {
-      const response = await fetch('/api/discounts');
+      const response = await fetch('/api/discounts?excludeExpired=true');
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {

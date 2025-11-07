@@ -37,8 +37,8 @@ export default function PresetsPage() {
       const localPresets = clientDb.getPresets();
       setPresets(localPresets);
 
-      // 서버 데이터 (할인 규칙)
-      const discountsRes = await fetch('/api/discounts');
+      // 서버 데이터 (할인 규칙) - 만료된 할인 제외
+      const discountsRes = await fetch('/api/discounts?excludeExpired=true');
       const discountsData = await discountsRes.json();
 
       if (discountsData.success) {

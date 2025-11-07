@@ -263,7 +263,8 @@ export function checkProductEligibility(
   discount: IDiscountRule,
   productBarcode: string,
   productCategory?: string,
-  productBrand?: string
+  productBrand?: string,
+  productCategories?: string[]
 ): DiscountEligibilityResult {
   // 특정 상품 제한이 있는 경우
   if (discount.applicableProducts && discount.applicableProducts.length > 0) {
@@ -277,7 +278,17 @@ export function checkProductEligibility(
 
   // 특정 카테고리 제한이 있는 경우
   if (discount.applicableCategories && discount.applicableCategories.length > 0) {
-    if (!productCategory || !discount.applicableCategories.includes(productCategory)) {
+    // 모든 카테고리 배열이 있으면 그걸 우선 사용, 없으면 단일 카테고리 체크
+    const categories = productCategories && productCategories.length > 0
+      ? productCategories
+      : (productCategory ? [productCategory] : []);
+
+    // 상품의 카테고리 중 하나라도 할인 대상 카테고리에 포함되는지 확인
+    const hasMatchingCategory = categories.some(category =>
+      discount.applicableCategories.includes(category)
+    );
+
+    if (!hasMatchingCategory) {
       return {
         isEligible: false,
         reason: '할인 대상 카테고리가 아닙니다.',
@@ -334,6 +345,7 @@ export function checkDiscountEligibility(
   options?: {
     productBarcode?: string;
     productCategory?: string;
+    productCategories?: string[];
     productBrand?: string;
     totalAmount?: number;
     totalQuantity?: number;
@@ -373,7 +385,8 @@ export function checkDiscountEligibility(
       discount,
       options.productBarcode,
       options.productCategory,
-      options.productBrand
+      options.productBrand,
+      options.productCategories
     );
     if (!productCheck.isEligible) {
       return productCheck;
@@ -410,6 +423,7 @@ export function filterEligibleDiscounts(
   options?: {
     productBarcode?: string;
     productCategory?: string;
+    productCategories?: string[];
     productBrand?: string;
     totalAmount?: number;
     totalQuantity?: number;
@@ -431,6 +445,7 @@ export function getDiscountEligibilityMap(
   options?: {
     productBarcode?: string;
     productCategory?: string;
+    productCategories?: string[];
     productBrand?: string;
     totalAmount?: number;
     totalQuantity?: number;

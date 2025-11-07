@@ -12,6 +12,7 @@ export interface CartItem {
   productBarcode: string;
   productName?: string;
   productCategory?: string;
+  productCategories?: string[]; // 모든 카테고리 이름 배열
   productBrand?: string;
   unitPrice: number;
   quantity: number;
@@ -78,12 +79,15 @@ function isPromotionApplicableToProduct(
   }
 
   // 특정 카테고리 대상
-  if (
-    item.productCategory &&
-    promotion.applicableCategories.length > 0 &&
-    promotion.applicableCategories.includes(item.productCategory)
-  ) {
-    return true;
+  if (promotion.applicableCategories.length > 0) {
+    // 상품의 모든 카테고리 중 하나라도 프로모션 대상 카테고리에 포함되는지 확인
+    const hasMatchingCategory = item.productCategories?.some(category =>
+      promotion.applicableCategories.includes(category)
+    ) || false;
+
+    if (hasMatchingCategory) {
+      return true;
+    }
   }
 
   // 특정 브랜드 대상
