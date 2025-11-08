@@ -34,10 +34,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 바코드 유효성 검사 (13자리 숫자)
-    if (!/^\d{13}$/.test(barcode)) {
+    // 바코드 유효성 검사 (8자리 EAN-8, 12자리 UPC-A, 13자리 EAN-13)
+    if (!/^\d{8}$|^\d{12}$|^\d{13}$/.test(barcode)) {
       return NextResponse.json(
-        { success: false, error: 'Barcode must be 13 digits' },
+        { success: false, error: 'Barcode must be 8, 12, or 13 digits' },
         { status: 400 }
       );
     }

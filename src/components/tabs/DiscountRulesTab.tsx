@@ -313,11 +313,25 @@ export default function DiscountRulesTab() {
                               </span>
                             </div>
                             <div className="flex items-start gap-2">
-                              <span className="text-gray-500">사용제한:</span>
+                              <span className="text-gray-500">상품제한:</span>
                               <span className="text-gray-700 font-medium">
-                                하루 {discount.config.dailyUsageLimit}회 / 월 {discount.config.totalUsageLimit}회
+                                {discount.config.itemLimitPerDay && discount.config.totalItemLimit ? (
+                                  <>하루 {discount.config.itemLimitPerDay}개 / 총 {discount.config.totalItemLimit}개</>
+                                ) : discount.config.dailyUsageLimit && discount.config.totalUsageLimit ? (
+                                  <>하루 {discount.config.dailyUsageLimit}회 / 월 {discount.config.totalUsageLimit}회</>
+                                ) : (
+                                  '제한 없음'
+                                )}
                               </span>
                             </div>
+                            {discount.config.itemSelectionMethod && (
+                              <div className="flex items-start gap-2">
+                                <span className="text-gray-500">적용방식:</span>
+                                <span className="text-gray-700 font-medium">
+                                  {discount.config.itemSelectionMethod === 'highest_price' || discount.config.itemSelectionMethod === 'most_expensive' ? '높은 가격 순' : '낮은 가격 순'}
+                                </span>
+                              </div>
+                            )}
                           </>
                         )}
 

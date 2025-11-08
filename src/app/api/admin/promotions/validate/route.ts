@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Promotion from '@/lib/models/Promotion';
-import { verifySignature } from '@/lib/userAuth';
+import { verifyWithTimestamp } from '@/lib/userAuth';
 import { isAdmin } from '@/lib/adminAuth';
 
 interface ValidationIssue {
@@ -23,14 +23,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const message = JSON.stringify({
-      action: 'validate_promotions',
-      targetDate,
+    const isValid = verifyWithTimestamp(
+      {
+        action: 'validate_promotions',
+        targetDate,
+      },
+      signature,
       timestamp,
-      address,
-    });
-
-    const isValid = verifySignature(message, signature, address);
+      address
+    );
 
     if (!isValid) {
       return NextResponse.json(

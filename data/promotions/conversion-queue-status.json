@@ -24,7 +24,32 @@
       "deactivatedAt": "2025-11-06T10:20:50.516Z",
       "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
       "reason": "Manual deactivation"
+    },
+    "session_2025-11-06T07-36-41": {
+      "deactivatedAt": "2025-11-08T04:18:03.958Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-06T07-37-41": {
+      "deactivatedAt": "2025-11-08T04:18:23.091Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-06T07-38-12": {
+      "deactivatedAt": "2025-11-08T04:18:27.264Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-06T07-39-24": {
+      "deactivatedAt": "2025-11-08T04:18:33.895Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-07T08-18-51": {
+      "deactivatedAt": "2025-11-08T04:19:00.651Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
     }
   },
-  "lastUpdated": "2025-11-06T10:20:50.516Z"
+  "lastUpdated": "2025-11-08T04:19:00.651Z"
 }

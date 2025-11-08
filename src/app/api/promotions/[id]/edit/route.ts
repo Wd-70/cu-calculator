@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Promotion from '@/lib/models/Promotion';
-import { verifySignature } from '@/lib/userAuth';
+import { verifyWithTimestamp } from '@/lib/userAuth';
 
 export async function POST(
   request: NextRequest,
@@ -26,18 +26,18 @@ export async function POST(
       );
     }
 
-    // 서명 시 사용된 메시지 재구성
-    // signWithTimestamp는 { ...data, timestamp, address } 형식으로 서명함
-    const message = JSON.stringify({
-      action: 'edit_promotion',
-      promotionId: id,
-      updates,
-      comment,
+    // 서명 검증
+    const isValid = verifyWithTimestamp(
+      {
+        action: 'edit_promotion',
+        promotionId: id,
+        updates,
+        comment,
+      },
+      signature,
       timestamp,
-      address,
-    });
-
-    const isValid = verifySignature(message, signature, address);
+      address
+    );
 
     if (!isValid) {
       return NextResponse.json(

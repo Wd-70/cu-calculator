@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Promotion from '@/lib/models/Promotion';
 import PromotionIndex from '@/lib/models/PromotionIndex';
-import { verifySignature } from '@/lib/userAuth';
+import { verifyWithTimestamp } from '@/lib/userAuth';
 import { isAdmin } from '@/lib/adminAuth';
 
 export async function POST(request: NextRequest) {
@@ -17,14 +17,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const message = JSON.stringify({
-      action: 'rebuild_promotion_index',
-      targetDate,
+    const isValid = verifyWithTimestamp(
+      {
+        action: 'rebuild_promotion_index',
+        targetDate,
+      },
+      signature,
       timestamp,
-      address,
-    });
-
-    const isValid = verifySignature(message, signature, address);
+      address
+    );
 
     if (!isValid) {
       return NextResponse.json(

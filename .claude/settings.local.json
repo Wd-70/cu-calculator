@@ -7,7 +7,9 @@
       "mcp__playwright__playwright_navigate",
       "mcp__playwright__playwright_click",
       "Bash(find:*)",
-      "mcp__playwright__playwright_close"
+      "mcp__playwright__playwright_close",
+      "Bash(tree:*)",
+      "Bash(git -C \"F:\\Data\\Git\\Nextjs\\cu-discount-calculator\" log --oneline -20)"
     ],
     "deny": [],
     "ask": []

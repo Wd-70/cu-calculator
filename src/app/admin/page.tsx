@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { getCurrentUserAddress } from '@/lib/userAuth';
 import Toast from '@/components/Toast';
 import ConflictResolutionPanel from '@/components/ConflictResolutionPanel';
-import BarcodeScannerModal from '@/components/BarcodeScannerModal';
+import SimpleBarcodeScanner from '@/components/SimpleBarcodeScanner';
 
 interface CrawledProduct {
   name: string;
@@ -453,8 +453,9 @@ export default function AdminPage() {
       return;
     }
 
-    if (!/^\d{13}$/.test(newBarcode)) {
-      setToast({ message: '바코드는 13자리 숫자여야 합니다.', type: 'error' });
+    // 8자리(EAN-8), 12자리(UPC-A), 13자리(EAN-13) 바코드 허용
+    if (!/^\d{8}$|^\d{12}$|^\d{13}$/.test(newBarcode)) {
+      setToast({ message: '바코드는 8, 12, 13자리 숫자여야 합니다.', type: 'error' });
       return;
     }
 
@@ -482,8 +483,25 @@ export default function AdminPage() {
         });
         setEditingProduct(null);
         setNewBarcode('');
-        // 목록 새로고침
-        loadProductsWithoutBarcode();
+
+        // 등록된 상품을 목록에서 제거하고 총 개수 감소
+        setProductsWithoutBarcode(prev => {
+          const filtered = prev.filter(p => p._id !== productId);
+
+          // 빈자리를 채우기 위해 다음 상품을 자동으로 로드 (비동기)
+          // 현재 로드된 개수가 줄어들었고, 아직 더 불러올 상품이 있다면
+          if (filtered.length > 0 && filtered.length < totalWithoutBarcode - 1) {
+            // 약간의 지연 후 다음 상품 1개 로드
+            setTimeout(() => {
+              loadProductsWithoutBarcode(true);
+            }, 100);
+          }
+
+          return filtered;
+        });
+
+        // 총 개수 감소
+        setTotalWithoutBarcode(prev => Math.max(0, prev - 1));
       } else {
         setToast({
           message: data.error || '바코드 등록에 실패했습니다.',
@@ -502,11 +520,9 @@ export default function AdminPage() {
   };
 
   // 바코드 스캔 핸들러
-  const handleBarcodeScan = async (barcode: string): Promise<boolean> => {
+  const handleBarcodeScan = (barcode: string) => {
     // 스캔된 바코드를 입력란에 설정
     setNewBarcode(barcode);
-    setIsScannerOpen(false);
-    return true;
   };
 
   const handleFixNullBarcodes = async () => {
@@ -1023,7 +1039,7 @@ export default function AdminPage() {
             <ul className="text-xs text-yellow-700 space-y-1 ml-4">
               <li>• 크롤링 시 바코드를 추출하지 못한 상품들입니다</li>
               <li>• 바코드를 등록하면 일반 사용자도 해당 상품을 조회할 수 있습니다</li>
-              <li>• 바코드는 13자리 숫자여야 합니다</li>
+              <li>• 바코드는 8자리(EAN-8), 12자리(UPC-A), 13자리(EAN-13) 숫자를 지원합니다</li>
               <li className="text-red-700 font-semibold">⚠️ 바코드 없는 상품 등록 실패 시:</li>
               <li className="text-red-700 ml-4">1️⃣ "인덱스 재생성" 버튼 클릭 (인덱스를 sparse unique로 재생성)</li>
               <li className="text-red-700 ml-4">2️⃣ "DB 정리" 버튼 클릭 (기존 barcode:null 레코드 수정)</li>
@@ -1039,12 +1055,14 @@ export default function AdminPage() {
                 {productsWithoutBarcode.map((product) => (
                   <div
                     key={product._id}
-                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"
+                    className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all bg-white"
                   >
-                    <div className="flex items-start gap-4">
+                    {/* PC: 가로 레이아웃, 모바일: 세로 레이아웃 */}
+                    <div className="flex flex-col md:flex-row">
+                      {/* 상품 이미지 */}
                       {product.imageUrl && (
                         <div
-                          className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 cursor-pointer hover:ring-4 hover:ring-purple-300 transition-all"
+                          className="w-full md:w-48 md:h-48 aspect-video md:aspect-square flex-shrink-0 overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
                           onClick={(e) => {
                             e.stopPropagation();
                             setImageModalUrl(product.imageUrl);
@@ -1055,80 +1073,119 @@ export default function AdminPage() {
                           <img
                             src={product.imageUrl}
                             alt={product.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                             onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/100x100?text=No+Image';
+                              e.currentTarget.src = 'https://via.placeholder.com/400x200?text=No+Image';
                             }}
                           />
                         </div>
                       )}
 
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-900 mb-2">{product.name}</h3>
-                        <div className="space-y-1 text-sm text-gray-600 mb-3">
-                          <p>
-                            <span className="font-semibold">가격:</span> {product.price?.toLocaleString()}원
+                      {/* 상품 정보 */}
+                      <div className="flex-1 p-4 space-y-3 min-w-0">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-base sm:text-lg leading-tight mb-2">
+                          {product.name}
+                        </h3>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <p className="flex items-center gap-2">
+                            <span className="font-semibold text-purple-600">₩</span>
+                            <span className="font-bold text-gray-900">{product.price?.toLocaleString()}원</span>
                           </p>
                           {product.categoryTags && product.categoryTags.length > 0 && (
-                            <p>
-                              <span className="font-semibold">카테고리:</span>{' '}
-                              {product.categoryTags.map((tag: any) => tag.name).join(', ')}
+                            <p className="text-xs text-gray-500 truncate">
+                              {product.categoryTags.map((tag: any) => tag.name).join(' > ')}
                             </p>
                           )}
                         </div>
+                      </div>
 
-                        {editingProduct === product._id ? (
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={newBarcode}
-                                onChange={(e) => setNewBarcode(e.target.value.replace(/\D/g, '').slice(0, 13))}
-                                placeholder="13자리 바코드 입력"
-                                maxLength={13}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7C3FBF]"
-                              />
-                              <button
-                                onClick={() => setIsScannerOpen(true)}
-                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-                                title="바코드 스캔"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                                </svg>
-                                스캔
-                              </button>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleUpdateBarcode(product._id)}
-                                disabled={updatingBarcode || newBarcode.length !== 13}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {updatingBarcode ? '등록 중...' : '등록'}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingProduct(null);
-                                  setNewBarcode('');
-                                }}
-                                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                              >
-                                취소
-                              </button>
-                            </div>
+                      {/* 바코드 등록 영역 */}
+                      {editingProduct === product._id ? (
+                        <div className="space-y-2 pt-2 border-t border-gray-200">
+                          {/* 바코드 입력 + 스캔 버튼 */}
+                          <div className="flex gap-2 md:max-w-md">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={newBarcode}
+                              onChange={(e) => setNewBarcode(e.target.value.replace(/\D/g, '').slice(0, 13))}
+                              placeholder="8/12/13자리"
+                              maxLength={13}
+                              className="flex-1 min-w-0 px-3 py-3 border-2 border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base font-mono"
+                            />
+                            <button
+                              onClick={() => setIsScannerOpen(true)}
+                              className="w-12 h-12 flex-shrink-0 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center shadow-md active:scale-95"
+                              title="바코드 스캔"
+                            >
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                              </svg>
+                            </button>
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setEditingProduct(product._id);
-                              setNewBarcode('');
-                            }}
-                            className="px-4 py-2 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-lg font-bold hover:shadow-lg transition-all"
-                          >
-                            바코드 등록
-                          </button>
-                        )}
+
+                          {/* 바코드 입력 상태 표시 */}
+                          {newBarcode && (
+                            <div className="flex items-center gap-2 text-xs">
+                              {(newBarcode.length === 8 || newBarcode.length === 12 || newBarcode.length === 13) ? (
+                                <>
+                                  <span className="flex-shrink-0 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white">
+                                    ✓
+                                  </span>
+                                  <span className="text-green-700 font-medium">
+                                    {newBarcode.length}자리 바코드 ({
+                                      newBarcode.length === 8 ? 'EAN-8' :
+                                      newBarcode.length === 12 ? 'UPC-A' : 'EAN-13'
+                                    })
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="flex-shrink-0 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs">
+                                    {newBarcode.length}
+                                  </span>
+                                  <span className="text-orange-700 font-medium">
+                                    {newBarcode.length < 8 ? `${8 - newBarcode.length}자리 더 (8자리)` :
+                                     newBarcode.length < 12 ? `${12 - newBarcode.length}자리 더 (12자리)` :
+                                     `${13 - newBarcode.length}자리 더 (13자리)`}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          )}
+
+                          {/* 등록/취소 버튼 */}
+                          <div className="grid grid-cols-2 gap-2 md:max-w-md">
+                            <button
+                              onClick={() => {
+                                setEditingProduct(null);
+                                setNewBarcode('');
+                              }}
+                              className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold active:scale-95"
+                            >
+                              취소
+                            </button>
+                            <button
+                              onClick={() => handleUpdateBarcode(product._id)}
+                              disabled={updatingBarcode || !(newBarcode.length === 8 || newBarcode.length === 12 || newBarcode.length === 13)}
+                              className="px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                            >
+                              {updatingBarcode ? '등록 중...' : '✓ 등록'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingProduct(product._id);
+                            setNewBarcode('');
+                          }}
+                          className="w-full md:w-auto md:px-8 py-3 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-lg font-bold hover:shadow-lg transition-all active:scale-95"
+                        >
+                          📷 바코드 등록
+                        </button>
+                      )}
                       </div>
                     </div>
                   </div>
@@ -1402,11 +1459,10 @@ export default function AdminPage() {
       )}
 
       {/* 바코드 스캐너 모달 */}
-      <BarcodeScannerModal
+      <SimpleBarcodeScanner
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onScan={handleBarcodeScan}
-        cartId="admin-barcode-registration"
       />
     </div>
   );

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Promotion from '@/lib/models/Promotion';
-import PromotionIndex from '@/lib/models/PromotionIndex';
 import { verifyWithTimestamp } from '@/lib/userAuth';
 import { isAdmin } from '@/lib/adminAuth';
 
@@ -77,13 +76,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // 2. 모든 바코드 수집
-    const allBarcodes = new Set<string>();
-    originalPromotions.forEach((p) => {
-      (p.applicableProducts || []).forEach((barcode: string) => allBarcodes.add(barcode));
-    });
-
-    // 3. 새 프로모션 생성
+    // 2. 새 프로모션 생성
     const createData: any = {
       ...mergedData,
       mergedFrom: promotionIds,
@@ -118,19 +111,6 @@ export async function POST(request: NextRequest) {
     }
 
     const newPromotion = await Promotion.create(createData);
-
-    // 4. PromotionIndex 업데이트
-    for (const barcode of allBarcodes) {
-      await PromotionIndex.updateOne(
-        { barcode },
-        {
-          $pull: { promotionIds: { $in: promotionIds } }, // 원본 제거
-          $addToSet: { promotionIds: newPromotion._id }, // 새 ID 추가
-          $set: { lastUpdated: new Date() },
-        },
-        { upsert: true }
-      );
-    }
 
     return NextResponse.json({
       success: true,

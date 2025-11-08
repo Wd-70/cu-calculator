@@ -175,7 +175,7 @@ export async function DELETE(
     }
 
     const isValid = verifyWithTimestamp(
-      { action: 'delete_promotion', id },
+      { action: 'delete_promotion', promotionId: id },
       signature,
       timestamp,
       address

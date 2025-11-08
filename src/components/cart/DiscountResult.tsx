@@ -23,6 +23,7 @@ interface DiscountResultProps {
       quantity: number;
       price: number;
     }>;
+    totalQuantity?: number; // 적용된 상품의 총 수량 (quantity 합산)
   }[];
   warnings?: string[];
   onRecalculate?: () => void;
@@ -203,7 +204,7 @@ export default function DiscountResult({
                         {discount.appliedProducts && discount.appliedProducts.length > 0 && (
                           <div>
                             <h5 className="text-xs font-semibold text-gray-700 mb-2">
-                              적용 대상 ({discount.appliedProducts.length}개 상품)
+                              적용 대상 ({discount.totalQuantity || discount.appliedProducts.reduce((sum, p) => sum + p.quantity, 0)}개 상품)
                             </h5>
                             <div className="space-y-2">
                               {discount.appliedProducts.map((product, productIndex) => (

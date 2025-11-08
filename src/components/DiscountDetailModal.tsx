@@ -358,6 +358,79 @@ function BasicInfoTab({ discount, isEditing, editedDiscount, setEditedDiscount }
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">사용 제한</label>
           <div className="space-y-2">
+            {/* 구독 쿠폰의 상품 개수 제한 */}
+            {discount.config.category === 'coupon' && discount.config.isSubscription && (
+              <>
+                {discount.config.itemLimitPerDay && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">일일 상품 제한:</span>
+                    {isEditing && editedDiscount ? (
+                      <input
+                        type="number"
+                        value={editedDiscount.config.itemLimitPerDay}
+                        onChange={(e) => setEditedDiscount({
+                          ...editedDiscount,
+                          config: { ...editedDiscount.config, itemLimitPerDay: Number(e.target.value) }
+                        })}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        min="1"
+                      />
+                    ) : (
+                      <span className="text-gray-900 font-medium">{discount.config.itemLimitPerDay}개</span>
+                    )}
+                  </div>
+                )}
+                {discount.config.totalItemLimit && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">총 상품 제한:</span>
+                    {isEditing && editedDiscount ? (
+                      <input
+                        type="number"
+                        value={editedDiscount.config.totalItemLimit}
+                        onChange={(e) => setEditedDiscount({
+                          ...editedDiscount,
+                          config: { ...editedDiscount.config, totalItemLimit: Number(e.target.value) }
+                        })}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        min="1"
+                      />
+                    ) : (
+                      <span className="text-gray-900 font-medium">{discount.config.totalItemLimit}개</span>
+                    )}
+                  </div>
+                )}
+                {discount.config.itemSelectionMethod && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-500">적용 방식:</span>
+                    {isEditing && editedDiscount ? (
+                      <select
+                        value={editedDiscount.config.itemSelectionMethod}
+                        onChange={(e) => setEditedDiscount({
+                          ...editedDiscount,
+                          config: { ...editedDiscount.config, itemSelectionMethod: e.target.value }
+                        })}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="highest_price">높은 가격 순</option>
+                        <option value="most_expensive">높은 가격 순</option>
+                        <option value="cheapest">낮은 가격 순</option>
+                        <option value="first_come">먼저 담긴 순서</option>
+                      </select>
+                    ) : (
+                      <span className="text-gray-900 font-medium">
+                        {discount.config.itemSelectionMethod === 'highest_price' ||
+                         discount.config.itemSelectionMethod === 'most_expensive' ?
+                         '높은 가격 순' :
+                         discount.config.itemSelectionMethod === 'cheapest' ?
+                         '낮은 가격 순' :
+                         '먼저 담긴 순서'}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+            {/* 레거시: 일일 사용 횟수 제한 */}
             {discount.dailyUsageLimit && (
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-gray-500">일일 사용:</span>
@@ -902,12 +975,6 @@ function RulesTab({ discount, isEditing, editedDiscount, setEditedDiscount }: an
             <div className="flex items-start gap-2">
               <span className="text-gray-500 min-w-24">행사 월:</span>
               <span className="text-gray-900 font-medium">{discount.eventMonth}</span>
-            </div>
-          )}
-          {discount.priority !== undefined && (
-            <div className="flex items-start gap-2">
-              <span className="text-gray-500 min-w-24">우선순위:</span>
-              <span className="text-gray-900 font-medium">{discount.priority}</span>
             </div>
           )}
         </div>
