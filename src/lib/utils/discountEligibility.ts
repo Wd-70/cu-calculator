@@ -23,6 +23,11 @@ export function checkPaymentMethodConstraint(
   discount: IDiscountRule,
   preset: IPreset
 ): DiscountEligibilityResult {
+  // "모든 할인 최대 적용" 프리셋인 경우 결제수단 체크 건너뛰기
+  if (String(preset._id) === '__MAX_DISCOUNT__') {
+    return { isEligible: true };
+  }
+
   // 할인에 결제수단 제약이 없으면 통과
   if (!discount.requiredPaymentMethods || discount.requiredPaymentMethods.length === 0) {
     return { isEligible: true };
@@ -58,6 +63,11 @@ export function checkQRRequirement(
   discount: IDiscountRule,
   preset: IPreset
 ): DiscountEligibilityResult {
+  // "모든 할인 최대 적용" 프리셋인 경우 QR 체크 건너뛰기
+  if (String(preset._id) === '__MAX_DISCOUNT__') {
+    return { isEligible: true };
+  }
+
   // 결제행사 할인에서 QR 필요 여부 확인
   if (discount.config.category === 'payment_event' && discount.config.requiresQR) {
     if (!preset.hasQRScanner) {
@@ -79,6 +89,11 @@ export function checkSubscriptionRequirement(
   preset: IPreset,
   currentDate: Date = new Date()
 ): DiscountEligibilityResult {
+  // "모든 할인 최대 적용" 프리셋인 경우 구독 체크 건너뛰기
+  if (String(preset._id) === '__MAX_DISCOUNT__') {
+    return { isEligible: true };
+  }
+
   // 할인 결합 규칙 가져오기
   const rules = getCombinationRules(discount);
 

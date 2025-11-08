@@ -213,7 +213,7 @@ export default function PromotionJsonModal({
 
       const { signature, timestamp } = await signWithTimestamp({
         action: 'delete_promotion',
-        id: selectedPromotion._id,
+        promotionId: selectedPromotion._id,
       });
 
       const response = await fetch(`/api/promotions/${selectedPromotion._id}`, {

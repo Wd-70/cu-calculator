@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const barcode = searchParams.get('barcode');
     const name = searchParams.get('name');
+    const search = searchParams.get('search'); // 통합 검색어 (상품명 + 바코드)
     const category = searchParams.get('category');
     const categories = searchParams.getAll('categories'); // 복수 카테고리 지원
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -38,12 +39,21 @@ export async function GET(request: NextRequest) {
         filter.barcode = { $exists: true, $ne: null, $ne: '' };
       }
 
-      if (barcode) {
-        filter.barcode = barcode;
-      }
+      if (search) {
+        // 통합 검색: 상품명 또는 바코드에서 검색
+        filter.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { barcode: { $regex: search, $options: 'i' } }
+        ];
+      } else {
+        if (barcode) {
+          // 바코드 부분 매칭 지원
+          filter.barcode = { $regex: barcode, $options: 'i' };
+        }
 
-      if (name) {
-        filter.name = { $regex: name, $options: 'i' };
+        if (name) {
+          filter.name = { $regex: name, $options: 'i' };
+        }
       }
 
       // 모든 상품을 가져와서 메모리에서 필터링
@@ -85,12 +95,21 @@ export async function GET(request: NextRequest) {
       filter.barcode = { $exists: true, $ne: null, $ne: '' };
     }
 
-    if (barcode) {
-      filter.barcode = barcode;
-    }
+    if (search) {
+      // 통합 검색: 상품명 또는 바코드에서 검색
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { barcode: { $regex: search, $options: 'i' } }
+      ];
+    } else {
+      if (barcode) {
+        // 바코드 부분 매칭 지원
+        filter.barcode = { $regex: barcode, $options: 'i' };
+      }
 
-    if (name) {
-      filter.name = { $regex: name, $options: 'i' };
+      if (name) {
+        filter.name = { $regex: name, $options: 'i' };
+      }
     }
 
     if (category) {

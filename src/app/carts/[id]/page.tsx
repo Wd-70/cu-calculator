@@ -677,10 +677,48 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
         {cart.items.length > 0 && (
           <>
             {/* 프리셋 선택 */}
-            {presets.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">프리셋 선택</h2>
+            <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">프리셋 선택</h2>
+
+              {presets.length === 0 && discounts.length === 0 ? (
+                <p className="text-gray-500 text-sm">
+                  사용 가능한 할인이나 프리셋이 없습니다.
+                </p>
+              ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* 기본 프리셋: 모든 할인 적용 */}
+                  {discounts.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const allDiscountIds = discounts.map(d => String(d._id));
+                        setSelectedDiscountIds(allDiscountIds);
+                        setToast({ message: '🔥 모든 할인이 적용되었습니다. 최대 절약을 확인하세요!', type: 'success' });
+                      }}
+                      className="p-4 border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl hover:border-orange-500 hover:shadow-lg transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">🔥</span>
+                        <span className="font-bold text-gray-900">모든 할인 최대 적용</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        사용 가능한 모든 할인을 적용하여 최대 절약 금액을 확인합니다
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {discounts.slice(0, 3).map(discount => (
+                          <span key={String(discount._id)} className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded">
+                            {DISCOUNT_CATEGORY_NAMES[discount.config.category]}
+                          </span>
+                        ))}
+                        {discounts.length > 3 && (
+                          <span className="text-xs px-2 py-0.5 bg-orange-200 text-orange-800 rounded font-semibold">
+                            +{discounts.length - 3}개
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 사용자 정의 프리셋 */}
                   {presets.map(preset => (
                     <button
                       key={String(preset._id)}
@@ -709,8 +747,8 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* 할인 선택 */}
             <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">

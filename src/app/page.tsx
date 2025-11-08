@@ -8,37 +8,28 @@ export default function Home() {
   const [cartItemCount, setCartItemCount] = useState(0);
 
   useEffect(() => {
-    // 초기 로드 시 카트 개수 가져오기
     const updateCartCount = () => {
       const count = clientDb.getMainCartItemCount();
       setCartItemCount(count);
     };
 
     updateCartCount();
-
-    // localStorage 변경 감지 (다른 탭에서 변경 시)
-    const handleStorageChange = () => {
-      updateCartCount();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    // 페이지 포커스 시에도 업데이트
+    window.addEventListener('storage', updateCartCount);
     window.addEventListener('focus', updateCartCount);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storage', updateCartCount);
       window.removeEventListener('focus', updateCartCount);
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
       {/* 헤더 */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="w-12 h-12 bg-gradient-to-br from-[#7C3FBF] to-[#9B5FD9] rounded-2xl flex items-center justify-center font-bold text-2xl text-white shadow-lg">
                 CU
               </div>
@@ -46,7 +37,7 @@ export default function Home() {
                 <h1 className="text-gray-900 font-bold text-xl">CU 할인계산기</h1>
                 <p className="text-gray-500 text-xs">똑똑한 할인 쇼핑</p>
               </div>
-            </div>
+            </Link>
             <Link
               href="/carts"
               className="relative p-3 hover:bg-gray-100 rounded-xl transition-all"
@@ -68,181 +59,301 @@ export default function Home() {
       <main className="container mx-auto px-4 py-8 md:py-16 max-w-6xl">
         {/* 히어로 섹션 */}
         <div className="text-center mb-16 animate-[fadeIn_0.6s_ease-out]">
-          <div className="inline-block px-4 py-2 bg-purple-50 rounded-full mb-4">
-            <span className="text-[#7C3FBF] font-semibold text-sm">✨ 스마트한 할인 계산의 시작</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full mb-6 shadow-sm">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-gray-700 font-semibold text-sm">AI 최적화 할인 계산</span>
           </div>
-          <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            CU에서
+          <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            CU에서 쓴 돈,
             <br />
-            <span className="text-[#7C3FBF]">최대 절약</span>하는 법
+            <span className="bg-gradient-to-r from-[#7C3FBF] to-[#FF3B3B] bg-clip-text text-transparent">
+              최대한 아껴드립니다
+            </span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            복잡한 할인 조합도 쉽고 빠르게!<br className="md:hidden" /> 실시간으로 계산해드립니다.
+          <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+            1+1, 2+1, 쿠폰, 카드할인, 통신사할인까지<br />
+            복잡한 할인 조합을 자동으로 계산하고 최적의 조합을 찾아드립니다
           </p>
-        </div>
 
-        {/* 빠른 액션 카드 */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          {/* 바코드 스캔 */}
-          <Link
-            href="/scan"
-            className="group bg-white rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-2"
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-[#7C3FBF] to-[#9B5FD9] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">바코드 스캔</h3>
-            <p className="text-gray-600">카메라로 바코드를 스캔하고 즉시 할인 정보를 확인하세요.</p>
-            <div className="mt-4 flex items-center text-[#7C3FBF] font-semibold group-hover:gap-2 transition-all">
-              <span>시작하기</span>
-              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-
-          {/* 상품 검색 */}
-          <Link
-            href="/products"
-            className="group bg-white rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-2"
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-[#00C73C] to-[#00A032] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">상품 검색</h3>
-            <p className="text-gray-600">원하는 상품을 검색하고 적용 가능한 할인을 찾아보세요.</p>
-            <div className="mt-4 flex items-center text-[#00C73C] font-semibold group-hover:gap-2 transition-all">
-              <span>검색하기</span>
-              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-
-          {/* 할인 정보 */}
-          <Link
-            href="/discounts"
-            className="group bg-white rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-2"
-          >
-            <div className="w-16 h-16 bg-gradient-to-br from-[#FF3B3B] to-[#FF8A00] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">할인 정보</h3>
-            <p className="text-gray-600">이번 달 진행 중인 모든 할인 행사를 확인하세요.</p>
-            <div className="mt-4 flex items-center text-[#FF3B3B] font-semibold group-hover:gap-2 transition-all">
-              <span>보러가기</span>
-              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-        </div>
-
-        {/* 통계 */}
-        <div className="bg-gradient-to-br from-purple-50 to-green-50 rounded-3xl p-8 mb-12 shadow-sm">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-5xl font-bold text-[#7C3FBF] mb-2">6</div>
-              <div className="text-gray-600">등록된 상품</div>
-            </div>
-            <div>
-              <div className="text-5xl font-bold text-[#00C73C] mb-2">5</div>
-              <div className="text-gray-600">활성 할인</div>
-            </div>
-            <div>
-              <div className="text-5xl font-bold text-[#FF3B3B] mb-2">최대 43%</div>
-              <div className="text-gray-600">절약 가능</div>
-            </div>
+          {/* CTA 버튼 */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link
+              href="/carts"
+              className="group px-8 py-4 bg-gradient-to-r from-[#7C3FBF] to-[#9B5FD9] text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+            >
+              <span className="flex items-center gap-2">
+                🛒 장바구니로 시작하기
+                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            </Link>
+            <Link
+              href="/discounts"
+              className="px-8 py-4 bg-white text-gray-700 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-gray-200"
+            >
+              💰 할인 정보 둘러보기
+            </Link>
           </div>
         </div>
 
-        {/* 기능 설명 */}
-        <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
-          <h3 className="text-3xl font-bold text-gray-900 mb-8 text-center">이런 기능이 있어요</h3>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="flex gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-[#7C3FBF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="font-bold text-lg text-gray-900 mb-1">복잡한 할인 계산</h4>
-                <p className="text-gray-600">1+1, 2+1, 퍼센트, 카드 할인을 한번에 계산합니다.</p>
-              </div>
+        {/* 핵심 가치 제안 */}
+        <div className="grid md:grid-cols-3 gap-6 mb-16">
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all">
+            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">자동 최적화</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              수백 가지 할인 조합 중 최대 절약 방법을 자동으로 찾아드립니다
+            </p>
+          </div>
 
-            <div className="flex gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-[#00C73C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="font-bold text-lg text-gray-900 mb-1">실시간 가격 확인</h4>
-                <p className="text-gray-600">장바구니에서 실시간으로 최종 가격을 확인하세요.</p>
-              </div>
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">멀티 카트 비교</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              여러 할인 조합을 동시에 비교하고 가장 저렴한 방법을 선택하세요
+            </p>
+          </div>
 
-            <div className="flex gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-[#0091FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="font-bold text-lg text-gray-900 mb-1">월별 행사 정보</h4>
-                <p className="text-gray-600">매달 새로운 할인 행사를 놓치지 마세요.</p>
-              </div>
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all">
+            <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">실시간 계산</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              장바구니에 상품을 담는 즉시 실시간으로 최종 가격을 확인할 수 있습니다
+            </p>
+          </div>
+        </div>
 
-            <div className="flex gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-[#FF8A00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
+        {/* 주요 기능 카드 */}
+        <div className="mb-16">
+          <h3 className="text-3xl font-bold text-gray-900 mb-8 text-center">주요 기능</h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* 장바구니 */}
+            <Link
+              href="/carts"
+              className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#7C3FBF] to-[#9B5FD9] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-[#7C3FBF] transition-colors">
+                    스마트 장바구니
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    상품을 추가하고 할인을 적용하면 자동으로 최적의 조합을 계산합니다
+                  </p>
+                  <div className="flex items-center text-[#7C3FBF] font-semibold group-hover:gap-2 transition-all">
+                    <span>시작하기</span>
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-lg text-gray-900 mb-1">결제수단별 할인</h4>
-                <p className="text-gray-600">카드사별 추가 할인도 자동으로 적용됩니다.</p>
+            </Link>
+
+            {/* 상품 검색 */}
+            <Link
+              href="/products"
+              className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#00C73C] to-[#00A032] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-[#00C73C] transition-colors">
+                    상품 검색
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    원하는 상품을 검색하고 적용 가능한 모든 할인 정보를 확인하세요
+                  </p>
+                  <div className="flex items-center text-[#00C73C] font-semibold group-hover:gap-2 transition-all">
+                    <span>검색하기</span>
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                </div>
               </div>
+            </Link>
+
+            {/* 할인 정보 */}
+            <Link
+              href="/discounts"
+              className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#FF3B3B] to-[#FF8A00] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-[#FF3B3B] transition-colors">
+                    할인 & 프로모션
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    이번 달 진행 중인 모든 할인, 프로모션 정보를 한눈에 확인하세요
+                  </p>
+                  <div className="flex items-center text-[#FF3B3B] font-semibold group-hover:gap-2 transition-all">
+                    <span>보러가기</span>
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* 프리셋 */}
+            <Link
+              href="/settings/presets"
+              className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#0091FF] to-[#0070CC] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-[#0091FF] transition-colors">
+                    내 프리셋
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    자주 사용하는 할인 조합을 프리셋으로 저장하고 빠르게 적용하세요
+                  </p>
+                  <div className="flex items-center text-[#0091FF] font-semibold group-hover:gap-2 transition-all">
+                    <span>설정하기</span>
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* 특징 */}
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[#7C3FBF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
             </div>
+            <h4 className="font-bold text-lg text-gray-900 mb-2">크라우드소싱</h4>
+            <p className="text-gray-600 text-sm">
+              사용자가 함께 만드는 할인 정보 데이터베이스
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[#0091FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <h4 className="font-bold text-lg text-gray-900 mb-2">익명 계정 시스템</h4>
+            <p className="text-gray-600 text-sm">
+              별도 가입 없이 암호화 서명으로 안전하게 인증
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[#00C73C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h4 className="font-bold text-lg text-gray-900 mb-2">최적화 알고리즘</h4>
+            <p className="text-gray-600 text-sm">
+              수백 가지 조합 중 최대 절약 자동 계산
+            </p>
           </div>
         </div>
       </main>
 
       {/* 푸터 */}
-      <footer className="bg-gray-50 border-t border-gray-200 mt-20 py-8">
+      <footer className="bg-white/80 backdrop-blur-md border-t border-gray-200 mt-20 py-12">
         <div className="container mx-auto px-4">
-          <div className="flex flex-wrap justify-center gap-4 mb-4 text-sm">
-            <Link href="/discounts" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
-              할인 정보
-            </Link>
-            <span className="text-gray-300">•</span>
-            <Link href="/carts" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
-              장바구니 비교
-            </Link>
-            <span className="text-gray-300">•</span>
-            <Link href="/settings/presets" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
-              내 프리셋
-            </Link>
-            <span className="text-gray-300">•</span>
-            <Link href="/settings/account" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
-              계정 관리
-            </Link>
-            <span className="text-gray-300">•</span>
-            <Link href="/test" className="text-gray-600 hover:text-[#7C3FBF] transition-colors">
-              테스트
-            </Link>
-          </div>
-          <div className="text-center text-gray-500 text-sm">
-            <p>© 2025 CU 할인계산기. Made with 💜 for smart shoppers.</p>
+          <div className="max-w-4xl mx-auto">
+            {/* 메인 링크 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+              <div>
+                <h5 className="font-bold text-gray-900 mb-3 text-sm">할인</h5>
+                <div className="space-y-2">
+                  <Link href="/discounts" className="block text-gray-600 hover:text-[#7C3FBF] transition-colors text-sm">
+                    할인 정보
+                  </Link>
+                  <Link href="/discounts/promotions" className="block text-gray-600 hover:text-[#7C3FBF] transition-colors text-sm">
+                    프로모션
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-bold text-gray-900 mb-3 text-sm">장바구니</h5>
+                <div className="space-y-2">
+                  <Link href="/carts" className="block text-gray-600 hover:text-[#7C3FBF] transition-colors text-sm">
+                    내 장바구니
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-bold text-gray-900 mb-3 text-sm">상품</h5>
+                <div className="space-y-2">
+                  <Link href="/products" className="block text-gray-600 hover:text-[#7C3FBF] transition-colors text-sm">
+                    상품 검색
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-bold text-gray-900 mb-3 text-sm">설정</h5>
+                <div className="space-y-2">
+                  <Link href="/settings/presets" className="block text-gray-600 hover:text-[#7C3FBF] transition-colors text-sm">
+                    프리셋 관리
+                  </Link>
+                  <Link href="/settings/account" className="block text-gray-600 hover:text-[#7C3FBF] transition-colors text-sm">
+                    계정 관리
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* 구분선 */}
+            <div className="border-t border-gray-200 mb-6"></div>
+
+            {/* 저작권 및 개발자 정보 */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+              <p>© 2025 CU 할인계산기. All rights reserved.</p>
+              <p className="flex items-center gap-2">
+                Developed by <span className="font-semibold text-gray-700">Wd-70</span>
+              </p>
+            </div>
           </div>
         </div>
       </footer>

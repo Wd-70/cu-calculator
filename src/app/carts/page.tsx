@@ -535,6 +535,7 @@ export default function CartsPage() {
                 <PresetSelector
                   selectedPresetId={selectedPreset ? String(selectedPreset._id) : null}
                   onPresetChange={handlePresetChange}
+                  availableDiscounts={availableDiscounts}
                 />
 
                 {/* 상품 추가 (메인 카트에만 표시) */}

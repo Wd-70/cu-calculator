@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { IPreset } from '@/types/preset';
+import { IDiscountRule } from '@/types/discount';
 import * as clientDb from '@/lib/clientDb';
 
 interface PresetSelectorProps {
   selectedPresetId: string | null;
   onPresetChange: (preset: IPreset | null) => void;
+  availableDiscounts?: IDiscountRule[];
 }
 
-export default function PresetSelector({ selectedPresetId, onPresetChange }: PresetSelectorProps) {
+export default function PresetSelector({ selectedPresetId, onPresetChange, availableDiscounts = [] }: PresetSelectorProps) {
   const [presets, setPresets] = useState<IPreset[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -28,7 +30,30 @@ export default function PresetSelector({ selectedPresetId, onPresetChange }: Pre
     }
   }, [selectedPresetId, onPresetChange]);
 
-  const selectedPreset = presets.find(p => String(p._id) === selectedPresetId);
+  // "모든 할인 최대 적용" 특수 프리셋 생성
+  const createMaxDiscountPreset = (): IPreset | null => {
+    if (availableDiscounts.length === 0) return null;
+
+    return {
+      _id: '__MAX_DISCOUNT__',
+      name: '모든 할인 최대 적용',
+      emoji: '🔥',
+      description: '사용 가능한 모든 할인을 적용하여 최대 절약 금액을 확인합니다',
+      discountIds: availableDiscounts.map(d => d._id),
+      paymentMethods: [],
+      subscriptions: [],
+      isDefault: false,
+      hasQRScanner: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  };
+
+  const maxDiscountPreset = createMaxDiscountPreset();
+
+  const selectedPreset = selectedPresetId === '__MAX_DISCOUNT__'
+    ? maxDiscountPreset
+    : presets.find(p => String(p._id) === selectedPresetId);
 
   const handlePresetSelect = (preset: IPreset) => {
     onPresetChange(preset);
@@ -40,7 +65,7 @@ export default function PresetSelector({ selectedPresetId, onPresetChange }: Pre
     setIsOpen(false);
   };
 
-  if (presets.length === 0) {
+  if (presets.length === 0 && !maxDiscountPreset) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
@@ -119,6 +144,39 @@ export default function PresetSelector({ selectedPresetId, onPresetChange }: Pre
               onClick={() => setIsOpen(false)}
             />
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-80 overflow-y-auto">
+              {/* 모든 할인 최대 적용 옵션 */}
+              {maxDiscountPreset && (
+                <button
+                  key={String(maxDiscountPreset._id)}
+                  onClick={() => handlePresetSelect(maxDiscountPreset)}
+                  className={`w-full flex items-center gap-3 p-3 hover:bg-orange-50 transition-colors border-b border-orange-100 bg-gradient-to-r from-orange-50 to-red-50 ${
+                    String(maxDiscountPreset._id) === selectedPresetId ? 'bg-orange-100' : ''
+                  }`}
+                >
+                  <span className="text-2xl flex-shrink-0">{maxDiscountPreset.emoji}</span>
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="font-bold text-gray-900 truncate flex items-center gap-2">
+                      {maxDiscountPreset.name}
+                      <span className="text-xs px-2 py-0.5 bg-orange-200 text-orange-800 rounded font-semibold">
+                        추천
+                      </span>
+                    </div>
+                    {maxDiscountPreset.description && (
+                      <div className="text-xs text-gray-600 truncate">{maxDiscountPreset.description}</div>
+                    )}
+                    <div className="flex items-center gap-2 mt-1 text-xs text-orange-700 font-medium">
+                      <span>전체 할인 {availableDiscounts.length}개 적용</span>
+                    </div>
+                  </div>
+                  {String(maxDiscountPreset._id) === selectedPresetId && (
+                    <svg className="w-5 h-5 text-orange-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+              )}
+
+              {/* 사용자 정의 프리셋 */}
               {presets.map((preset) => (
                 <button
                   key={String(preset._id)}
@@ -161,17 +219,24 @@ export default function PresetSelector({ selectedPresetId, onPresetChange }: Pre
 
       {selectedPreset && (
         <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="text-xs text-gray-500 space-y-1">
-            {selectedPreset.paymentMethods && selectedPreset.paymentMethods.length > 0 && (
-              <div>등록된 결제수단: {selectedPreset.paymentMethods.length}개</div>
-            )}
-            {selectedPreset.subscriptions && selectedPreset.subscriptions.length > 0 && (
-              <div>활성 구독: {selectedPreset.subscriptions.filter(s => s.isActive).length}개</div>
-            )}
-            {selectedPreset.hasQRScanner && (
-              <div className="text-purple-600">포켓CU 앱 사용 가능</div>
-            )}
-          </div>
+          {selectedPresetId === '__MAX_DISCOUNT__' ? (
+            <div className="text-xs text-orange-700 space-y-1">
+              <div className="font-semibold">사용 가능한 모든 할인 {availableDiscounts.length}개가 적용됩니다</div>
+              <div className="text-gray-500">최대 절약 금액을 확인할 수 있습니다</div>
+            </div>
+          ) : (
+            <div className="text-xs text-gray-500 space-y-1">
+              {selectedPreset.paymentMethods && selectedPreset.paymentMethods.length > 0 && (
+                <div>등록된 결제수단: {selectedPreset.paymentMethods.length}개</div>
+              )}
+              {selectedPreset.subscriptions && selectedPreset.subscriptions.length > 0 && (
+                <div>활성 구독: {selectedPreset.subscriptions.filter(s => s.isActive).length}개</div>
+              )}
+              {selectedPreset.hasQRScanner && (
+                <div className="text-purple-600">포켓CU 앱 사용 가능</div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

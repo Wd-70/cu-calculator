@@ -11,6 +11,7 @@ import { UNIFIED_CATEGORIES, CATEGORY_MAPPING, getUnifiedCategories, type Unifie
 import { getCurrentUserAddress } from '@/lib/userAuth';
 import { checkIsAdminClient } from '@/lib/adminAuth';
 import CategoryManagementModal from '@/components/CategoryManagementModal';
+import SimpleBarcodeScanner from '@/components/SimpleBarcodeScanner';
 
 interface CategoryTag {
   name: string;
@@ -45,6 +46,7 @@ export default function ProductsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -147,7 +149,15 @@ export default function ProductsPage() {
       });
 
       if (searchTerm) {
-        params.append('name', searchTerm);
+        // 숫자만 입력된 경우 상품명 + 바코드 검색, 그 외에는 상품명만 검색
+        const isNumeric = /^\d+$/.test(searchTerm);
+        if (isNumeric) {
+          // 숫자 검색: 상품명과 바코드 모두에서 검색
+          params.append('search', searchTerm);
+        } else {
+          // 문자 포함 검색: 상품명만 검색
+          params.append('name', searchTerm);
+        }
       }
 
       if (selectedCategory !== '전체') {
@@ -333,6 +343,12 @@ export default function ProductsPage() {
     });
   };
 
+  // 바코드 스캔 핸들러
+  const handleBarcodeScan = (barcode: string) => {
+    setSearchTerm(barcode);
+    setShowBarcodeScanner(false);
+  };
+
   // '+1 행사상품' 카테고리는 제외 (아직 구현되지 않음)
   const categories = UNIFIED_CATEGORIES.filter(cat => cat !== '+1 행사상품') as UnifiedCategory[];
 
@@ -370,7 +386,7 @@ export default function ProductsPage() {
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="상품명 또는 바코드로 검색..."
+                placeholder="상품명이나 바코드를 검색하세요..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-[#7C3FBF] focus:outline-none transition-colors text-lg"
@@ -379,15 +395,15 @@ export default function ProductsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <Link
-              href="/scan"
+            <button
+              onClick={() => setShowBarcodeScanner(true)}
               className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-[#7C3FBF] to-[#9B5FD9] text-white rounded-xl hover:shadow-lg transition-all flex-shrink-0"
               title="바코드 스캔"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
               </svg>
-            </Link>
+            </button>
           </div>
 
           {/* 카테고리 필터 */}
@@ -583,6 +599,13 @@ export default function ProductsPage() {
         onClose={() => setShowCategoryModal(false)}
       />
 
+      {/* 바코드 스캐너 모달 */}
+      <SimpleBarcodeScanner
+        isOpen={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+        onScan={handleBarcodeScan}
+      />
+
       {/* 맨 위로 가기 버튼 */}
       {showScrollTop && (
         <button
@@ -612,12 +635,12 @@ export default function ProductsPage() {
               </svg>
               <span className="text-xs font-medium">검색</span>
             </Link>
-            <Link href="/scan" className="flex flex-col items-center gap-1 text-gray-600 hover:text-[#7C3FBF] transition-colors">
+            <button onClick={() => setShowBarcodeScanner(true)} className="flex flex-col items-center gap-1 text-gray-600 hover:text-[#7C3FBF] transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
               </svg>
               <span className="text-xs font-medium">스캔</span>
-            </Link>
+            </button>
           </div>
         </div>
       </nav>
