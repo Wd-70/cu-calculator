@@ -6,6 +6,7 @@ import { ICartItem } from '@/types/cart';
 import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 import ProductSearchModal from './ProductSearchModal';
 import { getUnifiedCategory } from '@/lib/constants/categoryMapping';
+import { normalizeBarcode } from '@/lib/utils/barcodeUtils';
 
 interface ProductSearchProps {
   onAddItem: (item: ICartItem) => void;
@@ -27,8 +28,8 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
       return;
     }
 
-    // 바코드인 경우 검색하지 않음
-    if (query.match(/^\d{13}$/)) {
+    // 바코드인 경우 검색하지 않음 (13자리 또는 18자리)
+    if (query.match(/^\d{13}$/) || query.match(/^\d{18}$/)) {
       return;
     }
 
@@ -90,9 +91,12 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
   const handleBarcodeSearch = async (barcode: string) => {
     if (!barcode.trim()) return;
 
+    // 바코드 정규화 (18자리 -> 13자리)
+    const normalizedBarcode = normalizeBarcode(barcode);
+
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/products?barcode=${barcode}`);
+      const response = await fetch(`/api/products?barcode=${normalizedBarcode}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data && data.data.length > 0) {
@@ -113,8 +117,11 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
 
   // 바코드 스캐너에서 스캔 시 처리
   const handleScan = async (barcode: string): Promise<boolean> => {
+    // 바코드 정규화 (18자리 -> 13자리)
+    const normalizedBarcode = normalizeBarcode(barcode);
+
     try {
-      const response = await fetch(`/api/products?barcode=${barcode}`);
+      const response = await fetch(`/api/products?barcode=${normalizedBarcode}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data && data.data.length > 0) {
@@ -155,8 +162,8 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    if (query.match(/^\d{13}$/)) {
-                      // 13자리 숫자면 바코드로 간주
+                    if (query.match(/^\d{13}$/) || query.match(/^\d{18}$/)) {
+                      // 13자리 또는 18자리 숫자면 바코드로 간주
                       handleBarcodeSearch(query);
                     } else {
                       // 일반 검색
@@ -192,7 +199,7 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
         </div>
 
         <div className="mt-3 text-xs text-gray-500">
-          💡 상품명을 입력하고 검색 버튼을 누르거나 Enter를 누르세요. 13자리 바코드는 Enter로 바로 추가됩니다.
+          💡 상품명을 입력하고 검색 버튼을 누르거나 Enter를 누르세요. 바코드는 Enter로 바로 추가됩니다.
         </div>
       </div>
 

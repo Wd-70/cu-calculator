@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { normalizeBarcode } from '@/lib/utils/barcodeUtils';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
@@ -59,8 +60,9 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
           },
         },
         (decodedText) => {
-          // 바코드를 감지하면 저장하고 시각적 피드백
-          latestBarcodeRef.current = decodedText;
+          // 바코드를 감지하면 정규화하여 저장하고 시각적 피드백
+          const normalizedBarcode = normalizeBarcode(decodedText);
+          latestBarcodeRef.current = normalizedBarcode;
           setBarcodeDetected(true);
 
           // 0.3초 후 원래 색으로 복귀

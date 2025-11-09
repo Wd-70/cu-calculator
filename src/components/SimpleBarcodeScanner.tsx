@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { normalizeBarcode } from '@/lib/utils/barcodeUtils';
 
 interface SimpleBarcodeScannerProps {
   isOpen: boolean;
@@ -49,10 +50,14 @@ export default function SimpleBarcodeScanner({ isOpen, onClose, onScan }: Simple
           }
 
           hasScannedRef.current = true;
-          setScannedBarcode(decodedText);
 
-          // 바코드 전달
-          onScan(decodedText);
+          // 바코드 정규화 (18자리 -> 13자리)
+          const normalizedBarcode = normalizeBarcode(decodedText);
+
+          setScannedBarcode(normalizedBarcode);
+
+          // 정규화된 바코드 전달
+          onScan(normalizedBarcode);
 
           // 잠시 후 카메라 정지 및 모달 닫기
           setTimeout(async () => {
