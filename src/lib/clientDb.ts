@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   CARTS: 'cu_calculator_carts',
   PRESETS: 'cu_calculator_presets',
   INITIALIZED: 'cu_calculator_initialized',
+  LAST_USED_PRESET_ID: 'cu_calculator_last_used_preset_id',
 } as const;
 
 // ID 생성 헬퍼
@@ -425,6 +426,42 @@ export function incrementPresetUsage(presetId: string): IPreset | null {
     usageCount: (preset.usageCount || 0) + 1,
     lastUsedAt: new Date()
   });
+}
+
+// ============================================================================
+// Last Used Preset Tracking
+// ============================================================================
+
+/**
+ * 마지막으로 사용한 프리셋 ID 저장
+ */
+export function setLastUsedPresetId(presetId: string | null): void {
+  if (typeof window === 'undefined') return;
+
+  if (presetId === null) {
+    localStorage.removeItem(STORAGE_KEYS.LAST_USED_PRESET_ID);
+  } else {
+    localStorage.setItem(STORAGE_KEYS.LAST_USED_PRESET_ID, presetId);
+  }
+}
+
+/**
+ * 마지막으로 사용한 프리셋 ID 가져오기
+ */
+export function getLastUsedPresetId(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  return localStorage.getItem(STORAGE_KEYS.LAST_USED_PRESET_ID);
+}
+
+/**
+ * 마지막으로 사용한 프리셋 가져오기
+ */
+export function getLastUsedPreset(): IPreset | null {
+  const lastUsedId = getLastUsedPresetId();
+  if (!lastUsedId) return null;
+
+  return getPreset(lastUsedId);
 }
 
 // ============================================================================

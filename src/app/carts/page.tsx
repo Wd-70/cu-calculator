@@ -222,6 +222,11 @@ export default function CartsPage() {
   // 프리셋 변경
   const handlePresetChange = (preset: IPreset | null) => {
     setSelectedPreset(preset);
+
+    // 마지막 사용 프리셋 저장
+    if (preset) {
+      clientDb.setLastUsedPresetId(String(preset._id));
+    }
   };
 
   // 카트 생성
@@ -581,6 +586,8 @@ export default function CartsPage() {
               appliedDiscounts={getAppliedDiscounts()}
               warnings={optimalCombination?.warnings}
               onRecalculate={calculateDiscount}
+              selectedPreset={selectedPreset}
+              availableDiscounts={availableDiscounts}
             />
 
             {/* 대안 할인 조합 */}

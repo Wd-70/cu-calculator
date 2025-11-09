@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { IPreset } from '@/types/preset';
 import { IDiscountRule } from '@/types/discount';
 import * as clientDb from '@/lib/clientDb';
@@ -15,23 +15,8 @@ export default function PresetSelector({ selectedPresetId, onPresetChange, avail
   const [presets, setPresets] = useState<IPreset[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    const loadedPresets = clientDb.getPresets();
-    setPresets(loadedPresets);
-
-    // 선택된 프리셋이 없으면 기본 프리셋 자동 선택
-    if (!selectedPresetId) {
-      const defaultPreset = clientDb.getDefaultPreset();
-      if (defaultPreset) {
-        onPresetChange(defaultPreset);
-      } else if (loadedPresets.length > 0) {
-        onPresetChange(loadedPresets[0]);
-      }
-    }
-  }, [selectedPresetId, onPresetChange]);
-
-  // "모든 할인 최대 적용" 특수 프리셋 생성
-  const createMaxDiscountPreset = (): IPreset | null => {
+  // "모든 할인 최대 적용" 특수 프리셋 생성 (메모이제이션)
+  const maxDiscountPreset = useMemo((): IPreset | null => {
     if (availableDiscounts.length === 0) return null;
 
     return {
@@ -47,9 +32,46 @@ export default function PresetSelector({ selectedPresetId, onPresetChange, avail
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-  };
+  }, [availableDiscounts]);
 
-  const maxDiscountPreset = createMaxDiscountPreset();
+  // 프리셋 목록 로드
+  useEffect(() => {
+    const loadedPresets = clientDb.getPresets();
+    setPresets(loadedPresets);
+  }, []);
+
+  // 초기 자동 선택
+  useEffect(() => {
+    if (selectedPresetId) return; // 이미 선택되어 있으면 스킵
+
+    const loadedPresets = clientDb.getPresets();
+    const lastUsedPresetId = clientDb.getLastUsedPresetId();
+
+    if (lastUsedPresetId === '__MAX_DISCOUNT__') {
+      // 마지막으로 사용한 것이 "모든 할인 최대 적용" 프리셋
+      if (maxDiscountPreset) {
+        // maxDiscountPreset이 준비되면 선택
+        onPresetChange(maxDiscountPreset);
+      }
+      // maxDiscountPreset이 아직 null이면 다음 렌더링에서 처리됨
+      return;
+    }
+
+    if (lastUsedPresetId) {
+      // 일반 프리셋
+      const lastUsedPreset = clientDb.getPreset(lastUsedPresetId);
+      if (lastUsedPreset) {
+        onPresetChange(lastUsedPreset);
+        return;
+      }
+    }
+
+    // fallback: 첫 번째 프리셋 선택
+    if (loadedPresets.length > 0) {
+      onPresetChange(loadedPresets[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxDiscountPreset]); // maxDiscountPreset이 생성되면 다시 실행
 
   const selectedPreset = selectedPresetId === '__MAX_DISCOUNT__'
     ? maxDiscountPreset
@@ -112,9 +134,6 @@ export default function PresetSelector({ selectedPresetId, onPresetChange, avail
               <div className="flex-1 text-left min-w-0">
                 <div className="font-medium text-gray-900 truncate">
                   {selectedPreset.name}
-                  {selectedPreset.isDefault && (
-                    <span className="ml-2 text-xs text-yellow-600">⭐ 기본</span>
-                  )}
                 </div>
                 {selectedPreset.description && (
                   <div className="text-xs text-gray-500 truncate">{selectedPreset.description}</div>
@@ -189,9 +208,6 @@ export default function PresetSelector({ selectedPresetId, onPresetChange, avail
                   <div className="flex-1 text-left min-w-0">
                     <div className="font-medium text-gray-900 truncate">
                       {preset.name}
-                      {preset.isDefault && (
-                        <span className="ml-2 text-xs text-yellow-600">⭐ 기본</span>
-                      )}
                     </div>
                     {preset.description && (
                       <div className="text-xs text-gray-500 truncate">{preset.description}</div>

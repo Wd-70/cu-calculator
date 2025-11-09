@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { IDiscountRule, DiscountApplicationStep, DISCOUNT_CATEGORY_NAMES } from '@/types/discount';
+import { IPreset } from '@/types/preset';
+import { PAYMENT_METHOD_NAMES } from '@/types/payment';
 
 interface DiscountResultProps {
   isCalculating: boolean;
@@ -27,6 +29,8 @@ interface DiscountResultProps {
   }[];
   warnings?: string[];
   onRecalculate?: () => void;
+  selectedPreset?: IPreset | null;
+  availableDiscounts?: IDiscountRule[];
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
@@ -53,8 +57,51 @@ export default function DiscountResult({
   appliedDiscounts,
   warnings,
   onRecalculate,
+  selectedPreset,
+  availableDiscounts = [],
 }: DiscountResultProps) {
   const [expandedDiscounts, setExpandedDiscounts] = useState<Set<number>>(new Set());
+
+  // "모든 할인 최대 적용" 프리셋 사용 시 필요한 조건 분석
+  const analyzeRequiredConditions = () => {
+    if (!selectedPreset || String(selectedPreset._id) !== '__MAX_DISCOUNT__' || !availableDiscounts.length) {
+      return null;
+    }
+
+    const appliedDiscountIds = new Set(appliedDiscounts.map(d => d.discountId));
+    const appliedDiscountRules = availableDiscounts.filter(d => appliedDiscountIds.has(String(d._id)));
+
+    const requiredPaymentMethods = new Set<string>();
+    const requiredSubscriptions = new Set<string>();
+    const requiresQR = appliedDiscountRules.some(d =>
+      d.config.category === 'payment_event' && d.config.requiresQR
+    );
+
+    appliedDiscountRules.forEach(discount => {
+      // 결제수단 조건
+      if (discount.requiredPaymentMethods && discount.requiredPaymentMethods.length > 0) {
+        discount.requiredPaymentMethods.forEach(pm => requiredPaymentMethods.add(pm));
+      }
+
+      // 구독 조건
+      const isSubscriptionBased =
+        discount.config.category === 'telecom' ||
+        (discount.config.category === 'coupon' && discount.name.includes('구독')) ||
+        (discount.config.category === 'payment_instant' && (discount.config as any).isNaverPlus);
+
+      if (isSubscriptionBased) {
+        requiredSubscriptions.add(discount.name);
+      }
+    });
+
+    return {
+      paymentMethods: Array.from(requiredPaymentMethods),
+      subscriptions: Array.from(requiredSubscriptions),
+      requiresQR,
+    };
+  };
+
+  const requiredConditions = analyzeRequiredConditions();
 
   const toggleExpanded = (index: number) => {
     setExpandedDiscounts(prev => {
@@ -322,6 +369,88 @@ export default function DiscountResult({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* "모든 할인 최대 적용" 프리셋 사용 시 필요한 조건 표시 */}
+      {requiredConditions && appliedDiscounts.length > 0 && (
+        <div className="px-6 pb-4">
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-xl p-5">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="text-2xl">⚠️</div>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-orange-900 mb-1">
+                  💡 이 할인을 실제로 받으려면 다음 조건이 필요합니다
+                </h4>
+                <p className="text-xs text-orange-700">
+                  "모든 할인 최대 적용" 프리셋은 이론상 최대 할인을 보여줍니다. 실제 적용을 위해 아래 조건을 확인하세요.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {/* 필요한 구독 */}
+              {requiredConditions.subscriptions.length > 0 && (
+                <div className="bg-white rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-gray-900">📋 필요한 구독</span>
+                    <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium">
+                      {requiredConditions.subscriptions.length}개
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {requiredConditions.subscriptions.map((sub, idx) => (
+                      <span key={idx} className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-medium">
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 필요한 결제수단 */}
+              {requiredConditions.paymentMethods.length > 0 && (
+                <div className="bg-white rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-gray-900">💳 필요한 결제수단</span>
+                    <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium">
+                      {requiredConditions.paymentMethods.length}개 중 택1
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {requiredConditions.paymentMethods.map((pm, idx) => (
+                      <span key={idx} className="text-xs px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg font-medium">
+                        {PAYMENT_METHOD_NAMES[pm as keyof typeof PAYMENT_METHOD_NAMES] || pm}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* QR 스캐너 필요 */}
+              {requiredConditions.requiresQR && (
+                <div className="bg-white rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-900">📱 포켓CU 앱 QR 스캐너 필요</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 조건 없음 */}
+              {requiredConditions.subscriptions.length === 0 &&
+               requiredConditions.paymentMethods.length === 0 &&
+               !requiredConditions.requiresQR && (
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">✅</span>
+                    <span className="text-sm font-semibold text-green-700">
+                      별도 조건 없이 모든 할인이 적용 가능합니다!
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
