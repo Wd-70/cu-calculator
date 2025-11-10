@@ -51,7 +51,8 @@ export type DiscountValueType =
   | 'fixed_amount'      // 고정 금액 할인 (예: 1000원)
   | 'tiered_amount'     // 구간 금액 할인 (예: 1천원당 300원)
   | 'voucher_amount'    // 금액권 차감
-  | 'buy_n_get_m';      // N개 구매 시 M개 무료 (1+1, 2+1 등)
+  | 'buy_n_get_m'       // N개 구매 시 M개 무료 (1+1, 2+1 등)
+  | 'unit_price';       // 단품 특가 (예: 개당 1,320원)
 
 // ============================================================================
 // 상품 그룹 (세트 상품)
@@ -69,8 +70,10 @@ export interface ProductGroup {
 
 export interface CouponDiscount {
   category: 'coupon';
-  valueType: 'percentage';
-  percentage: number; // 예: 25 (25% 할인)
+  valueType: 'percentage' | 'fixed_amount' | 'unit_price';
+  percentage?: number; // 예: 25 (25% 할인)
+  fixedAmount?: number; // 예: 1000 (1000원 할인)
+  unitPrice?: number; // 예: 1320 (개당 1,320원 특가)
 
   // 구독 쿠폰 관련
   isSubscription?: boolean; // 구독 쿠폰 여부

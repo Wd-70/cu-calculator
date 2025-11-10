@@ -49,7 +49,37 @@
       "deactivatedAt": "2025-11-08T04:19:00.651Z",
       "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
       "reason": "Manual deactivation"
+    },
+    "session_2025-11-09T11-40-43": {
+      "deactivatedAt": "2025-11-10T10:22:45.750Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-09T11-39-58": {
+      "deactivatedAt": "2025-11-10T10:22:50.143Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-09T09-55-50": {
+      "deactivatedAt": "2025-11-10T10:22:51.386Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-09T09-43-38": {
+      "deactivatedAt": "2025-11-10T10:22:52.535Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-09T09-06-16": {
+      "deactivatedAt": "2025-11-10T10:22:52.881Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
+    },
+    "session_2025-11-10T10-59-32": {
+      "deactivatedAt": "2025-11-10T14:12:17.844Z",
+      "deactivatedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "reason": "Manual deactivation"
     }
   },
-  "lastUpdated": "2025-11-08T04:19:00.651Z"
+  "lastUpdated": "2025-11-10T14:12:17.844Z"
 }

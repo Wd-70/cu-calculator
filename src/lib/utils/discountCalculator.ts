@@ -33,7 +33,18 @@ function calculateCouponDiscount(
   config: Extract<DiscountConfig, { category: 'coupon' }>,
   maxDiscountAmount?: number
 ): number {
-  let discount = Math.floor(originalPrice * (config.percentage / 100));
+  let discount = 0;
+
+  if (config.valueType === 'percentage' && config.percentage) {
+    // 퍼센트 방식
+    discount = Math.floor(originalPrice * (config.percentage / 100));
+  } else if (config.valueType === 'fixed_amount' && config.fixedAmount) {
+    // 고정 금액 방식
+    discount = Math.min(originalPrice, config.fixedAmount);
+  } else if (config.valueType === 'unit_price' && config.unitPrice) {
+    // 단품 특가 방식: 정가 - 특가 = 할인액
+    discount = Math.max(0, originalPrice - config.unitPrice);
+  }
 
   // 최대 할인 금액 제한 적용
   if (maxDiscountAmount && discount > maxDiscountAmount) {

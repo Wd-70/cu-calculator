@@ -14,12 +14,13 @@ const DiscountConfigSchema = new Schema({
   valueType: {
     type: String,
     required: true,
-    enum: ['percentage', 'fixed_amount', 'tiered_amount', 'voucher_amount', 'buy_n_get_m'],
+    enum: ['percentage', 'fixed_amount', 'tiered_amount', 'voucher_amount', 'buy_n_get_m', 'unit_price'],
   },
 
   // 공통 필드
   percentage: Number,
   fixedAmount: Number,
+  unitPrice: Number, // 단품 특가: 개당 판매 가격
 
   // 통신사 할인 (구간 방식)
   tierUnit: Number,

@@ -125,12 +125,20 @@ export default function DiscountDetailModal({
   const getDiscountValue = (): string => {
     const config = displayDiscount.config;
 
+    // valueType 우선 체크 (카테고리 무관)
+    if (config.valueType === 'unit_price' && config.unitPrice) {
+      return `개당 ${config.unitPrice.toLocaleString()}원 할인`;
+    }
+
     switch (config.category) {
       case 'coupon':
         if (config.valueType === 'fixed_amount' && config.fixedAmount) {
           return `${config.fixedAmount.toLocaleString()}원 할인`;
         }
-        return `${config.percentage}% 할인`;
+        if (config.percentage) {
+          return `${config.percentage}% 할인`;
+        }
+        return '할인';
       case 'telecom':
         if (config.valueType === 'percentage') {
           return `${config.percentage}% 할인`;
@@ -153,7 +161,10 @@ export default function DiscountDetailModal({
         if (config.valueType === 'fixed_amount' && config.fixedAmount) {
           return `${config.fixedAmount.toLocaleString()}원 할인`;
         }
-        return `${config.percentage}% 할인`;
+        if (config.percentage) {
+          return `${config.percentage}% 할인`;
+        }
+        return '할인';
       default:
         return '할인';
     }

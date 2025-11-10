@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import CameraCapture from './CameraCapture';
+import SimpleBarcodeScanner from './SimpleBarcodeScanner';
+import Barcode from 'react-barcode';
 
 interface PendingPhoto {
   promotionId?: string;
@@ -43,7 +45,7 @@ export default function PhotoConversionModal({
   const [loading, setLoading] = useState(false);
   const [conversionData, setConversionData] = useState<string>('');
   const [importing, setImporting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'capture' | 'list' | 'import'>('capture');
+  const [activeTab, setActiveTab] = useState<'capture' | 'scan' | 'list' | 'import'>('capture');
 
   // 배치 파일 관련 상태
   const [batchFiles, setBatchFiles] = useState<any[]>([]);
@@ -64,6 +66,29 @@ export default function PhotoConversionModal({
   const [selectedPhoto, setSelectedPhoto] = useState<PendingPhoto | null>(null);
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
 
+  // 바코드 스캔 탭 관련 상태
+  const [scannedProducts, setScannedProducts] = useState<Array<{barcode: string, name: string, price: number, imageUrl?: string, scannedAt: string, scannedBy: string, isActive: boolean}>>([]);
+  const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [scanSessionId, setScanSessionId] = useState<string>(() => {
+    // localStorage에서 저장된 세션 ID 불러오기
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('scanSessionId') || '';
+    }
+    return '';
+  });
+  const [cameraMode, setCameraMode] = useState<'normal' | 'product'>('normal');
+  const [showInactiveProducts, setShowInactiveProducts] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedSearchResultIndex, setSelectedSearchResultIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchResultRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const savedScrollPosition = useRef<number>(0);
+
   useEffect(() => {
     if (isOpen) {
       loadPendingPhotos();
@@ -73,12 +98,195 @@ export default function PhotoConversionModal({
       if (!currentSessionId) {
         setCurrentSessionId(generateSessionId());
       }
+      // 바코드 스캔 세션 ID 생성
+      if (!scanSessionId) {
+        const newScanSessionId = generateSessionId();
+        setScanSessionId(newScanSessionId);
+        localStorage.setItem('scanSessionId', newScanSessionId);
+      }
+      // 스캔 상품 목록 불러오기
+      loadScannedProducts();
     }
   }, [isOpen]);
+
+  // 검색 결과 키보드 네비게이션
+  useEffect(() => {
+    if (!showSearchResults || searchResults.length === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSearchResultIndex((prev) =>
+          prev < searchResults.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSearchResultIndex((prev) =>
+          prev > 0 ? prev - 1 : prev
+        );
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (searchResults[selectedSearchResultIndex]) {
+          handleSelectSearchResult(searchResults[selectedSearchResultIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowSearchResults(false);
+        setSearchQuery('');
+        setSearchResults([]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSearchResults, searchResults, selectedSearchResultIndex]);
+
+  // 선택된 검색 결과 항목으로 스크롤
+  useEffect(() => {
+    if (showSearchResults && searchResultRefs.current[selectedSearchResultIndex]) {
+      searchResultRefs.current[selectedSearchResultIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedSearchResultIndex, showSearchResults]);
+
+  // 카메라가 닫힐 때 스크롤 위치 복원
+  useEffect(() => {
+    if (!showCamera && activeTab === 'scan' && savedScrollPosition.current > 0) {
+      // 카메라가 닫혔을 때 스크롤 복원
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = savedScrollPosition.current;
+        }
+      }, 50);
+    }
+  }, [showCamera, activeTab]);
 
   const generateSessionId = () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
     return `session_${timestamp}`;
+  };
+
+  const loadScannedProducts = async () => {
+    if (!userAddress) return;
+
+    try {
+      const response = await fetch(`/api/admin/photos/scan-products?accountAddress=${userAddress}`);
+      const data = await response.json();
+
+      if (data.success && data.products) {
+        setScannedProducts(data.products);
+      }
+    } catch (error) {
+      console.error('스캔 상품 불러오기 실패:', error);
+    }
+  };
+
+  const addScannedProduct = async (product: {barcode: string, name: string, price: number, imageUrl?: string}) => {
+    if (!userAddress) return;
+
+    try {
+      const response = await fetch('/api/admin/photos/scan-products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress: userAddress,
+          product,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.products) {
+        setScannedProducts(data.products);
+      }
+    } catch (error) {
+      console.error('스캔 상품 추가 실패:', error);
+    }
+  };
+
+  const removeScannedProduct = async (barcode: string) => {
+    if (!userAddress) return;
+
+    try {
+      const response = await fetch(`/api/admin/photos/scan-products?accountAddress=${userAddress}&barcode=${barcode}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (data.success && data.products) {
+        setScannedProducts(data.products);
+      }
+    } catch (error) {
+      console.error('스캔 상품 삭제 실패:', error);
+    }
+  };
+
+  const toggleProductActive = async (barcode: string, isActive: boolean) => {
+    if (!userAddress) return;
+
+    try {
+      const response = await fetch('/api/admin/photos/scan-products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountAddress: userAddress,
+          barcode,
+          isActive,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.products) {
+        setScannedProducts(data.products);
+      }
+    } catch (error) {
+      console.error('스캔 상품 활성 토글 실패:', error);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      alert('검색어를 2글자 이상 입력해주세요.');
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/products?name=${encodeURIComponent(searchQuery)}&limit=50`);
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setSearchResults(data.data);
+        setSelectedSearchResultIndex(0);
+        setShowSearchResults(true);
+      } else {
+        setSearchResults([]);
+        alert('검색 결과가 없습니다.');
+      }
+    } catch (error) {
+      console.error('상품 검색 실패:', error);
+      alert('상품 검색 중 오류가 발생했습니다.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = async (product: any) => {
+    await addScannedProduct({
+      barcode: product.barcode,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl
+    });
+    setShowSearchResults(false);
+    setSearchQuery('');
+    setSearchResults([]);
+
+    // 검색어 입력창으로 포커스 이동
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 100);
   };
 
   const loadPendingPhotos = async () => {
@@ -260,6 +468,98 @@ export default function PhotoConversionModal({
     loadPendingPhotos();
   };
 
+  // 바코드 스캔 탭 핸들러
+  const handleBarcodeScan = async (barcode: string) => {
+    setShowBarcodeScanner(false);
+
+    try {
+      // 상품 정보 조회
+      const response = await fetch(`/api/products?barcode=${barcode}`);
+      const data = await response.json();
+
+      if (data.success && data.data && data.data.length > 0) {
+        const product = data.data[0];
+
+        // 상품 추가 (이미 있으면 활성화됨)
+        await addScannedProduct({
+          barcode: product.barcode,
+          name: product.name,
+          price: product.price,
+          imageUrl: product.imageUrl
+        });
+      } else {
+        alert('상품을 찾을 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('상품 조회 실패:', error);
+      alert('상품 조회 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleRemoveProduct = async (barcode: string) => {
+    await removeScannedProduct(barcode);
+
+    // 선택된 상품이 삭제된 경우 선택 해제
+    const removedProduct = scannedProducts.find(p => p.barcode === barcode);
+    if (removedProduct && selectedProductIndex !== null) {
+      const selectedProduct = scannedProducts[selectedProductIndex];
+      if (selectedProduct?.barcode === barcode) {
+        setSelectedProductIndex(null);
+      }
+    }
+  };
+
+  const handleSelectProduct = (index: number) => {
+    setSelectedProductIndex(index);
+    // 스캔 세션 ID 생성 (상품별)
+    if (!scanSessionId) {
+      setScanSessionId(generateSessionId());
+    }
+  };
+
+  const handleCaptureForProduct = async (blob: Blob, filename: string) => {
+    if (!userAddress || selectedProductIndex === null) return;
+
+    const product = scannedProducts[selectedProductIndex];
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', blob, filename);
+      formData.append('sessionId', scanSessionId);
+      formData.append('sessionName', `${product.name} (${product.barcode})`);
+      formData.append('accountAddress', userAddress);
+      formData.append('productBarcode', product.barcode);
+      formData.append('productName', product.name);
+
+      const response = await fetch('/api/admin/photos/upload-standalone', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 카메라를 먼저 닫고 (스크롤 복원은 useEffect에서 처리)
+        setShowCamera(false);
+        // 다음 상품으로 이동하거나 세션 ID 리셋
+        setScanSessionId(generateSessionId());
+
+        // alert는 스크롤 복원 후에 표시
+        setTimeout(() => {
+          alert(`✅ ${product.name} POS 화면이 촬영되었습니다!`);
+        }, 100);
+      } else {
+        alert('사진 업로드 실패: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      alert('사진 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleCopyTaskInfo = () => {
     const filteredPhotos = getFilteredPhotos(); // 활성화된 항목만
 
@@ -326,7 +626,8 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
       const data = await response.json();
 
       if (data.success) {
-        alert(`✅ 변환 데이터가 성공적으로 임포트되었습니다!\n\n업데이트된 프로모션: ${data.updatedCount}개`);
+        const message = `✅ 변환 데이터가 성공적으로 임포트되었습니다!\n\n업데이트된 프로모션: ${data.updatedCount}개\n생성된 할인규칙: ${data.createdDiscountRulesCount || 0}개`;
+        alert(message);
         setConversionData('');
         setSelectedBatchFile('');
         setActiveTab('list');
@@ -350,11 +651,24 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
 
   if (!isOpen) return null;
 
+  if (showBarcodeScanner) {
+    return (
+      <SimpleBarcodeScanner
+        isOpen={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+        onScan={handleBarcodeScan}
+      />
+    );
+  }
+
   if (showCamera) {
     return (
       <CameraCapture
-        onCapture={handlePhotoCapture}
-        onClose={() => setShowCamera(false)}
+        onCapture={cameraMode === 'product' ? handleCaptureForProduct : handlePhotoCapture}
+        onClose={() => {
+          setShowCamera(false);
+          setCameraMode('normal');
+        }}
       />
     );
   }
@@ -384,10 +698,10 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
 
         {/* 탭 */}
         <div className="border-b border-gray-200">
-          <div className="flex gap-1 p-4">
+          <div className="flex gap-1 p-4 overflow-x-auto">
             <button
               onClick={() => setActiveTab('capture')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'capture'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -396,8 +710,18 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
               📸 사진 촬영
             </button>
             <button
+              onClick={() => setActiveTab('scan')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'scan'
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              🔍 바코드 스캔 ({scannedProducts.length})
+            </button>
+            <button
               onClick={() => setActiveTab('list')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'list'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -407,7 +731,7 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
             </button>
             <button
               onClick={() => setActiveTab('import')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'import'
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -419,7 +743,7 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
         </div>
 
         {/* 컨텐츠 */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
           {/* 사진 촬영 탭 */}
           {activeTab === 'capture' && (
             <div className="space-y-4">
@@ -495,6 +819,191 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
               <div className="text-xs text-gray-500 text-center">
                 현재 세션 ID: {currentSessionId}
               </div>
+            </div>
+          )}
+
+          {/* 바코드 스캔 탭 */}
+          {activeTab === 'scan' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <h3 className="font-semibold text-purple-900 mb-2">🔍 바코드 스캔 가이드</h3>
+                <ul className="text-purple-800 text-sm space-y-1">
+                  <li>• 바코드를 스캔하여 상품 목록을 만듭니다</li>
+                  <li>• 상품을 선택하면 바코드가 크게 표시됩니다</li>
+                  <li>• POS에서 해당 바코드를 스캔하고 화면을 촬영하세요</li>
+                  <li>• 모바일에서 왔다갔다 할 필요 없이 한 화면에서 처리할 수 있습니다</li>
+                </ul>
+              </div>
+
+              {/* 상품 추가 영역 */}
+              <div className="space-y-3">
+                {/* 바코드 스캔 버튼 */}
+                <button
+                  onClick={() => setShowBarcodeScanner(true)}
+                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
+                >
+                  📷 바코드 스캔하기
+                </button>
+
+                {/* 상품명 검색 */}
+                <div className="flex gap-2 w-full">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="상품명으로 검색..."
+                    className="flex-1 min-w-0 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    disabled={isSearching}
+                  />
+                  <button
+                    onClick={handleSearch}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap text-sm"
+                  >
+                    {isSearching ? '검색 중...' : '🔍 검색'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 text-center">
+                  💡 바코드 스캔 또는 상품명으로 검색하여 추가하세요
+                </p>
+              </div>
+
+              {/* 상품 목록 */}
+              {scannedProducts.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-900">
+                      📦 스캔된 상품 목록 ({scannedProducts.filter(p => showInactiveProducts || p.isActive).length}개)
+                    </h4>
+                    <button
+                      onClick={() => setShowInactiveProducts(!showInactiveProducts)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        showInactiveProducts
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-white text-purple-700 border border-purple-300 hover:bg-purple-100'
+                      }`}
+                    >
+                      {showInactiveProducts ? '✓ 비활성 항목 표시 중' : '비활성 항목 표시'}
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {scannedProducts.filter(p => showInactiveProducts || p.isActive).map((product, index) => (
+                      <div
+                        key={product.barcode}
+                        className={`p-4 border rounded-lg transition-all ${
+                          !product.isActive ? 'opacity-60 bg-gray-50' : ''
+                        } ${
+                          selectedProductIndex === index && product.isActive
+                            ? 'border-purple-500 bg-purple-50 shadow-md cursor-pointer'
+                            : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50 cursor-pointer'
+                        }`}
+                        onClick={() => product.isActive && handleSelectProduct(index)}
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* 상품 이미지 */}
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                              </svg>
+                            </div>
+                          )}
+
+                          {/* 상품 정보 */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-semibold text-gray-900">{product.name}</h5>
+                              {!product.isActive && (
+                                <span className="px-2 py-0.5 bg-gray-400 text-white text-xs rounded-full">
+                                  비활성
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 font-mono">{product.barcode}</p>
+                            <p className="text-sm font-bold text-blue-600">{product.price.toLocaleString()}원</p>
+                          </div>
+
+                          {/* 활성/비활성 토글 버튼 */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleProductActive(product.barcode, !product.isActive);
+                            }}
+                            className={`px-3 py-1 rounded-lg text-sm font-semibold transition-colors ${
+                              product.isActive
+                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                : 'bg-green-500 text-white hover:bg-green-600'
+                            }`}
+                          >
+                            {product.isActive ? '✗ 비활성' : '✓ 활성'}
+                          </button>
+
+                          {/* 삭제 버튼 */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`${product.name}을(를) 완전히 삭제하시겠습니까?`)) {
+                                handleRemoveProduct(product.barcode);
+                              }
+                            }}
+                            className="flex-shrink-0 text-red-600 hover:bg-red-50 p-2 rounded transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* 선택된 상품의 바코드 표시 */}
+                        {selectedProductIndex === index && product.isActive && (
+                          <div className="mt-4 p-4 bg-white rounded-lg border-2 border-purple-300">
+                            <h6 className="text-sm font-semibold text-purple-900 mb-3 text-center">
+                              ⬇️ POS에서 이 바코드를 스캔하세요 ⬇️
+                            </h6>
+                            <div className="flex flex-col items-center">
+                              <BarcodeDisplay barcode={product.barcode} />
+                              <p className="text-lg font-mono font-bold text-gray-900 mt-2">{product.barcode}</p>
+                            </div>
+
+                            {/* POS 화면 촬영 버튼 */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // 스크롤 위치 저장
+                                if (scrollContainerRef.current) {
+                                  savedScrollPosition.current = scrollContainerRef.current.scrollTop;
+                                }
+                                setCameraMode('product');
+                                setShowCamera(true);
+                              }}
+                              disabled={uploading}
+                              className="w-full mt-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-bold hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+                            >
+                              {uploading ? '업로드 중...' : '📸 POS 화면 촬영하기'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 안내 메시지 */}
+              {scannedProducts.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg">바코드를 스캔하여 상품을 추가하세요</p>
+                  <p className="text-sm mt-2">상품을 추가하면 POS 화면 촬영을 시작할 수 있습니다</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -847,6 +1356,102 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
           </div>
         </div>
       )}
+
+      {/* 상품 검색 결과 모달 */}
+      {showSearchResults && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col m-4">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold">
+                🔍 검색 결과: "{searchQuery}"
+              </h3>
+              <button
+                onClick={() => {
+                  setShowSearchResults(false);
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }}
+                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {searchResults.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">검색 결과가 없습니다.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {searchResults.map((product, index) => (
+                    <div
+                      key={product.barcode}
+                      ref={(el) => (searchResultRefs.current[index] = el)}
+                      onClick={() => handleSelectSearchResult(product)}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                        index === selectedSearchResultIndex
+                          ? 'border-purple-500 bg-purple-100'
+                          : 'border-gray-200 hover:border-purple-500 hover:bg-purple-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h5 className="font-semibold text-gray-900">{product.name}</h5>
+                          <p className="text-sm text-gray-600 font-mono">{product.barcode}</p>
+                          <p className="text-sm font-bold text-blue-600">{product.price.toLocaleString()}원</p>
+                        </div>
+                        <div className={index === selectedSearchResultIndex ? 'text-purple-700' : 'text-purple-600'}>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="border-t border-gray-200 p-4 bg-gray-50">
+              <p className="text-sm text-gray-600 text-center">
+                💡 클릭하거나 방향키(↑↓)로 선택하고 Enter로 추가 · ESC로 닫기
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 바코드 표시 컴포넌트
+function BarcodeDisplay({ barcode }: { barcode: string }) {
+  return (
+    <div className="bg-white p-2 rounded-lg overflow-x-auto">
+      <div className="flex justify-center min-w-0">
+        <Barcode
+          value={barcode}
+          width={2}
+          height={60}
+          fontSize={14}
+          margin={5}
+          displayValue={true}
+        />
+      </div>
     </div>
   );
 }

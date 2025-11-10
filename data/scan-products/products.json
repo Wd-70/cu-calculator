@@ -1,0 +1,671 @@
+{
+  "products": [
+    {
+      "barcode": "8801094202408",
+      "name": "코카)스프라이트P1.5L",
+      "price": 3700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094202408.png",
+      "scannedAt": "2025-11-10T13:59:59.744Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801094112400",
+      "name": "코카)환타오렌지P1.5L",
+      "price": 3500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094112400.png",
+      "scannedAt": "2025-11-10T13:59:42.312Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056175955",
+      "name": "롯데)펩시제로라임P500ml",
+      "price": 2300,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056175955.png",
+      "scannedAt": "2025-11-10T13:59:32.092Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056192013",
+      "name": "롯데)칠성사이다P500ml",
+      "price": 2300,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056192013.png",
+      "scannedAt": "2025-11-10T13:59:19.971Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801094112707",
+      "name": "코카)환타오렌지P600ml",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094112707.png",
+      "scannedAt": "2025-11-10T13:59:09.942Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801097235670",
+      "name": "동아)나랑드파인P500ml",
+      "price": 2000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801097235670.jpg",
+      "scannedAt": "2025-11-10T13:59:02.828Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801097135413",
+      "name": "동아)나랑드사이다캔345ml",
+      "price": 1800,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801097135413.jpg",
+      "scannedAt": "2025-11-10T13:58:50.514Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056248567",
+      "name": "롯데)탐스오렌지캔355ml",
+      "price": 1500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056248567.jpg",
+      "scannedAt": "2025-11-10T13:58:41.627Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056248703",
+      "name": "롯데)펩시제로라임캔310ml",
+      "price": 1800,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056248703.jpg",
+      "scannedAt": "2025-11-10T13:58:31.584Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801223014629",
+      "name": "1945레몬콜라350",
+      "price": 1800,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223014629.jpg",
+      "scannedAt": "2025-11-10T13:58:11.622Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801223014452",
+      "name": "일화)파이어망고패션캔500",
+      "price": 2700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223014452.jpg",
+      "scannedAt": "2025-11-10T13:58:03.732Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056228255",
+      "name": "롯데)핫식스더킹제로캔355",
+      "price": 2300,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056228255.jpg",
+      "scannedAt": "2025-11-10T13:57:52.642Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801043450690",
+      "name": "농심)웰치포도캔355ml",
+      "price": 1500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801043450690.jpg",
+      "scannedAt": "2025-11-10T13:57:34.218Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801223100254",
+      "name": "일화)맥콜캔250ml",
+      "price": 1500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223100254.jpg",
+      "scannedAt": "2025-11-10T13:57:24.934Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8806011416685",
+      "name": "동아)얼박사캔355ml",
+      "price": 2300,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806011416685.jpg",
+      "scannedAt": "2025-11-10T13:57:17.978Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801223014025",
+      "name": "일화)레몬애사비소다캔250",
+      "price": 1700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223014025.jpg",
+      "scannedAt": "2025-11-10T13:57:07.493Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809626921612",
+      "name": "링티)씨너지에너지캔250",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809626921612.jpg",
+      "scannedAt": "2025-11-10T13:56:56.341Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801094013004",
+      "name": "코카)코카콜라캔250ml",
+      "price": 1700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094013004.png",
+      "scannedAt": "2025-11-10T13:56:48.351Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809422046045",
+      "name": "HK)컨디션탄산제로병100ml",
+      "price": 5000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809422046045.jpg",
+      "scannedAt": "2025-11-10T13:56:37.945Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056248451",
+      "name": "롯데)깨수깡캔160ml",
+      "price": 5000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056248451.jpg",
+      "scannedAt": "2025-11-10T13:56:26.312Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801105914610",
+      "name": "해태)구론산스파클병150ml",
+      "price": 1200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801105914610.png",
+      "scannedAt": "2025-11-10T13:55:46.121Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801097280014",
+      "name": "동아)오로나민C병120ml",
+      "price": 1500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801097280014.png",
+      "scannedAt": "2025-11-10T13:55:22.647Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8806002022185",
+      "name": "광동)비타500제로병100ml",
+      "price": 1200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806002022185.png",
+      "scannedAt": "2025-11-10T13:55:12.747Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8805915912804",
+      "name": "종근당)아임비타에너지샷",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8805915912804.jpg",
+      "scannedAt": "2025-11-10T13:54:48.767Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056048129",
+      "name": "칸타타)라떼캔200ml",
+      "price": 1500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056048129.png",
+      "scannedAt": "2025-11-10T13:54:39.464Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801037091397",
+      "name": "마스터)라떼캔240ml",
+      "price": 1600,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801037091397.png",
+      "scannedAt": "2025-11-10T13:54:25.364Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8806011416562",
+      "name": "동아)모닝케어프레스온H병",
+      "price": 6000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806011416562.png",
+      "scannedAt": "2025-11-10T13:53:48.807Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8806002010861",
+      "name": "광동)헛개파워병",
+      "price": 5000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806002010861.png",
+      "scannedAt": "2025-11-10T13:53:40.113Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801013777468",
+      "name": "삼양사)상쾌환부스터제로",
+      "price": 5000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801013777468.png",
+      "scannedAt": "2025-11-10T13:53:29.192Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801094503000",
+      "name": "조지아)오리지널캔240ml",
+      "price": 1400,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094503000.png",
+      "scannedAt": "2025-11-10T13:53:21.121Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801094513009",
+      "name": "조지아)카페라떼캔240ml",
+      "price": 1400,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094513009.png",
+      "scannedAt": "2025-11-10T13:53:11.880Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056050269",
+      "name": "레쓰비)라떼캔240ml",
+      "price": 1400,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056050269.jpg",
+      "scannedAt": "2025-11-10T13:52:49.527Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809495075478",
+      "name": "클룹)제로소다포도캔500ml",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809495075478.png",
+      "scannedAt": "2025-11-10T13:52:37.777Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8800261385821",
+      "name": "이그니스)바이탈자몽캔500",
+      "price": 2700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8800261385821.jpg",
+      "scannedAt": "2025-11-10T13:52:29.184Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801037001730",
+      "name": "티오피)스모키블랙캔275ml",
+      "price": 2700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801037001730.png",
+      "scannedAt": "2025-11-10T13:52:21.482Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809713919027",
+      "name": "삼경)널담에너지자몽캔355",
+      "price": 2300,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809713919027.jpg",
+      "scannedAt": "2025-11-10T13:52:15.277Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8806004000945",
+      "name": "현대)미에로화이스파클500",
+      "price": 2700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806004000945.jpg",
+      "scannedAt": "2025-11-10T13:52:05.138Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056018948",
+      "name": "칸타타)라떼캔275ml",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056018948.png",
+      "scannedAt": "2025-11-10T13:51:54.511Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801047284642",
+      "name": "동원)비타C자몽에이드500",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047284642.jpg",
+      "scannedAt": "2025-11-10T13:51:39.818Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801382148500",
+      "name": "웅진)티즐제로피치P500",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801382148500.png",
+      "scannedAt": "2025-11-10T13:51:31.072Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809713919515",
+      "name": "OKF)제로청포도탄산캔500",
+      "price": 2700,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809713919515.jpg",
+      "scannedAt": "2025-11-10T13:51:21.016Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809286695120",
+      "name": "할리스)바닐라딜라이트450",
+      "price": 3200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809286695120.jpg",
+      "scannedAt": "2025-11-10T13:51:11.058Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801037057867",
+      "name": "티오피)더블랙캔380ml",
+      "price": 3300,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801037057867.png",
+      "scannedAt": "2025-11-10T13:51:01.877Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801382124528",
+      "name": "웅진)아침햇살P500ml",
+      "price": 2350,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801382124528.jpg",
+      "scannedAt": "2025-11-10T13:50:46.576Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "4901085596333",
+      "name": "농심)루이보스티P600ml",
+      "price": 3400,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/4901085596333.jpg",
+      "scannedAt": "2025-11-10T13:50:36.424Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8808024034085",
+      "name": "브리티시)블랙아메P500ml",
+      "price": 2800,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8808024034085.jpg",
+      "scannedAt": "2025-11-10T13:50:25.345Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8808244201014",
+      "name": "광동)제주삼다수P500ml",
+      "price": 1100,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8808244201014.png",
+      "scannedAt": "2025-11-10T13:50:10.362Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801047288114",
+      "name": "동원)먹는샘물P500ml",
+      "price": 1000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047288114.png",
+      "scannedAt": "2025-11-10T13:49:56.958Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801382147060",
+      "name": "웅진)빅토리아청포P500ml",
+      "price": 1800,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801382147060.jpg",
+      "scannedAt": "2025-11-10T13:49:52.244Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801223013530",
+      "name": "일화)에버데이에너지P500",
+      "price": 2800,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223013530.png",
+      "scannedAt": "2025-11-10T13:49:36.967Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801094412005",
+      "name": "코카)토레타P500ml",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094412005.png",
+      "scannedAt": "2025-11-10T13:49:30.752Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809799270203",
+      "name": "링티)제로레몬라임500ml",
+      "price": 2900,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809799270203.jpg",
+      "scannedAt": "2025-11-10T13:49:19.290Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801047284581",
+      "name": "동원)복숭아제로아이스900",
+      "price": 4000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047284581.jpg",
+      "scannedAt": "2025-11-10T13:49:03.367Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809799270661",
+      "name": "링티)애플라이트P500ml",
+      "price": 3200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809799270661.jpg",
+      "scannedAt": "2025-11-10T13:48:46.673Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056002725",
+      "name": "롯데)2프로복숭아P500ml",
+      "price": 1800,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056002725.png",
+      "scannedAt": "2025-11-10T13:48:34.531Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809495078851",
+      "name": "클룹)애사비오리지널P500",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809495078851.jpg",
+      "scannedAt": "2025-11-10T13:48:05.990Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801094000288",
+      "name": "코카)파워라임제로P600",
+      "price": 2400,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094000288.jpg",
+      "scannedAt": "2025-11-10T13:48:00.541Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8803420905618",
+      "name": "삼경)가나디자몽비타워터",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8803420905618.jpg",
+      "scannedAt": "2025-11-10T13:47:54.585Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809041429649",
+      "name": "OKF)워터멜론P500ml",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809041429649.png",
+      "scannedAt": "2025-11-10T13:47:38.226Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809403539719",
+      "name": "인테)레몬즙워터P500ml",
+      "price": 2600,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809403539719.png",
+      "scannedAt": "2025-11-10T13:47:31.151Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809422044447",
+      "name": "HK)티로그복숭아홍차P500",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809422044447.jpg",
+      "scannedAt": "2025-11-10T13:47:25.802Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801223013202",
+      "name": "일화)호박팥차P500ml",
+      "price": 2000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223013202.jpg",
+      "scannedAt": "2025-11-10T13:47:17.843Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801047289685",
+      "name": "동원)양반오미자차500ml",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047289685.jpg",
+      "scannedAt": "2025-11-10T13:47:10.201Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801069174020",
+      "name": "남양)17차P500ml",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801069174020.jpg",
+      "scannedAt": "2025-11-10T13:47:05.551Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8809422041125",
+      "name": "HK)새싹보리P500ml",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809422041125.png",
+      "scannedAt": "2025-11-10T13:46:57.460Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801007171210",
+      "name": "HK)헛개수P500ml",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801007171210.jpg",
+      "scannedAt": "2025-11-10T13:46:49.653Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801001238179",
+      "name": "하이트)블랙보리라이트520",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801001238179.jpg",
+      "scannedAt": "2025-11-10T13:46:36.680Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801001238391",
+      "name": "하이트)보리누룽지P520",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801001238391.png",
+      "scannedAt": "2025-11-10T13:46:09.224Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801056228927",
+      "name": "롯데)솔의눈P500ml",
+      "price": 2000,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056228927.png",
+      "scannedAt": "2025-11-10T13:46:02.913Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801047495499",
+      "name": "동원)윤곽나인P500ml",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047495499.jpg",
+      "scannedAt": "2025-11-10T13:45:47.623Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8806002009957",
+      "name": "광동)진한헛개차P500ml",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806002009957.png",
+      "scannedAt": "2025-11-10T13:45:41.112Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8808024030803",
+      "name": "쟈뎅)제주청보리차P500ml",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8808024030803.jpg",
+      "scannedAt": "2025-11-10T13:45:31.314Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801001238490",
+      "name": "하이트)티도씨체리P500ml",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801001238490.jpg",
+      "scannedAt": "2025-11-10T13:42:13.811Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
+      "barcode": "8801104949941",
+      "name": "신이어)유기농보리차P600",
+      "price": 2500,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801104949941.png",
+      "scannedAt": "2025-11-10T13:40:22.496Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    }
+  ],
+  "lastUpdated": "2025-11-10T13:59:59.744Z"
+}

@@ -78,9 +78,9 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
       setIsCameraReady(true);
       setHasPermission(true);
 
-      // qrbox의 크기를 찾아서 레이저 라인 너비 설정
+      // qrbox의 크기를 찾아서 레이저 라인 너비 설정 및 video 위치 조정
       setTimeout(() => {
-        const videoElement = document.querySelector('#' + elementId + ' video') as HTMLElement;
+        const videoElement = document.querySelector('#' + elementId + ' video') as HTMLVideoElement;
 
         if (videoElement) {
           const videoRect = videoElement.getBoundingClientRect();
@@ -92,9 +92,29 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
             top: 0, // 사용하지 않음 (flex center로 정렬)
             width: qrboxWidth
           });
+
+          // video 영상을 중앙으로 이동 (상단 크롭 문제 해결)
+          // videoHeight와 containerHeight를 비교해서 얼마나 이동할지 계산
+          const containerHeight = videoElement.parentElement?.clientHeight || 300;
+          const videoHeight = videoElement.videoHeight;
+          const videoWidth = videoElement.videoWidth;
+
+          if (videoHeight && videoWidth) {
+            // 현재 표시되는 video 요소의 실제 높이
+            const displayWidth = videoRect.width;
+            const aspectRatio = videoHeight / videoWidth;
+            const actualVideoHeight = displayWidth * aspectRatio;
+
+            // 크롭되는 부분의 절반만큼 위로 이동 (중앙 정렬)
+            const cropAmount = actualVideoHeight - containerHeight;
+            if (cropAmount > 0) {
+              const translateY = -(cropAmount / 2);
+              videoElement.style.transform = `translateY(${translateY}px)`;
+            }
+          }
         }
 
-      }, 1000);
+      }, 300);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Camera access failed';
       setHasPermission(false);
@@ -272,6 +292,8 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
       <style jsx global>{`
         #${elementId} video {
           object-fit: cover !important;
+          transform: translateY(-150px) !important;
+          transition: transform 0.3s ease-out;
         }
 
         /* qrbox 완전히 숨기기 */

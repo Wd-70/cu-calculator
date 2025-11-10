@@ -110,8 +110,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // 할인규칙 처리
-        if (itemType === 'discount_rule' && (action === 'create_discount_rule' || action === 'update_discount_rule')) {
+        // 할인규칙 처리 (action으로 자동 판단)
+        if (action === 'create_discount_rule' || action === 'update_discount_rule') {
           const { discountRuleUpdate } = extractedData;
 
           if (!discountRuleUpdate) {
