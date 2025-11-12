@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
 
         return {
           productId: product._id,
+          productBarcode: product.barcode,
           quantity: item.quantity,
           unitPrice: product.price,
           productCategory: product.category,
