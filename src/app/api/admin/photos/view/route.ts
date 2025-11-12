@@ -77,8 +77,8 @@ export async function GET(request: NextRequest) {
     else if (ext === '.gif') contentType = 'image/gif';
     else if (ext === '.webp') contentType = 'image/webp';
 
-    // 이미지 반환
-    return new NextResponse(fileBuffer, {
+    // 이미지 반환 (Buffer를 Uint8Array로 변환)
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=3600',
