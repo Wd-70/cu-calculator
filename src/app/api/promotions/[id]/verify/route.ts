@@ -39,11 +39,12 @@ async function updateVerificationStatus(promotionId: string) {
 // POST: 프로모션 검증
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
+    const { id } = await params;
     const { signature, timestamp, address, adminVerify } = await request.json();
 
     // 서명 검증
@@ -55,7 +56,7 @@ export async function POST(
     }
 
     const isValid = verifyWithTimestamp(
-      { action: 'verify_promotion', id: params.id },
+      { action: 'verify_promotion', id },
       signature,
       timestamp,
       address
@@ -69,7 +70,7 @@ export async function POST(
     }
 
     // 프로모션 조회
-    const promotion = await Promotion.findById(params.id);
+    const promotion = await Promotion.findById(id);
 
     if (!promotion) {
       return NextResponse.json(
@@ -90,7 +91,7 @@ export async function POST(
     const isAdminUser = isAdmin(address);
     if (adminVerify && isAdminUser) {
       await Promotion.updateOne(
-        { _id: params.id },
+        { _id: id },
         {
           $set: {
             verificationStatus: 'verified',
@@ -110,7 +111,7 @@ export async function POST(
         }
       );
 
-      const updatedPromotion = await Promotion.findById(params.id);
+      const updatedPromotion = await Promotion.findById(id);
 
       return NextResponse.json({
         success: true,
@@ -121,7 +122,7 @@ export async function POST(
 
     // 일반 사용자 검증
     await Promotion.updateOne(
-      { _id: params.id },
+      { _id: id },
       {
         $addToSet: { verifiedBy: address },
         $inc: { verificationCount: 1 },
@@ -139,9 +140,9 @@ export async function POST(
     );
 
     // 검증 상태 자동 업데이트
-    await updateVerificationStatus(params.id);
+    await updateVerificationStatus(id);
 
-    const updatedPromotion = await Promotion.findById(params.id);
+    const updatedPromotion = await Promotion.findById(id);
 
     return NextResponse.json({
       success: true,

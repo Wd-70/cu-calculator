@@ -38,11 +38,12 @@ async function updateVerificationStatus(promotionId: string) {
 // POST: 프로모션 이의 제기
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
+    const { id } = await params;
     const { signature, timestamp, address, reason } = await request.json();
 
     // 서명 검증
@@ -54,7 +55,7 @@ export async function POST(
     }
 
     const isValid = verifyWithTimestamp(
-      { action: 'dispute_promotion', id: params.id, reason },
+      { action: 'dispute_promotion', id, reason },
       signature,
       timestamp,
       address
@@ -68,7 +69,7 @@ export async function POST(
     }
 
     // 프로모션 조회
-    const promotion = await Promotion.findById(params.id);
+    const promotion = await Promotion.findById(id);
 
     if (!promotion) {
       return NextResponse.json(
@@ -87,7 +88,7 @@ export async function POST(
 
     // 이의 제기 추가
     await Promotion.updateOne(
-      { _id: params.id },
+      { _id: id },
       {
         $addToSet: { disputedBy: address },
         $inc: { disputeCount: 1 },
@@ -105,9 +106,9 @@ export async function POST(
     );
 
     // 검증 상태 자동 업데이트
-    await updateVerificationStatus(params.id);
+    await updateVerificationStatus(id);
 
-    const updatedPromotion = await Promotion.findById(params.id);
+    const updatedPromotion = await Promotion.findById(id);
 
     return NextResponse.json({
       success: true,
