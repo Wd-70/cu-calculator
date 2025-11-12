@@ -28,14 +28,14 @@ export async function GET(request: NextRequest) {
     // detailUrls가 있는 상품 수 (배열이고 비어있지 않은 것)
     const productsWithDetailUrl = await db.countProducts({
       detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } }
-    });
+    } as any);
 
     // detailUrls가 없는 상품 수
     const productsWithoutDetailUrl = totalProducts - productsWithDetailUrl;
 
     // 샘플 상품 몇 개 가져오기 (detailUrls 있는 것)
     const sampleWithDetailUrl = await db.findProducts(
-      { detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } } },
+      { detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } } } as any,
       { limit: 3 }
     );
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         { detailUrls: null },
         { detailUrls: [] },
         { detailUrls: { $size: 0 } }
-      ]},
+      ]} as any,
       { limit: 3 }
     );
 
