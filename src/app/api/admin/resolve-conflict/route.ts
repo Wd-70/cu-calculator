@@ -38,17 +38,11 @@ export async function POST(request: NextRequest) {
 
     const { name, price, imageUrl, categoryTags, promotionTags } = selectedData;
 
-    // 대표 카테고리 선택 (level 0인 메인 카테고리)
-    const category = categoryTags.length > 0
-      ? (categoryTags.find((tag: any) => tag.level === 0)?.name || categoryTags[0].name)
-      : undefined;
-
     // 상품 정보 업데이트
     const updated = await db.updateProduct(productId, {
       name,
       price,
       imageUrl,
-      category, // 대표 카테고리
       categoryTags, // 모든 카테고리 태그 저장
       detailUrls: [] // 업데이트 완료 후 제거
     });
