@@ -12,7 +12,7 @@ export async function GET() {
 
     // MongoDB aggregation to extract all unique category names from categoryTags array
     const result = await Product.aggregate([
-      { $match: { categoryTags: { $exists: true, $ne: null, $not: { $size: 0 } } } },
+      { $match: { categoryTags: { $exists: true, $ne: null, $not: { $size: 0 } } } } as any,
       { $unwind: '$categoryTags' },
       { $group: { _id: '$categoryTags.name' } },
       { $sort: { _id: 1 } }

@@ -29,17 +29,17 @@ export async function GET(
     const now = new Date();
     const discounts = await DiscountRule.find({
       isActive: true,
-      validFrom: { $lte: now },
-      validTo: { $gte: now },
+      validFrom: { $lte: now } as any,
+      validTo: { $gte: now } as any,
       $or: [
         { applicableProducts: product._id },
         { applicableCategories: product.category },
         {
-          applicableProducts: { $size: 0 },
-          applicableCategories: { $size: 0 },
+          applicableProducts: { $size: 0 } as any,
+          applicableCategories: { $size: 0 } as any,
         },
-      ],
-    }).sort({ applicationOrder: 1 });
+      ] as any,
+    } as any).sort({ applicationOrder: 1 });
 
     return NextResponse.json({
       success: true,

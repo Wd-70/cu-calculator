@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       status: 'active',
       giftSelectionType: 'same',
       'giftConstraints.mustBeSameProduct': true,
-      applicableProducts: { $size: 1 } // 단일 상품만
+      applicableProducts: { $size: 1 } as any // 단일 상품만
     };
 
     // 검색어가 있으면 이름 또는 바코드로 필터링
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       matchStage.$or = [
         { name: { $regex: searchQuery, $options: 'i' } },
         { applicableProducts: { $regex: searchQuery, $options: 'i' } }
-      ];
+      ] as any;
     }
 
     // 크롤링으로 생성된 개별 상품 프로모션 중
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         }
       },
       {
-        $match: { count: { $gte: 2 } } // 2개 이상인 그룹만
+        $match: { count: { $gte: 2 } } as any // 2개 이상인 그룹만
       },
       {
         $sort: { count: -1 } // 많은 것부터

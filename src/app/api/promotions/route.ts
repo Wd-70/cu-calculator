@@ -34,14 +34,14 @@ export async function GET(request: NextRequest) {
         { name: { $regex: name, $options: 'i' } },
         { description: { $regex: name, $options: 'i' } },
         { applicableProducts: { $regex: name, $options: 'i' } },
-      ];
+      ] as any;
     }
 
     // 바코드로 조회 (역인덱스 사용)
     if (barcode) {
       const index = await PromotionIndex.findOne({ barcode });
       if (index && index.promotionIds.length > 0) {
-        filter._id = { $in: index.promotionIds };
+        filter._id = { $in: index.promotionIds } as any;
       } else {
         // 인덱스에 없으면 빈 결과 반환
         return NextResponse.json({ success: true, promotions: [] });
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       filter.$or = [
         { applicableType: 'categories', applicableCategories: category },
         { giftSelectionType: 'combo', giftCategories: category },
-      ];
+      ] as any;
     }
 
     // 브랜드로 조회
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       filter.$or = [
         { applicableType: 'brands', applicableBrands: brand },
         { giftSelectionType: 'combo', giftBrands: brand },
-      ];
+      ] as any;
     }
 
     // 상태별 날짜 필터링 (DB의 status 필드가 아닌 실제 날짜 기준)
@@ -69,11 +69,11 @@ export async function GET(request: NextRequest) {
     if (status === 'active') {
       // 활성 프로모션: 현재 날짜가 유효기간 내
       filter.isActive = true;
-      filter.validFrom = { $lte: now };
-      filter.validTo = { $gte: now };
+      filter.validFrom = { $lte: now } as any;
+      filter.validTo = { $gte: now } as any;
     } else if (status === 'expired') {
       // 만료된 프로모션: 유효기간 종료일이 현재보다 이전
-      filter.validTo = { $lt: now };
+      filter.validTo = { $lt: now } as any;
     } else if (status === 'merged') {
       // 병합된 프로모션: DB의 status 필드가 'merged'인 것
       filter.status = 'merged';

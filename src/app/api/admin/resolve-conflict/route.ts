@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
         promotionType: promotionTag as any,
         status: 'active',
         isActive: true,
-        validFrom: { $lte: now },
-        validTo: { $gte: now },
+        validFrom: { $lte: now } as any,
+        validTo: { $gte: now } as any,
         applicableProducts: updated.barcode
-      });
+      } as any);
 
       if (existingPromotions.length > 0) {
         console.log(`프로모션이 이미 존재함: ${existingPromotions[0].name}`);
@@ -90,10 +90,10 @@ export async function POST(request: NextRequest) {
         isActive: true,
         isCrawled: true,
         needsVerification: true,
-        'applicableProducts.0': { $exists: true },
-        validFrom: { $lte: now },
-        validTo: { $gte: now }
-      }).limit(1);
+        'applicableProducts.0': { $exists: true } as any,
+        validFrom: { $lte: now } as any,
+        validTo: { $gte: now } as any
+      } as any).limit(1);
 
       // 기본 기간: 현재 달의 첫 날부터 마지막 날까지
       let validFrom = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);

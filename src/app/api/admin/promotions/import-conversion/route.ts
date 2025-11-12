@@ -236,11 +236,11 @@ export async function POST(request: NextRequest) {
 
         // 사진에서 발견된 모든 상품들의 개별 프로모션 찾기
         const relatedPromotions = await Promotion.find({
-          _id: { $ne: promotion._id }, // 현재 프로모션 제외
+          _id: { $ne: promotion._id } as any, // 현재 프로모션 제외
           promotionType: promotionUpdate.promotionType,
-          applicableProducts: { $in: allProducts },
+          applicableProducts: { $in: allProducts } as any,
           status: 'active'
-        }).session(session);
+        } as any).session(session);
 
         // 관련된 모든 프로모션의 상품 수집
         const allRelatedProducts = new Set<string>(allProducts);
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
         // 개별 프로모션 삭제
         if (promotionsToDelete.length > 0) {
           await Promotion.deleteMany(
-            { _id: { $in: promotionsToDelete } },
+            { _id: { $in: promotionsToDelete } } as any,
             { session }
           );
         }
@@ -320,8 +320,8 @@ export async function POST(request: NextRequest) {
           await PromotionIndex.updateOne(
             { barcode },
             {
-              $pull: { promotionIds: { $in: promotionsToDelete } }
-            },
+              $pull: { promotionIds: { $in: promotionsToDelete } } as any
+            } as any,
             { session }
           );
 

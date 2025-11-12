@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     // MongoDB aggregation으로 모든 고유 카테고리 추출
     const result = await Product.aggregate([
-      { $match: { categoryTags: { $exists: true, $ne: null, $not: { $size: 0 } } } },
+      { $match: { categoryTags: { $exists: true, $ne: null, $not: { $size: 0 } } } as any },
       { $unwind: '$categoryTags' },
       { $group: { _id: '$categoryTags.name' } },
       { $sort: { _id: 1 } }

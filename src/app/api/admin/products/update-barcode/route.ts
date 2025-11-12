@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
     // 바코드 중복 확인 (다른 상품에서 이미 사용 중인지)
     const existingProduct = await Product.findOne({
       barcode,
-      _id: { $ne: productId }
-    });
+      _id: { $ne: productId } as any
+    } as any);
 
     if (existingProduct) {
       return NextResponse.json(

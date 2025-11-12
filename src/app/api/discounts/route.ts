@@ -36,22 +36,22 @@ export async function GET(request: NextRequest) {
     // 기본적으로 모든 할인 표시, excludeExpired가 true일 때만 만료된 할인 제외
     const excludeExpired = searchParams.get('excludeExpired') === 'true';
     if (excludeExpired) {
-      filter.validTo = { $gte: new Date() };
+      filter.validTo = { $gte: new Date() } as any;
     }
 
     if (startDate && endDate) {
       filter.$and = [
-        { validFrom: { $lte: new Date(endDate) } },
-        { validTo: { $gte: new Date(startDate) } },
-      ];
+        { validFrom: { $lte: new Date(endDate) } } as any,
+        { validTo: { $gte: new Date(startDate) } } as any,
+      ] as any;
     }
 
     // Payment method filtering
     if (paymentMethod) {
       filter.$or = [
-        { requiredPaymentMethods: { $size: 0 } }, // No restrictions
+        { requiredPaymentMethods: { $size: 0 } } as any, // No restrictions
         { requiredPaymentMethods: paymentMethod },
-      ];
+      ] as any;
     }
 
     const discounts = await db.findDiscountRules(filter, {

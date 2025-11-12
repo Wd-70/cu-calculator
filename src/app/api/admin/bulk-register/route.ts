@@ -72,12 +72,12 @@ export async function POST(request: NextRequest) {
     // 기존 상품들을 한 번에 조회 (이름)
     if (allNames.length > 0) {
       const existingProductsWithoutBarcode = await db.findProducts({
-        name: { $in: allNames },
+        name: { $in: allNames } as any,
         $or: [
-          { barcode: { $exists: false } },
+          { barcode: { $exists: false } } as any,
           { barcode: null },
           { barcode: '' }
-        ]
+        ] as any
       } as any);
       existingProductsWithoutBarcode.forEach(p => {
         if (p.name) existingNames.add(p.name);

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       // detailUrls가 있는 모든 상품 (최대 maxProducts개)
       // detailUrls가 있다 = 아직 업데이트되지 않은 상품
       const allProducts = await db.findProducts(
-        { detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } } },
+        { detailUrls: { $exists: true, $ne: null, $not: { $size: 0 } } } as any,
         { limit: maxProducts }
       );
       productsToUpdate = allProducts;
@@ -209,10 +209,10 @@ export async function POST(request: NextRequest) {
             promotionType: promotionTag as any,
             status: 'active',
             isActive: true,
-            validFrom: { $lte: now },
-            validTo: { $gte: now },
+            validFrom: { $lte: now } as any,
+            validTo: { $gte: now } as any,
             applicableProducts: product.barcode
-          });
+          } as any);
 
           if (existingPromotions.length > 0) {
             console.log(`    Promotion already exists for this product: ${existingPromotions[0].name}`);
@@ -226,10 +226,10 @@ export async function POST(request: NextRequest) {
             isActive: true,
             isCrawled: true,
             needsVerification: true,
-            'applicableProducts.0': { $exists: true }, // 최소 1개 이상
-            validFrom: { $lte: now },
-            validTo: { $gte: now }
-          }).limit(1);
+            'applicableProducts.0': { $exists: true } as any, // 최소 1개 이상
+            validFrom: { $lte: now } as any,
+            validTo: { $gte: now } as any
+          } as any).limit(1);
 
           let validFrom = now;
           let validTo = new Date(now);

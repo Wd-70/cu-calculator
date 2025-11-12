@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
     // 바코드가 없는 상품만 필터링
     const filter: any = {
       $or: [
-        { barcode: { $exists: false } },
+        { barcode: { $exists: false } } as any,
         { barcode: null },
         { barcode: '' }
-      ]
+      ] as any
     };
 
     if (name) {

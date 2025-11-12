@@ -32,12 +32,12 @@ export async function GET(request: NextRequest) {
     if (isUnmappedOnlyQuery) {
       // 모든 카테고리가 미매핑인 상품만 필터링
       const filter: any = {
-        categoryTags: { $exists: true, $ne: null, $not: { $size: 0 } }
+        categoryTags: { $exists: true, $ne: null, $not: { $size: 0 } } as any
       };
 
       // 바코드 필터 적용
       if (!includeWithoutBarcode) {
-        filter.barcode = { $exists: true, $ne: null, $ne: '' };
+        filter.barcode = { $exists: true, $ne: null, $ne: '' } as any;
       }
 
       if (search) {
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
 
     // 바코드 필터 적용
     if (!includeWithoutBarcode) {
-      filter.barcode = { $exists: true, $ne: null, $ne: '' };
+      filter.barcode = { $exists: true, $ne: null, $ne: '' } as any;
     }
 
     if (search) {
@@ -151,14 +151,14 @@ export async function GET(request: NextRequest) {
 
     if (category) {
       // categoryTags 배열 내에서 해당 이름을 가진 태그가 있는지 검색
-      filter.categoryTags = { $elemMatch: { name: category } };
+      filter.categoryTags = { $elemMatch: { name: category } } as any;
     } else if (categories && categories.length > 0) {
       // 여러 카테고리 중 하나라도 포함하는 상품 검색
       filter.categoryTags = {
         $elemMatch: {
-          name: { $in: categories }
+          name: { $in: categories } as any
         }
-      };
+      } as any;
     }
 
     const total = await db.countProducts(filter);
