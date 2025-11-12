@@ -465,18 +465,20 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          createdPromotions.push(promotion);
+          if (promotion) {
+            createdPromotions.push(promotion);
 
-          // PromotionIndex 업데이트
-          for (const barcode of data.barcodes) {
-            await PromotionIndex.updateOne(
-              { barcode },
-              {
-                $addToSet: { promotionIds: promotion._id.toString() },
-                $set: { lastUpdated: new Date() }
-              },
-              { upsert: true }
-            );
+            // PromotionIndex 업데이트
+            for (const barcode of data.barcodes) {
+              await PromotionIndex.updateOne(
+                { barcode },
+                {
+                  $addToSet: { promotionIds: promotion._id.toString() },
+                  $set: { lastUpdated: new Date() }
+                },
+                { upsert: true }
+              );
+            }
           }
         }
 
