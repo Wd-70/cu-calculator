@@ -1023,7 +1023,7 @@ export default function AdminPage() {
                 {fixingNullBarcodes ? '수정 중...' : 'DB 정리'}
               </button>
               <button
-                onClick={loadProductsWithoutBarcode}
+                onClick={() => loadProductsWithoutBarcode()}
                 disabled={loadingWithoutBarcode || !userAddress}
                 className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
