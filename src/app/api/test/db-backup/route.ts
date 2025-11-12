@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
 
       case 'list': {
         // 백업 목록 조회
-        const backups = [];
+        const backups: any[] = [];
 
         if (existsSync(backupDir)) {
           const entries = await readdir(backupDir, { withFileTypes: true });

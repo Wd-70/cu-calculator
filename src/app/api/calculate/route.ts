@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch all products
-    const products = [];
+    const products: any[] = [];
     for (const item of items) {
       let product = null;
 

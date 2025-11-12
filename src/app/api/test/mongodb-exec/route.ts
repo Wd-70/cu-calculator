@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    const results = [];
+    const results: any[] = [];
 
     for (const command of commands as MongoDBCommand[]) {
       try {

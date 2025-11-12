@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const pendingPhotos = [];
+    const pendingPhotos: any[] = [];
 
     // 모든 프로모션 폴더 스캔
     const promotionFolders = readdirSync(promotionsDir, { withFileTypes: true })

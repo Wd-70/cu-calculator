@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     };
 
     // 1단계: 필수 필드 검증 및 기존 상품 필터링
-    const validProducts = [];
+    const validProducts: any[] = [];
     const existingBarcodes = new Set<string>();
     const existingNames = new Set<string>();
 

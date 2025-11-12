@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // 모든 세션 폴더 읽기
     const sessionDirs = await readdir(photosDir, { withFileTypes: true });
-    const sessions = [];
+    const sessions: any[] = [];
 
     for (const dir of sessionDirs) {
       if (dir.isDirectory()) {

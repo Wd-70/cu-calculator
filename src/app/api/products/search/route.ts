@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    const products = [];
+    const products: any[] = [];
 
     for (const barcode of barcodes) {
       const cleaned = barcode.trim();

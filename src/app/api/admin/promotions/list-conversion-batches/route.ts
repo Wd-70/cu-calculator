@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // 모든 JSON 파일 읽기
     const files = await readdir(batchesDir);
-    const batches = [];
+    const batches: any[] = [];
 
     for (const file of files) {
       // .json 파일만 처리하고, _imported.flag는 제외
