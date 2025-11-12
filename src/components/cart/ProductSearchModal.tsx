@@ -150,9 +150,9 @@ export default function ProductSearchModal({
                             {product.brand}
                           </div>
                         )}
-                        {product.category && (
+                        {product.categoryTags?.[0]?.name && (
                           <div className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                            {product.category}
+                            {product.categoryTags[0].name}
                           </div>
                         )}
                       </div>

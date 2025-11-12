@@ -118,7 +118,11 @@ export function calculateCartOnClient(
       const eligibleItems = cartItems.filter(item => {
         // 카테고리 체크
         if (discount.applicableCategories && discount.applicableCategories.length > 0) {
-          if (!item.category || !discount.applicableCategories.includes(item.category)) {
+          const itemCategoryNames = item.categoryTags?.map(t => t.name) || [];
+          const hasMatchingCategory = itemCategoryNames.some(cat =>
+            discount.applicableCategories?.includes(cat)
+          );
+          if (!hasMatchingCategory) {
             return false;
           }
         }
@@ -205,7 +209,7 @@ export function calculateCartOnClient(
         productId: 'cart-total',
         quantity: 1,
         unitPrice: baseAmount,
-        productCategory: representativeItem.category,
+        productCategory: representativeItem.categoryTags?.[0]?.name || '',
         productBrand: representativeItem.brand,
       }];
 

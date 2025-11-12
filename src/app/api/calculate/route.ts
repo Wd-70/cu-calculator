@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
           productBarcode: product.barcode,
           quantity: item.quantity,
           unitPrice: product.price,
-          productCategory: product.category,
+          productCategory: product.categoryTags?.[0]?.name || '',
           productBrand: product.brand,
         };
       })

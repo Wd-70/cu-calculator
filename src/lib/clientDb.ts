@@ -165,7 +165,6 @@ export function addItemToCart(cartId: string, item: ICartItem): ICart | null {
     cart.items[existingItemIndex].latestPrice = item.price;
     cart.items[existingItemIndex].imageUrl = item.imageUrl || cart.items[existingItemIndex].imageUrl;
     cart.items[existingItemIndex].categoryTags = item.categoryTags || cart.items[existingItemIndex].categoryTags;
-    cart.items[existingItemIndex].category = item.category || cart.items[existingItemIndex].category;
     cart.items[existingItemIndex].lastSyncedAt = now;
   } else {
     // 새 아이템 추가 - 타임스탬프 추가

@@ -61,7 +61,7 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, on
                 <div className="text-xs text-gray-500 mb-2">
                   {item.barcode}
                   {item.brand && ` · ${item.brand}`}
-                  {item.category && ` · ${item.category}`}
+                  {item.categoryTags?.[0]?.name && ` · ${item.categoryTags[0].name}`}
                 </div>
 
                 <div className="flex items-center gap-3">

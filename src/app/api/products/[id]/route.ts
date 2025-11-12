@@ -27,13 +27,14 @@ export async function GET(
 
     // Find applicable discounts
     const now = new Date();
+    const productCategoryNames = product.categoryTags?.map((t: any) => t.name) || [];
     const discounts = await DiscountRule.find({
       isActive: true,
       validFrom: { $lte: now } as any,
       validTo: { $gte: now } as any,
       $or: [
         { applicableProducts: product._id },
-        { applicableCategories: product.category },
+        { applicableCategories: { $in: productCategoryNames } as any },
         {
           applicableProducts: { $size: 0 } as any,
           applicableCategories: { $size: 0 } as any,

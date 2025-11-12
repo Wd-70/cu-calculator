@@ -100,7 +100,6 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
               ...item,
               imageUrl: latestProduct.imageUrl || item.imageUrl,
               categoryTags: latestProduct.categoryTags || item.categoryTags,
-              category: latestProduct.categoryTags?.[0]?.name || item.category,
               latestPrice: latestProduct.price,
               priceCheckedAt: now,
               lastSyncedAt: now,
@@ -324,7 +323,6 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
         price: product.price,
         quantity: 1,
         imageUrl: product.imageUrl,
-        category: product.categoryTags?.[0]?.name || '',
         categoryTags: product.categoryTags,
       });
 
@@ -582,9 +580,9 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
 
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-gray-900 text-sm mb-1 truncate">{item.name}</h3>
-                          {item.category && (
+                          {item.categoryTags?.[0]?.name && (
                             <span className="inline-block px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                              {item.category}
+                              {item.categoryTags[0].name}
                             </span>
                           )}
                         </div>
@@ -638,9 +636,9 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                       <div className="flex-1">
                         <h3 className="font-bold text-gray-900 mb-1">{item.name}</h3>
                         <p className="text-sm text-gray-500 mb-2">{item.price.toLocaleString()}원</p>
-                        {item.category && (
+                        {item.categoryTags?.[0]?.name && (
                           <span className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                            {item.category}
+                            {item.categoryTags[0].name}
                           </span>
                         )}
                       </div>
@@ -1091,11 +1089,11 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 {/* 카테고리 */}
-                {cart.items[selectedItemIndex].category && (
+                {cart.items[selectedItemIndex].categoryTags?.[0]?.name && (
                   <div className="p-4 bg-purple-50 rounded-xl">
                     <p className="text-sm text-gray-600 mb-1">카테고리</p>
                     <p className="font-semibold text-purple-700">
-                      {cart.items[selectedItemIndex].category}
+                      {cart.items[selectedItemIndex].categoryTags[0].name}
                     </p>
                   </div>
                 )}
