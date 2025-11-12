@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // 필터링 및 검증
     for (const product of products) {
-      const { barcode, name, price, category, imageUrl, detailUrls } = product;
+      const { barcode, name, price, imageUrl, detailUrls } = product;
 
       // 필수 필드 검증 (바코드는 선택 사항)
       if (!name || !price) {
@@ -113,7 +113,6 @@ export async function POST(request: NextRequest) {
       const productData: any = {
         name,
         price,
-        category: category || null,
         brand: 'CU',
         imageUrl: imageUrl || null,
         detailUrls: detailUrls || [],

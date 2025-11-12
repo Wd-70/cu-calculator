@@ -174,17 +174,12 @@ export async function POST(request: NextRequest) {
         console.log(`  수집된 카테고리 태그: ${Array.from(allCategoryTags).join(', ')}`);
         console.log(`  수집된 프로모션 태그: ${Array.from(allPromotionTags).join(', ')}`);
 
-        // 카테고리 설정 (가장 세부적인 카테고리 선택)
-        let newCategory = '';
+        // 카테고리 태그 업데이트
         if (allCategoryTags.size > 0) {
           const categoryArray = Array.from(allCategoryTags);
-          // 마지막 태그가 가장 세부적인 카테고리
-          newCategory = categoryArray[categoryArray.length - 1];
-
-          console.log(`  Setting category: ${newCategory}`);
-          // 카테고리 업데이트 후 detailUrls 제거 (재업데이트 방지)
+          console.log(`  Setting category tags: ${categoryArray.join(', ')}`);
+          // detailUrls 제거 (재업데이트 방지)
           await db.updateProduct(product._id.toString(), {
-            category: newCategory,
             detailUrls: []
           });
         }

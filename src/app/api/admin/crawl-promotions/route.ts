@@ -361,7 +361,6 @@ export async function POST(request: NextRequest) {
               barcode: product.barcode,
               name: product.name,
               price: product.price,
-              category: null,
               brand: 'CU',
               imageUrl: product.imageUrl,
               detailUrls: product.detailUrl ? [product.detailUrl] : [],
