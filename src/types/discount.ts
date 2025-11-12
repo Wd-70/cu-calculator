@@ -107,6 +107,16 @@ export interface TelecomDiscount {
   tierUnit?: number; // 1000 (1천원)
   tierAmount?: number; // 300 (300원)
 
+  // 할인 계산 기준 금액
+  baseAmountType?: 'original_price' | 'after_promotion'; // 기본값: after_promotion (프로모션 적용 후 금액 기준)
+  // 'original_price': 정가 기준으로 할인 계산
+  // 'after_promotion': 프로모션 할인 적용 후 금액 기준으로 할인 계산 (다른 할인은 미적용)
+
+  // 할인 계산 단위
+  calculationLevel?: 'item' | 'cart'; // 기본값: cart (장바구니 전체 금액 기준)
+  // 'item': 각 상품별로 개별 계산 (각 상품마다 floor 적용)
+  // 'cart': 장바구니 전체 금액으로 한 번만 계산 후 상품별 비율 배분
+
   provider: string; // 우주패스, SKT, KT알뜰, etc.
   canCombineWithMembership?: boolean; // CU멤버십/네이버플러스와 중복 가능 여부
   restrictedProviders?: string[]; // 특정 통신사와 중복 불가 (예: ["KT알뜰"])
@@ -454,10 +464,12 @@ export interface CartCalculationOptionsV2 {
   items: Array<{
     productId: Types.ObjectId | string;
     productBarcode: string; // 바코드 추가
+    productName?: string; // 상품명 추가
     quantity: number;
     unitPrice: number;
     productCategory?: string;
     productBrand?: string;
+    productCategories?: string[]; // 카테고리 배열 추가
   }>;
   discountSelections: CartItemDiscounts[]; // 상품별 선택된 할인
   paymentMethod?: PaymentMethod;
@@ -478,8 +490,38 @@ export interface CartItemCalculationResult {
   calculation: DiscountCalculationResultV2;
 }
 
+export interface CartLevelDiscount {
+  discountId: Types.ObjectId | string;
+  discountName: string;
+  category: DiscountCategory;
+
+  // 계산 기준
+  baseAmount: number; // 할인 계산에 사용된 금액
+  baseAmountDescription: string; // 기준 금액 설명 (예: "프로모션 적용 후 기준")
+
+  // 계산 결과
+  discountAmount: number; // 할인액
+
+  // 적용 대상 상품들
+  applicableItems: Array<{
+    productId: Types.ObjectId | string;
+    productName?: string;
+    quantity: number;
+    unitPrice: number;
+    itemAmount: number; // 상품 금액 (정가)
+    promotionDiscount?: number; // 프로모션 할인액
+    itemAmountAfterPromotion?: number; // 프로모션 적용 후 금액
+  }>;
+
+  // 추가 정보
+  calculationDetails?: string; // 계산 과정 설명
+}
+
 export interface CartCalculationResultV2 {
   items: CartItemCalculationResult[];
+
+  // 장바구니 레벨 할인 (calculationLevel: 'cart')
+  cartLevelDiscounts?: CartLevelDiscount[];
 
   // 전체 합계
   totalOriginalPrice: number;

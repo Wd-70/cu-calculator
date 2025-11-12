@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { CATEGORY_MAPPING } from '@/lib/constants/categoryMapping';
+import { mapBarcodeToStandard } from '@/lib/utils/barcodeMappings';
 
 /**
  * GET /api/products
@@ -41,14 +42,32 @@ export async function GET(request: NextRequest) {
 
       if (search) {
         // 통합 검색: 상품명 또는 바코드에서 검색
-        filter.$or = [
+        const searchConditions: any[] = [
           { name: { $regex: search, $options: 'i' } },
           { barcode: { $regex: search, $options: 'i' } }
         ];
+
+        // 바코드 매핑 확인 - 매핑이 있으면 변환된 바코드로도 정확히 검색
+        const mappedBarcode = mapBarcodeToStandard(search);
+        if (mappedBarcode) {
+          console.log(`[바코드 매핑 (search)] ${search} → ${mappedBarcode}`);
+          searchConditions.push({ barcode: mappedBarcode });
+        }
+
+        filter.$or = searchConditions;
       } else {
         if (barcode) {
-          // 바코드 부분 매칭 지원
-          filter.barcode = { $regex: barcode, $options: 'i' };
+          // 1차: 매핑 테이블 확인
+          const mappedBarcode = mapBarcodeToStandard(barcode);
+
+          if (mappedBarcode) {
+            console.log(`[바코드 매핑] ${barcode} → ${mappedBarcode}`);
+            // 매핑된 바코드로 정확히 일치하는 검색
+            filter.barcode = mappedBarcode;
+          } else {
+            // 2차: 원래 바코드로 정확히 일치하는 검색
+            filter.barcode = barcode;
+          }
         }
 
         if (name) {
@@ -97,14 +116,32 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       // 통합 검색: 상품명 또는 바코드에서 검색
-      filter.$or = [
+      const searchConditions: any[] = [
         { name: { $regex: search, $options: 'i' } },
         { barcode: { $regex: search, $options: 'i' } }
       ];
+
+      // 바코드 매핑 확인 - 매핑이 있으면 변환된 바코드로도 정확히 검색
+      const mappedBarcode = mapBarcodeToStandard(search);
+      if (mappedBarcode) {
+        console.log(`[바코드 매핑 (search)] ${search} → ${mappedBarcode}`);
+        searchConditions.push({ barcode: mappedBarcode });
+      }
+
+      filter.$or = searchConditions;
     } else {
       if (barcode) {
-        // 바코드 부분 매칭 지원
-        filter.barcode = { $regex: barcode, $options: 'i' };
+        // 1차: 매핑 테이블 확인
+        const mappedBarcode = mapBarcodeToStandard(barcode);
+
+        if (mappedBarcode) {
+          console.log(`[바코드 매핑] ${barcode} → ${mappedBarcode}`);
+          // 매핑된 바코드로 정확히 일치하는 검색
+          filter.barcode = mappedBarcode;
+        } else {
+          // 2차: 원래 바코드로 정확히 일치하는 검색 시도 후 regex fallback
+          filter.barcode = barcode;
+        }
       }
 
       if (name) {

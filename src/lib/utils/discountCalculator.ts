@@ -12,6 +12,7 @@ import {
   CartCalculationOptionsV2,
   CartCalculationResultV2,
   CartItemCalculationResult,
+  CartLevelDiscount,
   DISCOUNT_CATEGORY_ORDER,
   PaymentMethodRequirement,
   CardIssuerRequirement,
@@ -55,10 +56,13 @@ function calculateCouponDiscount(
 }
 
 /**
- * 통신사 할인 계산 (정가 기준)
+ * 통신사 할인 계산
+ * @param baseAmount - 할인 계산 기준 금액 (baseAmountType에 따라 정가 또는 프로모션 적용 후 금액)
+ * @param config - 통신사 할인 설정
+ * @param maxDiscountAmount - 최대 할인 금액 제한
  */
 function calculateTelecomDiscount(
-  originalPrice: number,
+  baseAmount: number,
   config: Extract<DiscountConfig, { category: 'telecom' }>,
   maxDiscountAmount?: number
 ): number {
@@ -66,14 +70,14 @@ function calculateTelecomDiscount(
 
   if (config.valueType === 'percentage' && config.percentage) {
     // 퍼센트 방식: 20%
-    discount = Math.floor(originalPrice * (config.percentage / 100));
+    discount = Math.floor(baseAmount * (config.percentage / 100));
   } else if (
     config.valueType === 'tiered_amount' &&
     config.tierUnit &&
     config.tierAmount
   ) {
     // 구간 방식: 1천원당 300원
-    const tiers = Math.floor(originalPrice / config.tierUnit);
+    const tiers = Math.floor(baseAmount / config.tierUnit);
     discount = tiers * config.tierAmount;
   }
 
@@ -858,11 +862,18 @@ export function calculateDiscountForItem(
   const telecomAmount = sortedDiscounts
     .filter((d) => d.config.category === 'telecom')
     .reduce((sum, d) => {
+      const config = d.config as Extract<DiscountConfig, { category: 'telecom' }>;
+      // baseAmountType에 따라 기준 금액 결정
+      // 기본값은 'after_promotion' (프로모션 적용 후 금액 기준)
+      const baseAmount = config.baseAmountType === 'original_price'
+        ? originalPrice
+        : adjustedBasePrice;
+
       return (
         sum +
         calculateTelecomDiscount(
-          adjustedBasePrice,
-          d.config as Extract<DiscountConfig, { category: 'telecom' }>,
+          baseAmount,
+          config,
           getConstraints(d).maxDiscountAmount
         )
       );
@@ -930,20 +941,31 @@ export function calculateDiscountForItem(
     sortedDiscounts
       .filter((d) => d.config.category === 'telecom')
       .forEach((d) => {
+        const config = d.config as Extract<
+          DiscountConfig,
+          { category: 'telecom' }
+        >;
+
+        // baseAmountType에 따라 기준 금액 결정 (기본값: after_promotion)
+        const baseAmount = config.baseAmountType === 'original_price'
+          ? originalPrice
+          : adjustedBasePrice;
+
         const amount = calculateTelecomDiscount(
-          adjustedBasePrice,
-          d.config as Extract<DiscountConfig, { category: 'telecom' }>,
+          baseAmount,
+          config,
           getConstraints(d).maxDiscountAmount
         );
         if (amount > 0) {  // 할인액이 있을 때만 step 추가
-          const config = d.config as Extract<
-            DiscountConfig,
-            { category: 'telecom' }
-          >;
+          // 기준 금액 설명
+          const baseAmountDesc = config.baseAmountType === 'original_price'
+            ? '정가 기준'
+            : (promotionAmount > 0 ? '프로모션 적용 후 기준' : '');
+
           const detail =
             config.valueType === 'percentage'
-              ? `${config.percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}`
-              : `${config.tierUnit}원당 ${config.tierAmount}원 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}`;
+              ? `${config.percentage}% 할인${baseAmountDesc ? ` (${baseAmountDesc})` : ''}`
+              : `${config.tierUnit}원당 ${config.tierAmount}원 할인${baseAmountDesc ? ` (${baseAmountDesc})` : ''}`;
 
           const limitInfo = [];
           if (config.maxDiscountPerMonth) limitInfo.push(`월 최대 ${config.maxDiscountPerMonth.toLocaleString()}원`);
@@ -954,10 +976,10 @@ export function calculateDiscountForItem(
             category: 'telecom',
             discountId: d._id,
             discountName: d.name,
-            baseAmount: adjustedBasePrice,
-            isOriginalPriceBased: promotionAmount > 0 ? false : true,
+            baseAmount: baseAmount,
+            isOriginalPriceBased: config.baseAmountType === 'original_price' || (promotionAmount === 0),
             discountAmount: amount,
-            amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
+            amountAfterDiscount: baseAmount - amount,  // 개별 할인액만 차감
             calculationDetails: detail + limitText,
           });
         }
@@ -1279,10 +1301,223 @@ export function calculateCart(
   }
 
   // ============================================================================
-  // 2단계: 각 상품별 할인 계산 (콤보 프로모션 할인 반영)
+  // 2단계: 장바구니 레벨 할인 계산 (통신사 할인 등)
   // ============================================================================
   if (verbose) {
-    console.log('\n[2단계: 각 상품별 할인 계산]');
+    console.log('\n[2단계: 장바구니 레벨 할인 계산]');
+  }
+
+  // 장바구니 레벨 할인 결과 저장
+  const cartLevelDiscounts: CartLevelDiscount[] = [];
+
+  // 모든 상품에서 선택된 통신사 할인 찾기 (calculationLevel이 'cart'인 경우)
+  const cartLevelTelecomDiscounts = new Set<string>(); // discountId 저장
+
+  for (const item of items) {
+    const productId = item.productId.toString();
+    const selection = discountSelections.find(
+      (s) => s.productId.toString() === productId
+    );
+
+    if (!selection) continue;
+
+    for (const discount of selection.selectedDiscounts) {
+      if (discount.config.category === 'telecom') {
+        const config = discount.config as Extract<DiscountConfig, { category: 'telecom' }>;
+        // calculationLevel이 'cart'이거나 명시되지 않은 경우 (기본값 'cart')
+        if (!config.calculationLevel || config.calculationLevel === 'cart') {
+          cartLevelTelecomDiscounts.add(discount._id.toString());
+        }
+      }
+    }
+  }
+
+  // 장바구니 레벨 통신사 할인 계산
+  for (const discountId of cartLevelTelecomDiscounts) {
+    // 할인 정보 찾기
+    let discount: IDiscountRuleV2 | undefined;
+    for (const item of items) {
+      const productId = item.productId.toString();
+      const selection = discountSelections.find(
+        (s) => s.productId.toString() === productId
+      );
+      if (selection) {
+        discount = selection.selectedDiscounts.find((d) => d._id.toString() === discountId);
+        if (discount) break;
+      }
+    }
+
+    if (!discount) continue;
+
+    const config = discount.config as Extract<DiscountConfig, { category: 'telecom' }>;
+
+    // 프로모션 증정 상품인지 확인하는 함수
+    const isGiftProduct = (productId: string): { isGift: boolean; giftType?: 'same' | 'cross' | 'combo' } => {
+      // Combo/Cross 프로모션 증정 상품인지 확인
+      if (crossPromotionDiscounts.has(productId) && crossPromotionDiscounts.get(productId)! > 0) {
+        // 이 상품이 어떤 프로모션의 증정 상품인지 확인
+        const matchingPromotion = crossPromotions.find(cp =>
+          cp.giftProduct?.productId.toString() === productId
+        );
+
+        if (matchingPromotion) {
+          const promoConfig = matchingPromotion.promotion.config as Extract<DiscountConfig, { category: 'promotion' }>;
+          return { isGift: true, giftType: promoConfig.giftSelectionType as 'cross' | 'combo' };
+        }
+
+        // 프로모션을 찾지 못한 경우 기본값 'cross' (이전 동작 유지)
+        return { isGift: true, giftType: 'cross' };
+      }
+
+      // Same 프로모션 증정 상품인지 확인 (할인액이 상품 가격의 일부인 경우)
+      const item = items.find((i) => i.productId.toString() === productId);
+      if (item) {
+        const selection = discountSelections.find(
+          (s) => s.productId.toString() === productId
+        );
+        const samePromotion = selection?.selectedDiscounts.find(
+          (d) => d.config.category === 'promotion'
+        );
+        if (samePromotion) {
+          const config = samePromotion.config as Extract<DiscountConfig, { category: 'promotion' }>;
+          if (config.giftSelectionType === 'same') {
+            return { isGift: true, giftType: 'same' };
+          }
+        }
+      }
+
+      return { isGift: false };
+    };
+
+    // 장바구니 전체 금액 계산 (프로모션 적용 후, 프로모션 조합 규칙 체크)
+    let totalOriginal = 0;
+    let totalAfterPromotion = 0;
+    const eligibleItemsForTelecom: typeof items = [];
+    const promotionDiscountByProductId = new Map<string, number>(); // 각 상품의 프로모션 할인액 저장
+
+    for (const item of items) {
+      const productId = item.productId.toString();
+      const itemOriginalPrice = item.unitPrice * item.quantity;
+
+      // 이 상품이 통신사 할인 대상인지 확인
+      const selection = discountSelections.find(
+        (s) => s.productId.toString() === productId
+      );
+
+      // 통신사 할인이 선택되지 않은 상품은 제외
+      const hasThisTelecomDiscount = selection?.selectedDiscounts.some(
+        (d) => d._id.toString() === discountId
+      );
+      if (!hasThisTelecomDiscount) {
+        continue;
+      }
+
+      // 프로모션 조합 규칙 체크
+      const giftInfo = isGiftProduct(productId);
+      if (giftInfo.isGift && discount.combinationRules?.cannotCombineWithPromotionGiftTypes) {
+        const blockedTypes = discount.combinationRules.cannotCombineWithPromotionGiftTypes;
+        if (blockedTypes.includes(giftInfo.giftType!)) {
+          if (verbose) {
+            console.log(`  [제외] ${item.productBarcode} - ${giftInfo.giftType} 프로모션 증정 상품`);
+          }
+          continue;
+        }
+      }
+
+      eligibleItemsForTelecom.push(item);
+      totalOriginal += itemOriginalPrice;
+
+      // 이 상품에 적용된 프로모션 할인 계산
+      const crossPromotionDiscount = crossPromotionDiscounts.get(productId) || 0;
+
+      // Same 프로모션 할인 계산
+      const samePromotionDiscount = selection?.selectedDiscounts
+        .filter((d) => d.config.category === 'promotion')
+        .reduce((sum, d) => {
+          return (
+            sum +
+            calculatePromotionDiscount(
+              item.unitPrice,
+              item.quantity,
+              d.config as Extract<DiscountConfig, { category: 'promotion' }>
+            )
+          );
+        }, 0) || 0;
+
+      const totalPromotionDiscount = samePromotionDiscount + crossPromotionDiscount;
+      promotionDiscountByProductId.set(productId, totalPromotionDiscount);
+
+      totalAfterPromotion += (itemOriginalPrice - totalPromotionDiscount);
+    }
+
+    // baseAmountType에 따라 기준 금액 결정 (기본값: after_promotion)
+    // - 'original_price': 정가 기준
+    // - 'after_promotion' 또는 undefined: 프로모션 적용 후 기준 (기본값)
+    const baseAmount = config.baseAmountType === 'original_price'
+      ? totalOriginal
+      : totalAfterPromotion;
+
+    // 통신사 할인 계산
+    const totalTelecomDiscount = calculateTelecomDiscount(
+      baseAmount,
+      config,
+      getConstraints(discount).maxDiscountAmount
+    );
+
+    if (verbose) {
+      console.log(`[장바구니 레벨 통신사 할인] ${discount.name}`);
+      console.log(`  기준 금액: ${baseAmount.toLocaleString()}원`);
+      console.log(`  할인 금액: ${totalTelecomDiscount.toLocaleString()}원`);
+    }
+
+    // 기준 금액 설명
+    const baseAmountDesc = config.baseAmountType === 'original_price'
+      ? '정가 기준'
+      : '프로모션 적용 후 기준';
+
+    const detail =
+      config.valueType === 'percentage'
+        ? `${config.percentage}% 할인`
+        : `${config.tierUnit}원당 ${config.tierAmount}원 할인`;
+
+    const limitInfo = [];
+    if (config.maxDiscountPerMonth) limitInfo.push(`월 최대 ${config.maxDiscountPerMonth.toLocaleString()}원`);
+    if (getConstraints(discount).maxDiscountAmount) limitInfo.push(`최대 ${getConstraints(discount).maxDiscountAmount.toLocaleString()}원`);
+    const limitText = limitInfo.length > 0 ? ` (${limitInfo.join(', ')})` : '';
+
+    // 장바구니 레벨 할인 결과 저장 (배분 없음)
+    cartLevelDiscounts.push({
+      discountId: discount._id,
+      discountName: discount.name,
+      category: 'telecom',
+      baseAmount,
+      baseAmountDescription: baseAmountDesc,
+      discountAmount: totalTelecomDiscount,
+      applicableItems: eligibleItemsForTelecom.map((item) => {
+        const productId = item.productId.toString();
+        const itemAmount = item.unitPrice * item.quantity;
+        const promotionDiscount = promotionDiscountByProductId.get(productId) || 0;
+        const itemAmountAfterPromotion = itemAmount - promotionDiscount;
+
+        return {
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          itemAmount,
+          promotionDiscount: promotionDiscount > 0 ? promotionDiscount : undefined,
+          itemAmountAfterPromotion: promotionDiscount > 0 ? itemAmountAfterPromotion : undefined,
+        };
+      }),
+      calculationDetails: detail + limitText,
+    });
+  }
+
+  // ============================================================================
+  // 3단계: 각 상품별 할인 계산 (장바구니 레벨 할인 제외)
+  // ============================================================================
+  if (verbose) {
+    console.log('\n[3단계: 각 상품별 할인 계산]');
   }
 
   for (const item of items) {
@@ -1294,7 +1529,17 @@ export function calculateCart(
       (s) => s.productId.toString() === productId
     );
 
-    const discounts = selection?.selectedDiscounts || [];
+    // 장바구니 레벨 할인 제외
+    const discounts = (selection?.selectedDiscounts || []).filter((d) => {
+      if (d.config.category === 'telecom') {
+        const config = d.config as Extract<DiscountConfig, { category: 'telecom' }>;
+        // calculationLevel이 'cart'이거나 명시되지 않은 경우 제외
+        if (!config.calculationLevel || config.calculationLevel === 'cart') {
+          return false;
+        }
+      }
+      return true;
+    });
 
     // 상품 총액 (단가 × 수량)
     const itemOriginalPrice = item.unitPrice * item.quantity;
@@ -1337,21 +1582,33 @@ export function calculateCart(
     }
   }
 
-  // 전체 합계 계산 (크로스 프로모션 적용 후)
+  // 전체 합계 계산 (장바구니 레벨 할인 포함)
   const totalOriginalPrice = itemResults.reduce(
     (sum, item) => sum + item.itemOriginalPrice,
     0
   );
-  const totalFinalPrice = itemResults.reduce(
+
+  // 아이템 레벨 할인 합계
+  const itemLevelFinalPrice = itemResults.reduce(
     (sum, item) => sum + item.itemFinalPrice,
     0
   );
+
+  // 장바구니 레벨 할인 합계
+  const cartLevelDiscountTotal = cartLevelDiscounts.reduce(
+    (sum, discount) => sum + discount.discountAmount,
+    0
+  );
+
+  // 최종 금액 = 아이템 레벨 할인 후 금액 - 장바구니 레벨 할인
+  const totalFinalPrice = itemLevelFinalPrice - cartLevelDiscountTotal;
   const totalDiscount = totalOriginalPrice - totalFinalPrice;
   const totalDiscountRate =
     totalOriginalPrice > 0 ? totalDiscount / totalOriginalPrice : 0;
 
   return {
     items: itemResults,
+    cartLevelDiscounts: cartLevelDiscounts.length > 0 ? cartLevelDiscounts : undefined,
     totalOriginalPrice,
     totalFinalPrice,
     totalDiscount,

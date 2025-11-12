@@ -24,6 +24,8 @@ interface DiscountResultProps {
       name: string;
       quantity: number;
       price: number;
+      promotionDiscount?: number; // 프로모션 할인액
+      itemAmountAfterPromotion?: number; // 프로모션 적용 후 금액
     }>;
     totalQuantity?: number; // 적용된 상품의 총 수량 (quantity 합산)
   }[];
@@ -254,23 +256,46 @@ export default function DiscountResult({
                               적용 대상 ({discount.totalQuantity || discount.appliedProducts.reduce((sum, p) => sum + p.quantity, 0)}개 상품)
                             </h5>
                             <div className="space-y-2">
-                              {discount.appliedProducts.map((product, productIndex) => (
-                                <div key={productIndex} className="bg-white rounded-lg p-3 border border-gray-200 text-xs">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <div className="font-medium text-gray-900 mb-1">
-                                        {product.name}
+                              {discount.appliedProducts.map((product, productIndex) => {
+                                const itemTotal = product.quantity * product.price;
+                                const hasPromotion = product.promotionDiscount && product.promotionDiscount > 0;
+
+                                return (
+                                  <div key={productIndex} className="bg-white rounded-lg p-3 border border-gray-200 text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <div className="font-medium text-gray-900 mb-1">
+                                          {product.name}
+                                        </div>
+                                        <div className="text-gray-600">
+                                          {product.quantity}개 × {product.price.toLocaleString()}원
+                                        </div>
+                                        {hasPromotion && (
+                                          <div className="text-pink-600 mt-1 flex items-center gap-1">
+                                            <span className="text-xs">프로모션 할인 -{product.promotionDiscount!.toLocaleString()}원</span>
+                                          </div>
+                                        )}
                                       </div>
-                                      <div className="text-gray-600">
-                                        {product.quantity}개 × {product.price.toLocaleString()}원
+                                      <div className="text-right">
+                                        {hasPromotion ? (
+                                          <div className="space-y-1">
+                                            <div className="text-gray-400 line-through text-xs">
+                                              {itemTotal.toLocaleString()}원
+                                            </div>
+                                            <div className="font-semibold text-pink-600">
+                                              {product.itemAmountAfterPromotion!.toLocaleString()}원
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <span className="font-semibold text-gray-700">
+                                            {itemTotal.toLocaleString()}원
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
-                                    <span className="font-semibold text-gray-700">
-                                      {(product.quantity * product.price).toLocaleString()}원
-                                    </span>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}

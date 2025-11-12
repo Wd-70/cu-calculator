@@ -638,9 +638,11 @@ export default function CartsPage() {
             price: selectedProductForDetail.price,
             brand: selectedProductForDetail.brand,
             imageUrl: selectedProductForDetail.imageUrl,
-            categoryTags: selectedProductForDetail.category
-              ? [{ name: selectedProductForDetail.category, level: 1 }]
-              : undefined,
+            categoryTags: selectedProductForDetail.categoryTags || (
+              selectedProductForDetail.category
+                ? [{ name: selectedProductForDetail.category, level: 1 }]
+                : undefined
+            ),
           }}
           onClose={handleCloseDetailModal}
           onAddToCart={handleAddFromDetailModal}
