@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // 기존 상품들을 한 번에 조회 (바코드)
     if (allBarcodes.length > 0) {
       const existingProductsWithBarcode = await db.findProducts({
-        barcode: { $in: allBarcodes }
+        barcode: { $in: allBarcodes } as any
       });
       existingProductsWithBarcode.forEach(p => existingBarcodes.add(p.barcode));
     }
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           { barcode: null },
           { barcode: '' }
         ]
-      });
+      } as any);
       existingProductsWithoutBarcode.forEach(p => existingNames.add(p.name));
     }
 
