@@ -174,19 +174,19 @@ export async function POST(request: NextRequest) {
           const newPromotion = new Promotion({
             name: promotionUpdate.name,
             description: promotionUpdate.description,
-            promotionType: promotionUpdate.promotionType,
+            promotionType: promotionUpdate.promotionType as any,
             buyQuantity: promotionUpdate.buyQuantity,
             getQuantity: promotionUpdate.getQuantity,
-            applicableType: promotionUpdate.applicableType,
+            applicableType: promotionUpdate.applicableType as any,
             applicableProducts: promotionUpdate.applicableProducts,
-            giftSelectionType: promotionUpdate.giftSelectionType,
+            giftSelectionType: promotionUpdate.giftSelectionType as any,
             giftProducts: promotionUpdate.giftProducts || [],
             giftConstraints: {
               mustBeSameProduct: promotionUpdate.giftSelectionType === 'same'
             },
             validFrom: new Date(promotionUpdate.validFrom),
             validTo: new Date(promotionUpdate.validTo),
-            status: promotionUpdate.status,
+            status: promotionUpdate.status as any,
             isActive: promotionUpdate.isActive,
             priority: 100,
             verificationCount: 1,
@@ -261,12 +261,12 @@ export async function POST(request: NextRequest) {
         // 메인 프로모션 업데이트
         promotion.name = promotionUpdate.name;
         promotion.description = promotionUpdate.description;
-        promotion.promotionType = promotionUpdate.promotionType;
+        promotion.promotionType = promotionUpdate.promotionType as any;
         promotion.buyQuantity = promotionUpdate.buyQuantity;
         promotion.getQuantity = promotionUpdate.getQuantity;
-        promotion.applicableType = promotionUpdate.applicableType;
+        promotion.applicableType = promotionUpdate.applicableType as any;
         promotion.applicableProducts = mergedProducts;
-        promotion.giftSelectionType = promotionUpdate.giftSelectionType;
+        promotion.giftSelectionType = promotionUpdate.giftSelectionType as any;
 
         if (promotionUpdate.giftProducts && promotionUpdate.giftProducts.length > 0) {
           promotion.giftProducts = promotionUpdate.giftProducts;
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
 
         promotion.validFrom = new Date(promotionUpdate.validFrom);
         promotion.validTo = new Date(promotionUpdate.validTo);
-        promotion.status = promotionUpdate.status;
+        promotion.status = promotionUpdate.status as any;
         promotion.isActive = promotionUpdate.isActive;
         promotion.lastModifiedBy = accountAddress;
 
