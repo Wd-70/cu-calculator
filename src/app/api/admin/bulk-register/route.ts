@@ -64,7 +64,9 @@ export async function POST(request: NextRequest) {
       const existingProductsWithBarcode = await db.findProducts({
         barcode: { $in: allBarcodes } as any
       });
-      existingProductsWithBarcode.forEach(p => existingBarcodes.add(p.barcode));
+      existingProductsWithBarcode.forEach(p => {
+        if (p.barcode) existingBarcodes.add(p.barcode);
+      });
     }
 
     // 기존 상품들을 한 번에 조회 (이름)
@@ -77,7 +79,9 @@ export async function POST(request: NextRequest) {
           { barcode: '' }
         ]
       } as any);
-      existingProductsWithoutBarcode.forEach(p => existingNames.add(p.name));
+      existingProductsWithoutBarcode.forEach(p => {
+        if (p.name) existingNames.add(p.name);
+      });
     }
 
     console.log(`${existingBarcodes.size}개 기존 상품 발견 (바코드)`);
