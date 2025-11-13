@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Barcode from 'react-barcode';
+import { checkIsAdminClient } from '@/lib/adminAuth';
 
 interface CategoryTag {
   name: string;
@@ -44,6 +45,15 @@ export default function ProductDetailModal({
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
+  // 관리자 기능 상태
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showVariantForm, setShowVariantForm] = useState(false);
+  const [variantBarcode, setVariantBarcode] = useState('');
+  const [variantName, setVariantName] = useState('');
+  const [variantPrice, setVariantPrice] = useState(product.price);
+  const [isSavingVariant, setIsSavingVariant] = useState(false);
+  const [variantMessage, setVariantMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
   // 모달이 열릴 때 배경 스크롤 방지
   useEffect(() => {
     // 현재 스크롤 위치 저장
@@ -65,9 +75,81 @@ export default function ProductDetailModal({
     };
   }, []);
 
+  // 관리자 권한 체크
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const userAddress = localStorage.getItem('accountAddress');
+      if (userAddress) {
+        const adminStatus = await checkIsAdminClient(userAddress);
+        setIsAdmin(adminStatus);
+      }
+    };
+    checkAdmin();
+  }, []);
+
+  // 간편식사 카테고리 체크
+  const isSimpleMeal = product.categoryTags?.some(tag => tag.name === '간편식사') || false;
+
   const handleAddToCart = () => {
     onAddToCart(quantity);
     onClose();
+  };
+
+  const handleSaveVariant = async () => {
+    if (!variantBarcode.trim()) {
+      setVariantMessage({ type: 'error', text: '바코드를 입력해주세요.' });
+      return;
+    }
+    if (!variantName.trim()) {
+      setVariantMessage({ type: 'error', text: '상품명을 입력해주세요.' });
+      return;
+    }
+    if (variantPrice <= 0) {
+      setVariantMessage({ type: 'error', text: '가격을 입력해주세요.' });
+      return;
+    }
+
+    setIsSavingVariant(true);
+    setVariantMessage(null);
+
+    try {
+      const userAddress = localStorage.getItem('accountAddress');
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          barcode: variantBarcode.trim(),
+          name: variantName.trim(),
+          price: variantPrice,
+          brand: product.brand || 'CU',
+          imageUrl: product.imageUrl,
+          createdBy: userAddress,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setVariantMessage({ type: 'success', text: '변형 상품이 등록되었습니다!' });
+        setVariantBarcode('');
+        setVariantName('');
+        setVariantPrice(product.price);
+        setTimeout(() => {
+          setShowVariantForm(false);
+          setVariantMessage(null);
+        }, 2000);
+      } else {
+        setVariantMessage({ type: 'error', text: data.error || '등록에 실패했습니다.' });
+      }
+    } catch (error) {
+      console.error('Error saving variant:', error);
+      setVariantMessage({ type: 'error', text: '서버 오류가 발생했습니다.' });
+    } finally {
+      setIsSavingVariant(false);
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -290,6 +372,110 @@ export default function ProductDetailModal({
           >
             장바구니에 {quantity}개 추가
           </button>
+
+          {/* 관리자 전용: 변형 상품 추가 */}
+          {isAdmin && isSimpleMeal && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-gray-700">🔧 관리자 전용</h4>
+                {!showVariantForm && (
+                  <button
+                    onClick={() => {
+                      setShowVariantForm(true);
+                      setVariantName(product.name);
+                      setVariantPrice(product.price);
+                    }}
+                    className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    변형 상품 추가
+                  </button>
+                )}
+              </div>
+
+              {showVariantForm && (
+                <div className="space-y-3 p-4 bg-orange-50 rounded-lg">
+                  <p className="text-xs text-orange-800 mb-2">
+                    다른 바코드(1번/2번)를 스캔하여 변형 상품을 추가하세요
+                  </p>
+
+                  {/* 바코드 입력 */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      바코드 *
+                    </label>
+                    <input
+                      type="text"
+                      value={variantBarcode}
+                      onChange={(e) => setVariantBarcode(e.target.value)}
+                      placeholder="바코드를 스캔하거나 입력하세요"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* 상품명 입력 */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      상품명 *
+                    </label>
+                    <input
+                      type="text"
+                      value={variantName}
+                      onChange={(e) => setVariantName(e.target.value)}
+                      placeholder="예: 상품명 2"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* 가격 입력 */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      가격 (원) *
+                    </label>
+                    <input
+                      type="number"
+                      value={variantPrice}
+                      onChange={(e) => setVariantPrice(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* 메시지 */}
+                  {variantMessage && (
+                    <div className={`p-2 rounded-lg text-xs ${
+                      variantMessage.type === 'success'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {variantMessage.text}
+                    </div>
+                  )}
+
+                  {/* 버튼 */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setShowVariantForm(false);
+                        setVariantBarcode('');
+                        setVariantName('');
+                        setVariantMessage(null);
+                      }}
+                      disabled={isSavingVariant}
+                      className="flex-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleSaveVariant}
+                      disabled={isSavingVariant}
+                      className="flex-1 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {isSavingVariant ? '저장 중...' : '저장'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
