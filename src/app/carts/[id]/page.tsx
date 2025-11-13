@@ -306,80 +306,90 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
 
   // 바코드 스캔 핸들러 (즉시 추가 + 백그라운드 로딩)
   const handleBarcodeScan = async (barcode: string): Promise<boolean> => {
+    console.log('[handleBarcodeScan] 시작:', barcode);
+
     try {
-      // 1. 즉시 placeholder 아이템 추가
-      const placeholderItem = {
+      // 1. 즉시 바코드만으로 아이템 추가
+      const placeholderItem: ICartItem = {
         barcode,
+        quantity: 1,
         name: '상품 정보 로딩 중...',
         price: 0,
-        quantity: 1,
         isLoading: true,
-        selectedDiscountIds: [],
-        addedAt: new Date(),
       };
 
+      console.log('[handleBarcodeScan] placeholder 추가 시도');
       const updatedCart = clientDb.addItemToCart(id, placeholderItem);
 
       if (!updatedCart) {
+        console.error('[handleBarcodeScan] 장바구니 추가 실패');
         setToast({ message: '장바구니에 추가할 수 없습니다', type: 'error' });
         return false;
       }
 
+      console.log('[handleBarcodeScan] 장바구니 업데이트 성공', updatedCart.items.length, '개 아이템');
       setCart(updatedCart);
 
       // 2. 백그라운드에서 상품 정보 로드
-      (async () => {
-        try {
-          const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
-          const data = await response.json();
+      setTimeout(() => {
+        (async () => {
+          try {
+            console.log('[백그라운드] API 요청 시작:', barcode);
+            const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
+            const data = await response.json();
+            console.log('[백그라운드] API 응답:', data);
 
-          if (!data.success || !data.data || data.data.length === 0) {
-            // 실패: 에러 상태로 업데이트
+            if (!data.success || !data.data || data.data.length === 0) {
+              // 실패: 에러 상태로 업데이트
+              console.log('[백그라운드] 상품 없음, 에러 상태 업데이트');
+              clientDb.updateCartItem(id, barcode, {
+                isLoading: false,
+                loadError: '상품을 찾을 수 없습니다',
+                name: '알 수 없는 상품',
+              });
+            } else {
+              // 성공: 실제 정보로 업데이트
+              const product = data.data[0];
+              console.log('[백그라운드] 상품 정보 업데이트:', product.name);
+              clientDb.updateCartItem(id, barcode, {
+                productId: product._id,
+                name: product.name,
+                price: product.price,
+                imageUrl: product.imageUrl,
+                categoryTags: product.categoryTags,
+                brand: product.brand,
+                isLoading: false,
+                loadError: undefined,
+                lastSyncedAt: new Date(),
+              });
+            }
+
+            // 장바구니 다시 로드
+            const newCart = clientDb.getCart(id);
+            if (newCart) {
+              console.log('[백그라운드] 장바구니 리프레시');
+              setCart(newCart);
+            }
+          } catch (error) {
+            console.error('[백그라운드] 에러 발생:', error);
+            // 에러 상태로 업데이트
             clientDb.updateCartItem(id, barcode, {
               isLoading: false,
-              loadError: '상품을 찾을 수 없습니다',
-              name: '알 수 없는 상품',
+              loadError: '로딩 실패',
+              name: '로딩 실패',
             });
-          } else {
-            // 성공: 실제 정보로 업데이트
-            const product = data.data[0];
-            clientDb.updateCartItem(id, barcode, {
-              productId: product._id,
-              name: product.name,
-              price: product.price,
-              imageUrl: product.imageUrl,
-              categoryTags: product.categoryTags,
-              brand: product.brand,
-              isLoading: false,
-              loadError: undefined,
-              lastSyncedAt: new Date(),
-            });
-          }
 
-          // 장바구니 다시 로드
-          const newCart = clientDb.getCart(id);
-          if (newCart) {
-            setCart(newCart);
+            const newCart = clientDb.getCart(id);
+            if (newCart) {
+              setCart(newCart);
+            }
           }
-        } catch (error) {
-          console.error('Failed to load product info:', error);
-          // 에러 상태로 업데이트
-          clientDb.updateCartItem(id, barcode, {
-            isLoading: false,
-            loadError: '로딩 실패',
-            name: '로딩 실패',
-          });
-
-          const newCart = clientDb.getCart(id);
-          if (newCart) {
-            setCart(newCart);
-          }
-        }
-      })();
+        })();
+      }, 100); // 약간의 딜레이로 UI 업데이트 우선
 
       return true;
     } catch (error) {
-      console.error('Failed to add product:', error);
+      console.error('[handleBarcodeScan] 에러:', error);
       setToast({ message: '상품 추가 중 오류가 발생했습니다', type: 'error' });
       return false;
     }

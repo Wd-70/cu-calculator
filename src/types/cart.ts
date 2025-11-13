@@ -39,13 +39,14 @@ export interface CartCalculation {
 
 // 저장용 카트 아이템 (하이브리드 방식)
 export interface ICartItem {
-  productId?: Types.ObjectId | string; // 로딩 중일 때는 없을 수 있음
+  // 필수 필드 (바코드만 있으면 추가 가능)
   barcode: string;
-
-  // 스냅샷 필수 정보 (담았을 당시)
-  name: string;  // 로딩 중일 때는 "상품 정보 로딩 중..."
-  price: number;           // 담았을 당시 가격, 로딩 중일 때는 0
   quantity: number;
+
+  // 선택 필드들
+  productId?: Types.ObjectId | string; // 로딩 중일 때는 없을 수 있음
+  name?: string;  // 로딩 중일 때는 "상품 정보 로딩 중..."
+  price?: number;           // 담았을 당시 가격, 로딩 중일 때는 0
 
   // 캐시된 정보 (자동 업데이트 가능)
   imageUrl?: string;
@@ -65,7 +66,7 @@ export interface ICartItem {
   isLoading?: boolean;     // 상품 정보 로딩 중
   loadError?: string;      // 로딩 실패 시 에러 메시지
 
-  selectedDiscountIds: (Types.ObjectId | string)[];
+  selectedDiscountIds?: (Types.ObjectId | string)[];
 }
 
 // 저장용 카트
