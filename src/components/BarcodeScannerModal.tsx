@@ -72,50 +72,33 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
           const normalizedBarcode = normalizeBarcode(decodedText);
           setBarcodeDetected(true);
 
-          try {
-            // 장바구니에 즉시 추가 (바코드만 전달, 상품 정보는 백그라운드에서 로딩)
-            const success = await onScan(normalizedBarcode);
-
-            // 마지막 스캔 바코드 저장
-            setLastScannedProduct({
-              barcode: normalizedBarcode,
-              name: '로딩 중...',
-              price: 0,
-              success,
-            });
-
-            // 피드백 표시
-            if (success) {
-              setScanFeedback({ type: 'success', message: '장바구니에 추가됨!' });
-              if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
-              }
-            } else {
-              setScanFeedback({ type: 'error', message: '추가 실패' });
-              if (navigator.vibrate) {
-                navigator.vibrate(200);
-              }
-            }
-
-            // 피드백 자동 숨김
-            setTimeout(() => {
-              setScanFeedback(null);
-              setBarcodeDetected(false);
-            }, 500);
-
-            setIsScanning(false);
-            processingBarcodeRef.current = false;
-
-          } catch (error) {
+          // 장바구니에 즉시 추가 (fire-and-forget, UI 차단 방지)
+          onScan(normalizedBarcode).catch(error => {
             console.error('Scan error:', error);
-            setScanFeedback({ type: 'error', message: '스캔 오류' });
-            setTimeout(() => {
-              setScanFeedback(null);
-              setBarcodeDetected(false);
-            }, 800);
-            setIsScanning(false);
-            processingBarcodeRef.current = false;
+          });
+
+          // 마지막 스캔 바코드 저장
+          setLastScannedProduct({
+            barcode: normalizedBarcode,
+            name: '추가 중...',
+            price: 0,
+            success: true,
+          });
+
+          // 즉시 피드백
+          setScanFeedback({ type: 'success', message: '추가됨!' });
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
           }
+
+          // 피드백 자동 숨김
+          setTimeout(() => {
+            setScanFeedback(null);
+            setBarcodeDetected(false);
+          }, 400);
+
+          setIsScanning(false);
+          processingBarcodeRef.current = false;
         },
         () => {
           // 스캔 에러 무시
