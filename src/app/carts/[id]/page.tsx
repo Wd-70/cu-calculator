@@ -654,7 +654,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                         )}
 
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-gray-900 text-sm mb-1 truncate">{item.name}</h3>
+                          <h3 className="font-bold text-gray-900 text-sm mb-1 truncate">{item.name || `바코드: ${item.barcode}`}</h3>
                           {item.categoryTags?.[0]?.name && (
                             <span className="inline-block px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
                               {item.categoryTags[0].name}
@@ -666,7 +666,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                       {/* 하단: 가격 + 수량 조절 + 소계 */}
                       <div className="flex items-center justify-between gap-3" onClick={(e) => e.stopPropagation()}>
                         <div className="text-sm text-gray-600 flex-shrink-0">
-                          {item.price.toLocaleString()}원
+                          {item.price !== undefined ? `${item.price.toLocaleString()}원` : '-'}
                         </div>
 
                         <div className="flex items-center gap-1.5">
@@ -687,7 +687,9 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
 
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs text-gray-500">소계</p>
-                          <p className="font-bold text-gray-900 text-sm">{(item.price * item.quantity).toLocaleString()}원</p>
+                          <p className="font-bold text-gray-900 text-sm">
+                            {item.price !== undefined ? `${(item.price * item.quantity).toLocaleString()}원` : '-'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -709,8 +711,10 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                       )}
 
                       <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 mb-1">{item.name}</h3>
-                        <p className="text-sm text-gray-500 mb-2">{item.price.toLocaleString()}원</p>
+                        <h3 className="font-bold text-gray-900 mb-1">{item.name || `바코드: ${item.barcode}`}</h3>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {item.price !== undefined ? `${item.price.toLocaleString()}원` : '-'}
+                        </p>
                         {item.categoryTags?.[0]?.name && (
                           <span className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
                             {item.categoryTags[0].name}
@@ -737,7 +741,9 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
 
                       <div className="text-right">
                         <p className="text-sm text-gray-500">소계</p>
-                        <p className="font-bold text-gray-900">{(item.price * item.quantity).toLocaleString()}원</p>
+                        <p className="font-bold text-gray-900">
+                          {item.price !== undefined ? `${(item.price * item.quantity).toLocaleString()}원` : '-'}
+                        </p>
                       </div>
                     </div>
                   </div>
