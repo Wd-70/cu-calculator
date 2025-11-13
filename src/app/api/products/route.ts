@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
       // 바코드 필터 적용
       if (!includeWithoutBarcode) {
-        filter.barcode = { $exists: true, $ne: null, $ne: '' } as any;
+        filter.barcode = { $exists: true, $nin: [null, ''] } as any;
       }
 
       if (search) {
