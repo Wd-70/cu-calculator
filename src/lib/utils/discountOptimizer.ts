@@ -39,6 +39,13 @@ export interface DiscountCombination {
     amount: number;
     steps?: any[]; // 계산 과정 단계
     baseAmount?: number; // 기준 금액
+    appliedProducts?: Array<{ // 적용된 상품 목록
+      productId: string;
+      barcode: string;
+      name: string;
+      quantity: number;
+      price: number;
+    }>;
   }>;
 }
 
