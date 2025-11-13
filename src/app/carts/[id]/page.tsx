@@ -223,7 +223,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   const handleApplyPreset = (preset: IPreset) => {
-    setSelectedDiscountIds(preset.discountIds.map(String));
+    setSelectedDiscountIds(preset.discountIds?.map(String) || []);
     if (preset.paymentMethod) {
       setSelectedPaymentMethod(preset.paymentMethod);
     }
@@ -731,12 +731,12 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                         <p className="text-sm text-gray-600 mb-2">{preset.description}</p>
                       )}
                       <div className="flex flex-wrap gap-1">
-                        {preset.discountIds.slice(0, 3).map(discountId => (
+                        {preset.discountIds?.slice(0, 3).map(discountId => (
                           <span key={String(discountId)} className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
                             {getDiscountName(String(discountId))}
                           </span>
                         ))}
-                        {preset.discountIds.length > 3 && (
+                        {preset.discountIds && preset.discountIds.length > 3 && (
                           <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                             +{preset.discountIds.length - 3}
                           </span>
