@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     await db.connect();
 
     const body = await request.json();
-    const { barcode, name, price, brand, imageUrl, createdBy } = body;
+    const { barcode, name, price, brand, imageUrl, categoryTags, createdBy } = body;
 
     // Validate required fields
     if (!barcode || !name || price === undefined) {
@@ -231,6 +231,7 @@ export async function POST(request: NextRequest) {
       price,
       brand,
       imageUrl,
+      categoryTags, // 카테고리 태그 포함
       createdBy, // Use user's public address
       modificationCount: 0,
       isVerified: false,

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Barcode from 'react-barcode';
 import { checkIsAdminClient } from '@/lib/adminAuth';
+import SimpleBarcodeScanner from './SimpleBarcodeScanner';
 
 interface CategoryTag {
   name: string;
@@ -48,6 +49,7 @@ export default function ProductDetailModal({
   // 관리자 기능 상태
   const [isAdmin, setIsAdmin] = useState(false);
   const [showVariantForm, setShowVariantForm] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [variantBarcode, setVariantBarcode] = useState('');
   const [variantName, setVariantName] = useState('');
   const [variantPrice, setVariantPrice] = useState(product.price);
@@ -79,10 +81,8 @@ export default function ProductDetailModal({
   useEffect(() => {
     const checkAdmin = async () => {
       const userAddress = localStorage.getItem('user_address');
-      console.log('🔍 관리자 체크 - userAddress:', userAddress);
       if (userAddress) {
         const adminStatus = await checkIsAdminClient(userAddress);
-        console.log('🔍 관리자 체크 결과:', adminStatus);
         setIsAdmin(adminStatus);
       }
     };
@@ -91,14 +91,15 @@ export default function ProductDetailModal({
 
   // 간편식사 카테고리 체크
   const isSimpleMeal = product.categoryTags?.some(tag => tag.name === '간편식사') || false;
-  console.log('🔍 상품 카테고리:', product.categoryTags);
-  console.log('🔍 간편식사 체크:', isSimpleMeal);
-  console.log('🔍 관리자 여부:', isAdmin);
-  console.log('🔍 UI 표시 조건:', isAdmin && isSimpleMeal);
 
   const handleAddToCart = () => {
     onAddToCart(quantity);
     onClose();
+  };
+
+  const handleBarcodeScanned = (barcode: string) => {
+    setVariantBarcode(barcode);
+    setShowBarcodeScanner(false);
   };
 
   const handleSaveVariant = async () => {
@@ -132,6 +133,7 @@ export default function ProductDetailModal({
           price: variantPrice,
           brand: product.brand || 'CU',
           imageUrl: product.imageUrl,
+          categoryTags: product.categoryTags, // 카테고리 태그 복사
           createdBy: userAddress,
         }),
       });
@@ -409,13 +411,22 @@ export default function ProductDetailModal({
                     <label className="block text-xs font-semibold text-gray-700 mb-1">
                       바코드 *
                     </label>
-                    <input
-                      type="text"
-                      value={variantBarcode}
-                      onChange={(e) => setVariantBarcode(e.target.value)}
-                      placeholder="바코드를 스캔하거나 입력하세요"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={variantBarcode}
+                        onChange={(e) => setVariantBarcode(e.target.value)}
+                        placeholder="바코드를 스캔하거나 입력하세요"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowBarcodeScanner(true)}
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                      >
+                        📷 스캔
+                      </button>
+                    </div>
                   </div>
 
                   {/* 상품명 입력 */}
@@ -484,6 +495,15 @@ export default function ProductDetailModal({
           )}
         </div>
       </div>
+
+      {/* 바코드 스캐너 */}
+      {showBarcodeScanner && (
+        <SimpleBarcodeScanner
+          isOpen={showBarcodeScanner}
+          onClose={() => setShowBarcodeScanner(false)}
+          onScan={handleBarcodeScanned}
+        />
+      )}
     </div>
   );
 }
