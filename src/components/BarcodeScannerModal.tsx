@@ -31,8 +31,9 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
   const isStoppingRef = useRef(false);
   const elementId = 'continuous-barcode-reader';
 
-  const latestBarcodeRef = useRef<string>('');
-  const waitingForBarcodeRef = useRef<boolean>(false);
+  // 버튼을 누른 후에만 바코드 처리
+  const shouldProcessBarcodeRef = useRef<boolean>(false);
+  const processingBarcodeRef = useRef<boolean>(false);
 
   const startCamera = async () => {
     try {
@@ -43,7 +44,7 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
       const scanner = new Html5Qrcode(elementId);
       scannerRef.current = scanner;
 
-      // 카메라 시작 - 바코드는 실시간으로 감지하되 버튼 클릭 후에만 처리
+      // 카메라 시작 - 버튼 누른 후에만 바코드 처리
       await scanner.start(
         { facingMode: 'environment' }, // 후면 카메라 사용
         {
@@ -59,16 +60,89 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
             };
           },
         },
-        (decodedText) => {
-          // 바코드를 감지하면 정규화하여 저장하고 시각적 피드백
+        async (decodedText) => {
+          // 버튼을 누른 후에만 처리
+          if (!shouldProcessBarcodeRef.current || processingBarcodeRef.current) {
+            return;
+          }
+
+          processingBarcodeRef.current = true;
+          shouldProcessBarcodeRef.current = false; // 한 번만 처리
+
           const normalizedBarcode = normalizeBarcode(decodedText);
-          latestBarcodeRef.current = normalizedBarcode;
           setBarcodeDetected(true);
 
-          // 0.3초 후 원래 색으로 복귀
-          setTimeout(() => {
-            setBarcodeDetected(false);
-          }, 300);
+          try {
+            // 상품 정보 가져오기
+            const response = await fetch(`/api/products?barcode=${normalizedBarcode}&limit=1`);
+            const data = await response.json();
+
+            if (!data.success || !data.data || data.data.length === 0) {
+              setScanFeedback({ type: 'error', message: '상품을 찾을 수 없습니다' });
+              if (navigator.vibrate) {
+                navigator.vibrate(200);
+              }
+              setLastScannedProduct({
+                barcode: normalizedBarcode,
+                name: '알 수 없는 상품',
+                price: 0,
+                success: false,
+              });
+              setTimeout(() => {
+                setScanFeedback(null);
+                setBarcodeDetected(false);
+              }, 800);
+              setIsScanning(false);
+              processingBarcodeRef.current = false;
+              return;
+            }
+
+            const product = data.data[0];
+
+            // 장바구니에 추가
+            const success = await onScan(normalizedBarcode);
+
+            // 마지막 스캔 상품 정보 저장
+            setLastScannedProduct({
+              barcode: product.barcode,
+              name: product.name,
+              price: product.price,
+              imageUrl: product.imageUrl,
+              success,
+            });
+
+            // 피드백 표시
+            if (success) {
+              setScanFeedback({ type: 'success', message: '상품이 추가되었습니다!' });
+              if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+              }
+            } else {
+              setScanFeedback({ type: 'error', message: '장바구니에 추가할 수 없습니다' });
+              if (navigator.vibrate) {
+                navigator.vibrate(200);
+              }
+            }
+
+            // 피드백 자동 숨김
+            setTimeout(() => {
+              setScanFeedback(null);
+              setBarcodeDetected(false);
+            }, 800);
+
+            setIsScanning(false);
+            processingBarcodeRef.current = false;
+
+          } catch (error) {
+            console.error('Scan error:', error);
+            setScanFeedback({ type: 'error', message: '스캔 중 오류가 발생했습니다' });
+            setTimeout(() => {
+              setScanFeedback(null);
+              setBarcodeDetected(false);
+            }, 800);
+            setIsScanning(false);
+            processingBarcodeRef.current = false;
+          }
         },
         () => {
           // 스캔 에러 무시
@@ -122,115 +196,31 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
     }
   };
 
-  // 스캔 버튼 클릭 시 실시간으로 바코드 감지 대기
-  const handleScanClick = async () => {
-    if (isScanning) return;
+  // 스캔 버튼 클릭 시 바코드 처리 활성화
+  const handleScanClick = () => {
+    if (isScanning || processingBarcodeRef.current) return;
 
     setIsScanning(true);
     setScanFeedback(null);
-    setLastScannedProduct(null);
 
-    // 이전 바코드 초기화
-    latestBarcodeRef.current = '';
-    waitingForBarcodeRef.current = true;
+    // 바코드 처리 플래그 활성화 (다음 감지된 바코드를 즉시 처리)
+    shouldProcessBarcodeRef.current = true;
 
-    // 타임아웃 설정 (10초 동안 바코드를 감지하지 못하면 실패)
-    const timeout = 10000;
-    const startTime = Date.now();
-
-    // 바코드가 감지될 때까지 대기
-    while (Date.now() - startTime < timeout && waitingForBarcodeRef.current) {
-      if (latestBarcodeRef.current) {
-        // 바코드 감지됨!
-        const barcode = latestBarcodeRef.current;
-        latestBarcodeRef.current = ''; // 즉시 초기화
-        waitingForBarcodeRef.current = false;
-
-        try {
-          // 먼저 상품 정보 가져오기
-          const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
-          const data = await response.json();
-
-          if (!data.success || !data.data || data.data.length === 0) {
-            setScanFeedback({ type: 'error', message: '상품을 찾을 수 없습니다' });
-            if (navigator.vibrate) {
-              navigator.vibrate(200);
-            }
-            setLastScannedProduct({
-              barcode,
-              name: '알 수 없는 상품',
-              price: 0,
-              success: false,
-            });
-            setTimeout(() => {
-              setScanFeedback(null);
-            }, 800); // 0.8초로 단축
-            setIsScanning(false);
-            return;
-          }
-
-          const product = data.data[0];
-
-          // 장바구니에 추가
-          const success = await onScan(barcode);
-
-          // 마지막 스캔 상품 정보 저장
-          setLastScannedProduct({
-            barcode: product.barcode,
-            name: product.name,
-            price: product.price,
-            imageUrl: product.imageUrl,
-            success,
-          });
-
-          // 피드백 표시
-          if (success) {
-            setScanFeedback({ type: 'success', message: '상품이 추가되었습니다!' });
-            if (navigator.vibrate) {
-              navigator.vibrate([100, 50, 100]);
-            }
-          } else {
-            setScanFeedback({ type: 'error', message: '장바구니에 추가할 수 없습니다' });
-            if (navigator.vibrate) {
-              navigator.vibrate(200);
-            }
-          }
-
-          // 피드백 자동 숨김 (0.8초로 단축)
-          setTimeout(() => {
-            setScanFeedback(null);
-          }, 800);
-
-          setIsScanning(false);
-          return;
-
-        } catch (error) {
-          console.error('Scan error:', error);
-          setScanFeedback({ type: 'error', message: '스캔 중 오류가 발생했습니다' });
-          setTimeout(() => {
-            setScanFeedback(null);
-          }, 800);
-          setIsScanning(false);
-          waitingForBarcodeRef.current = false;
-          return;
-        }
-      }
-
-      // 10ms 대기 후 다시 확인
-      await new Promise(resolve => setTimeout(resolve, 10));
-    }
-
-    // 타임아웃 - 바코드를 감지하지 못함
-    setLastScannedProduct(null);
-    setScanFeedback({ type: 'error', message: '바코드를 인식하지 못했습니다' });
-    if (navigator.vibrate) {
-      navigator.vibrate(200);
-    }
+    // 10초 타임아웃 설정 (바코드를 감지하지 못하면 실패)
     setTimeout(() => {
-      setScanFeedback(null);
-    }, 800);
-    setIsScanning(false);
-    waitingForBarcodeRef.current = false;
+      if (shouldProcessBarcodeRef.current && !processingBarcodeRef.current) {
+        // 10초 동안 바코드를 감지하지 못함
+        shouldProcessBarcodeRef.current = false;
+        setScanFeedback({ type: 'error', message: '바코드를 인식하지 못했습니다' });
+        if (navigator.vibrate) {
+          navigator.vibrate(200);
+        }
+        setTimeout(() => {
+          setScanFeedback(null);
+        }, 800);
+        setIsScanning(false);
+      }
+    }, 10000);
   };
 
   const stopCamera = async () => {
@@ -266,8 +256,11 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
 
       startCamera();
       setLastScannedProduct(null);
-      latestBarcodeRef.current = '';
       setScanFeedback(null);
+
+      // 플래그 초기화
+      shouldProcessBarcodeRef.current = false;
+      processingBarcodeRef.current = false;
     } else {
       // 스크롤 복원
       document.body.style.overflow = '';
