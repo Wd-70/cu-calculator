@@ -303,28 +303,32 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   // 바코드 스캔 핸들러 (연속 스캔용)
-  const handleBarcodeScan = async (barcode: string): Promise<boolean> => {
+  const handleBarcodeScan = async (barcode: string, product?: any): Promise<boolean> => {
     try {
-      // 바코드로 상품 검색
-      const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
-      const data = await response.json();
+      // product가 전달되지 않았을 때만 조회 (중복 조회 방지)
+      let productData = product;
 
-      if (!data.success || !data.data || data.data.length === 0) {
-        setToast({ message: `상품을 찾을 수 없습니다 (${barcode})`, type: 'error' });
-        return false;
+      if (!productData) {
+        const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
+        const data = await response.json();
+
+        if (!data.success || !data.data || data.data.length === 0) {
+          setToast({ message: `상품을 찾을 수 없습니다 (${barcode})`, type: 'error' });
+          return false;
+        }
+
+        productData = data.data[0];
       }
-
-      const product = data.data[0];
 
       // 장바구니에 상품 추가
       const updatedCart = clientDb.addItemToCart(id, {
-        productId: product._id,
-        barcode: product.barcode,
-        name: product.name,
-        price: product.price,
+        productId: productData._id,
+        barcode: productData.barcode,
+        name: productData.name,
+        price: productData.price,
         quantity: 1,
-        imageUrl: product.imageUrl,
-        categoryTags: product.categoryTags,
+        imageUrl: productData.imageUrl,
+        categoryTags: productData.categoryTags,
         selectedDiscountIds: [],
       });
 

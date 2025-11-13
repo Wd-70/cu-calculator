@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { normalizeBarcode } from '@/lib/utils/barcodeUtils';
+import { IProduct } from '@/types/product';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onScan: (barcode: string) => Promise<boolean>; // 성공 여부를 반환
+  onScan: (barcode: string, product?: IProduct) => Promise<boolean>; // 성공 여부를 반환, 중복 조회 방지를 위해 product 전달
   cartId: string;
 }
 
@@ -99,8 +100,8 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
 
             const product = data.data[0];
 
-            // 장바구니에 추가
-            const success = await onScan(normalizedBarcode);
+            // 장바구니에 추가 (상품 정보를 함께 전달하여 중복 조회 방지)
+            const success = await onScan(normalizedBarcode, product);
 
             // 마지막 스캔 상품 정보 저장
             setLastScannedProduct({

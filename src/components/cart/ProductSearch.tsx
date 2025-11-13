@@ -107,11 +107,18 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
   };
 
   // 바코드 스캐너에서 스캔 시 처리
-  const handleScan = async (barcode: string): Promise<boolean> => {
+  const handleScan = async (barcode: string, product?: IProduct): Promise<boolean> => {
     // 바코드 정규화 (18자리 -> 13자리)
     const normalizedBarcode = normalizeBarcode(barcode);
 
     try {
+      // product가 전달되었으면 바로 사용 (중복 조회 방지)
+      if (product) {
+        handleAddProduct(product);
+        return true;
+      }
+
+      // product가 없으면 조회
       const response = await fetch(`/api/products?barcode=${normalizedBarcode}`);
       if (response.ok) {
         const data = await response.json();
