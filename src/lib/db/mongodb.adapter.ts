@@ -43,6 +43,11 @@ export class MongoDBAdapter implements IDatabase {
   ): Promise<IProduct[]> {
     let query = Product.find(filter || {});
 
+    // Projection 처리 (필요한 필드만 선택)
+    if (options?.projection) {
+      query = query.select(options.projection);
+    }
+
     if (options?.sort) {
       query = query.sort(options.sort);
     }
@@ -52,6 +57,9 @@ export class MongoDBAdapter implements IDatabase {
     if (options?.limit) {
       query = query.limit(options.limit);
     }
+
+    // Lean 옵션으로 plain JavaScript object 반환 (더 빠름)
+    query = query.lean();
 
     return query.exec();
   }

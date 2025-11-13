@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     };
 
     // 필요한 필드만 선택하여 크기 최소화
+    // categoryTags.name과 level만 필요하므로 전체 객체 가져오기
     const projection = {
       _id: 1,
       barcode: 1,
@@ -28,6 +29,17 @@ export async function GET(request: NextRequest) {
       brand: 1,
       imageUrl: 1,
       categoryTags: 1,
+      // 불필요한 필드 제외
+      createdAt: 0,
+      updatedAt: 0,
+      createdBy: 0,
+      lastModifiedBy: 0,
+      modificationCount: 0,
+      isVerified: 0,
+      verificationCount: 0,
+      reportCount: 0,
+      cuProductCode: 0,
+      detailUrls: 0,
     };
 
     const products = await db.findProducts(filter, {
