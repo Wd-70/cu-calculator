@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     await db.connect();
 
     const body = await request.json();
-    const { barcode, name, price, category, brand, imageUrl, createdBy } = body;
+    const { barcode, name, price, brand, imageUrl, createdBy } = body;
 
     // Validate required fields
     if (!barcode || !name || price === undefined) {
@@ -229,7 +229,6 @@ export async function POST(request: NextRequest) {
       barcode,
       name,
       price,
-      category,
       brand,
       imageUrl,
       createdBy, // Use user's public address
