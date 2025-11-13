@@ -11,6 +11,8 @@ import { PaymentMethod, PAYMENT_METHOD_NAMES } from '@/types/payment';
 import Toast from '@/components/Toast';
 import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 import { calculateCartOnClient } from '@/lib/clientCalculator';
+import { loadAllProducts, findProductByBarcode } from '@/lib/utils/productLoader';
+import { IProduct } from '@/types/product';
 
 interface DiscountStep {
   discountId: string;
@@ -57,16 +59,17 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
   const [showBarcode, setShowBarcode] = useState(true);
   const [priceChanges, setPriceChanges] = useState<Record<string, { oldPrice: number; newPrice: number }>>({});
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
+  const [allProducts, setAllProducts] = useState<IProduct[]>([]);
 
   useEffect(() => {
     loadData();
   }, [id]);
 
-  // 장바구니 아이템의 상품 정보 동기화 (백그라운드)
+  // 장바구니 아이템의 상품 정보 동기화 (메모리 기반)
   useEffect(() => {
-    if (!cart || cart.items.length === 0) return;
+    if (!cart || cart.items.length === 0 || allProducts.length === 0) return;
 
-    const syncProductInfo = async () => {
+    const syncProductInfo = () => {
       const now = new Date();
       const changes: Record<string, { oldPrice: number; newPrice: number }> = {};
       let hasUpdates = false;
@@ -79,38 +82,31 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
           if (minutesSinceSync < 5) continue;
         }
 
-        try {
-          // 바코드로 최신 상품 정보 가져오기
-          const response = await fetch(`/api/products?barcode=${item.barcode}&limit=1`);
-          const data = await response.json();
+        // 메모리에서 최신 상품 정보 가져오기
+        const latestProduct = findProductByBarcode(allProducts, item.barcode);
 
-          if (data.success && data.data && data.data.length > 0) {
-            const latestProduct = data.data[0];
-
-            // 가격 변경 감지
-            if (latestProduct.price !== item.price) {
-              changes[item.barcode] = {
-                oldPrice: item.price,
-                newPrice: latestProduct.price,
-              };
-            }
-
-            // 이미지, 카테고리 등 자동 업데이트 (가격 제외)
-            const updatedItem = {
-              ...item,
-              imageUrl: latestProduct.imageUrl || item.imageUrl,
-              categoryTags: latestProduct.categoryTags || item.categoryTags,
-              latestPrice: latestProduct.price,
-              priceCheckedAt: now,
-              lastSyncedAt: now,
+        if (latestProduct) {
+          // 가격 변경 감지
+          if (latestProduct.price !== item.price) {
+            changes[item.barcode] = {
+              oldPrice: item.price,
+              newPrice: latestProduct.price,
             };
-
-            // 로컬 업데이트
-            clientDb.updateCartItem(id, item.barcode, updatedItem);
-            hasUpdates = true;
           }
-        } catch (error) {
-          console.error(`Failed to sync product ${item.barcode}:`, error);
+
+          // 이미지, 카테고리 등 자동 업데이트 (가격 제외)
+          const updatedItem = {
+            ...item,
+            imageUrl: latestProduct.imageUrl || item.imageUrl,
+            categoryTags: latestProduct.categoryTags || item.categoryTags,
+            latestPrice: latestProduct.price,
+            priceCheckedAt: now,
+            lastSyncedAt: now,
+          };
+
+          // 로컬 업데이트
+          clientDb.updateCartItem(id, item.barcode, updatedItem);
+          hasUpdates = true;
         }
       }
 
@@ -128,9 +124,9 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
       }
     };
 
-    // 백그라운드에서 비동기 실행
+    // 동기 실행 (메모리 검색이므로 빠름)
     syncProductInfo();
-  }, [cart?.items.length, id]); // items.length 변경 시에만 재실행
+  }, [cart?.items.length, id, allProducts.length]); // allProducts 로드 후에도 실행
 
   const loadData = async () => {
     try {
@@ -144,12 +140,17 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
       const localPresets = clientDb.getPresets();
       setPresets(localPresets);
 
-      // 서버 데이터 (할인 목록) - 만료된 할인 제외
-      const discountsRes = await fetch('/api/discounts?excludeExpired=true');
-      const discountsData = await discountsRes.json();
+      // 서버 데이터 병렬 로드
+      const [discountsData, products] = await Promise.all([
+        fetch('/api/discounts?excludeExpired=true').then(res => res.json()),
+        loadAllProducts()
+      ]);
+
       if (discountsData.success) {
         setDiscounts(discountsData.data);
       }
+
+      setAllProducts(products);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -305,19 +306,16 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
   // 바코드 스캔 핸들러 (연속 스캔용)
   const handleBarcodeScan = async (barcode: string, product?: any): Promise<boolean> => {
     try {
-      // product가 전달되지 않았을 때만 조회 (중복 조회 방지)
+      // product가 전달되지 않았을 때 메모리에서 검색
       let productData = product;
 
       if (!productData) {
-        const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
-        const data = await response.json();
+        productData = findProductByBarcode(allProducts, barcode);
 
-        if (!data.success || !data.data || data.data.length === 0) {
+        if (!productData) {
           setToast({ message: `상품을 찾을 수 없습니다 (${barcode})`, type: 'error' });
           return false;
         }
-
-        productData = data.data[0];
       }
 
       // 장바구니에 상품 추가

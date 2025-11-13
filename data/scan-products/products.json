@@ -7,7 +7,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094202408.png",
       "scannedAt": "2025-11-10T13:59:59.744Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801094112400",
@@ -16,7 +16,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094112400.png",
       "scannedAt": "2025-11-10T13:59:42.312Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801056175955",
@@ -25,16 +25,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056175955.png",
       "scannedAt": "2025-11-10T13:59:32.092Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
-    },
-    {
-      "barcode": "8801056192013",
-      "name": "롯데)칠성사이다P500ml",
-      "price": 2300,
-      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056192013.png",
-      "scannedAt": "2025-11-10T13:59:19.971Z",
-      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801094112707",
@@ -667,5 +658,5 @@
       "isActive": true
     }
   ],
-  "lastUpdated": "2025-11-10T13:59:59.744Z"
+  "lastUpdated": "2025-11-13T08:17:45.547Z"
 }
