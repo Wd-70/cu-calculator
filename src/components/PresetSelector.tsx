@@ -104,7 +104,7 @@ export default function PresetSelector({ onSelect, discounts, className = '' }: 
                 저장된 프리셋 ({presets.length})
               </div>
               {presets.map((preset) => {
-                const discountNames = getDiscountNames(preset.selectedDiscountIds);
+                const discountNames = getDiscountNames(preset.discountIds);
                 return (
                   <button
                     key={String(preset._id)}
