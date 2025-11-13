@@ -84,7 +84,7 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col" style={{ height: '100vh', height: '100dvh' }}>
+    <div className="fixed inset-0 bg-black z-50 flex flex-col" style={{ height: '100dvh' }}>
       {/* 헤더 */}
       <div className="bg-gray-900 text-white p-4 flex items-center justify-between flex-shrink-0">
         <h2 className="text-lg font-bold">📷 POS 화면 촬영</h2>
