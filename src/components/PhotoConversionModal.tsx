@@ -1388,7 +1388,7 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
                   {searchResults.map((product, index) => (
                     <div
                       key={product.barcode}
-                      ref={(el) => (searchResultRefs.current[index] = el)}
+                      ref={(el) => { searchResultRefs.current[index] = el; }}
                       onClick={() => handleSelectSearchResult(product)}
                       className={`p-4 border rounded-lg cursor-pointer transition-all ${
                         index === selectedSearchResultIndex
