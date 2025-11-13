@@ -149,19 +149,23 @@ export default function SimpleBarcodeScanner({ isOpen, onClose, onScan }: Simple
           {/* 카메라 뷰 */}
           <div id={elementId} className="w-full" style={{ minHeight: '400px' }}></div>
 
-          {/* 스캔 안내 오버레이 */}
+          {/* 스캔 가이드 - 코너 마커 */}
           {hasPermission && !scannedBarcode && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 max-w-xs">
-                  <div className="text-4xl mb-2">📷</div>
-                  <p className="text-sm font-medium text-gray-800">
-                    바코드를 스캔 영역에 맞춰주세요
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    자동으로 인식됩니다
+              {/* 상단 안내 텍스트 */}
+              <div className="absolute top-4 left-0 right-0 text-center">
+                <div className="inline-block bg-black/60 backdrop-blur-sm rounded-full px-4 py-2">
+                  <p className="text-sm font-medium text-white">
+                    📷 바코드를 스캔 박스 안에 맞춰주세요
                   </p>
                 </div>
+              </div>
+
+              {/* 하단 힌트 */}
+              <div className="absolute bottom-4 left-0 right-0 text-center">
+                <p className="text-xs text-white/70">
+                  ✨ 자동으로 인식됩니다
+                </p>
               </div>
             </div>
           )}
