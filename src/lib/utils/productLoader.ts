@@ -3,14 +3,15 @@ import { IProduct } from '@/types/product';
 /**
  * 전체 상품 정보를 메모리에 로드
  * 캐싱 없이 항상 최신 데이터 사용
+ * 최적화된 전용 API 엔드포인트 사용
  */
 export async function loadAllProducts(): Promise<IProduct[]> {
   try {
     console.log('[ProductLoader] 전체 상품 로드 시작...');
     const startTime = performance.now();
 
-    // includeWithoutBarcode=true로 바코드 없는 상품도 포함
-    const response = await fetch('/api/products?limit=100000&includeWithoutBarcode=true');
+    // 전용 API 엔드포인트 사용 (정렬 없이 빠른 응답)
+    const response = await fetch('/api/products/all');
 
     if (!response.ok) {
       throw new Error(`Failed to load products: ${response.status}`);
@@ -20,7 +21,13 @@ export async function loadAllProducts(): Promise<IProduct[]> {
     const products = data.data || [];
 
     const loadTime = performance.now() - startTime;
-    console.log(`[ProductLoader] ${products.length}개 상품 로드 완료 (${loadTime.toFixed(0)}ms)`);
+    const serverTime = data.loadTime || 0;
+    const networkTime = loadTime - serverTime;
+
+    console.log(`[ProductLoader] ${products.length}개 상품 로드 완료`);
+    console.log(`  - 서버 처리: ${serverTime}ms`);
+    console.log(`  - 네트워크: ${networkTime.toFixed(0)}ms`);
+    console.log(`  - 총 시간: ${loadTime.toFixed(0)}ms`);
 
     return products;
   } catch (error) {
