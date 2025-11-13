@@ -78,7 +78,7 @@ export default function ProductDetailModal({
   // 관리자 권한 체크
   useEffect(() => {
     const checkAdmin = async () => {
-      const userAddress = localStorage.getItem('accountAddress');
+      const userAddress = localStorage.getItem('user_address');
       console.log('🔍 관리자 체크 - userAddress:', userAddress);
       if (userAddress) {
         const adminStatus = await checkIsAdminClient(userAddress);
@@ -119,7 +119,7 @@ export default function ProductDetailModal({
     setVariantMessage(null);
 
     try {
-      const userAddress = localStorage.getItem('accountAddress');
+      const userAddress = localStorage.getItem('user_address');
 
       const response = await fetch('/api/products', {
         method: 'POST',
