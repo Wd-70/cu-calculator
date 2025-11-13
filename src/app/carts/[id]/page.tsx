@@ -318,12 +318,14 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
 
       // 장바구니에 상품 추가
       const updatedCart = clientDb.addItemToCart(id, {
+        productId: product._id,
         barcode: product.barcode,
         name: product.name,
         price: product.price,
         quantity: 1,
         imageUrl: product.imageUrl,
         categoryTags: product.categoryTags,
+        selectedDiscountIds: [],
       });
 
       if (updatedCart) {
