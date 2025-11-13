@@ -11,8 +11,6 @@ import { PaymentMethod, PAYMENT_METHOD_NAMES } from '@/types/payment';
 import Toast from '@/components/Toast';
 import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 import { calculateCartOnClient } from '@/lib/clientCalculator';
-import { loadAllProducts, findProductByBarcode } from '@/lib/utils/productLoader';
-import { IProduct } from '@/types/product';
 
 interface DiscountStep {
   discountId: string;
@@ -59,22 +57,24 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
   const [showBarcode, setShowBarcode] = useState(true);
   const [priceChanges, setPriceChanges] = useState<Record<string, { oldPrice: number; newPrice: number }>>({});
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
-  const [allProducts, setAllProducts] = useState<IProduct[]>([]);
 
   useEffect(() => {
     loadData();
   }, [id]);
 
-  // 장바구니 아이템의 상품 정보 동기화 (메모리 기반)
+  // 장바구니 아이템의 상품 정보 동기화 (비동기)
   useEffect(() => {
-    if (!cart || cart.items.length === 0 || allProducts.length === 0) return;
+    if (!cart || cart.items.length === 0) return;
 
-    const syncProductInfo = () => {
+    const syncProductInfo = async () => {
       const now = new Date();
       const changes: Record<string, { oldPrice: number; newPrice: number }> = {};
       let hasUpdates = false;
 
       for (const item of cart.items) {
+        // 로딩 중이거나 에러 상태인 아이템은 스킵
+        if (item.isLoading || item.loadError) continue;
+
         // 5분 이내에 동기화했으면 스킵
         if (item.lastSyncedAt) {
           const lastSync = new Date(item.lastSyncedAt);
@@ -82,31 +82,37 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
           if (minutesSinceSync < 5) continue;
         }
 
-        // 메모리에서 최신 상품 정보 가져오기
-        const latestProduct = findProductByBarcode(allProducts, item.barcode);
+        try {
+          const response = await fetch(`/api/products?barcode=${item.barcode}&limit=1`);
+          const data = await response.json();
 
-        if (latestProduct) {
-          // 가격 변경 감지
-          if (latestProduct.price !== item.price) {
-            changes[item.barcode] = {
-              oldPrice: item.price,
-              newPrice: latestProduct.price,
+          if (data.success && data.data && data.data.length > 0) {
+            const latestProduct = data.data[0];
+
+            // 가격 변경 감지
+            if (latestProduct.price !== item.price) {
+              changes[item.barcode] = {
+                oldPrice: item.price,
+                newPrice: latestProduct.price,
+              };
+            }
+
+            // 이미지, 카테고리 등 자동 업데이트 (가격 제외)
+            const updatedItem = {
+              ...item,
+              imageUrl: latestProduct.imageUrl || item.imageUrl,
+              categoryTags: latestProduct.categoryTags || item.categoryTags,
+              latestPrice: latestProduct.price,
+              priceCheckedAt: now,
+              lastSyncedAt: now,
             };
+
+            // 로컬 업데이트
+            clientDb.updateCartItem(id, item.barcode, updatedItem);
+            hasUpdates = true;
           }
-
-          // 이미지, 카테고리 등 자동 업데이트 (가격 제외)
-          const updatedItem = {
-            ...item,
-            imageUrl: latestProduct.imageUrl || item.imageUrl,
-            categoryTags: latestProduct.categoryTags || item.categoryTags,
-            latestPrice: latestProduct.price,
-            priceCheckedAt: now,
-            lastSyncedAt: now,
-          };
-
-          // 로컬 업데이트
-          clientDb.updateCartItem(id, item.barcode, updatedItem);
-          hasUpdates = true;
+        } catch (error) {
+          console.error(`Failed to sync product ${item.barcode}:`, error);
         }
       }
 
@@ -124,9 +130,9 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
       }
     };
 
-    // 동기 실행 (메모리 검색이므로 빠름)
+    // 백그라운드에서 비동기 실행
     syncProductInfo();
-  }, [cart?.items.length, id, allProducts.length]); // allProducts 로드 후에도 실행
+  }, [cart?.items.length, id]);
 
   const loadData = async () => {
     try {
@@ -140,17 +146,12 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
       const localPresets = clientDb.getPresets();
       setPresets(localPresets);
 
-      // 서버 데이터 병렬 로드
-      const [discountsData, products] = await Promise.all([
-        fetch('/api/discounts?excludeExpired=true').then(res => res.json()),
-        loadAllProducts()
-      ]);
-
+      // 서버 데이터 (할인 목록만)
+      const discountsRes = await fetch('/api/discounts?excludeExpired=true');
+      const discountsData = await discountsRes.json();
       if (discountsData.success) {
         setDiscounts(discountsData.data);
       }
-
-      setAllProducts(products);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -303,41 +304,80 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
     }
   };
 
-  // 바코드 스캔 핸들러 (연속 스캔용)
-  const handleBarcodeScan = async (barcode: string, product?: any): Promise<boolean> => {
+  // 바코드 스캔 핸들러 (즉시 추가 + 백그라운드 로딩)
+  const handleBarcodeScan = async (barcode: string): Promise<boolean> => {
     try {
-      // product가 전달되지 않았을 때 메모리에서 검색
-      let productData = product;
-
-      if (!productData) {
-        productData = findProductByBarcode(allProducts, barcode);
-
-        if (!productData) {
-          setToast({ message: `상품을 찾을 수 없습니다 (${barcode})`, type: 'error' });
-          return false;
-        }
-      }
-
-      // 장바구니에 상품 추가
-      const updatedCart = clientDb.addItemToCart(id, {
-        productId: productData._id,
-        barcode: productData.barcode,
-        name: productData.name,
-        price: productData.price,
+      // 1. 즉시 placeholder 아이템 추가
+      const placeholderItem = {
+        barcode,
+        name: '상품 정보 로딩 중...',
+        price: 0,
         quantity: 1,
-        imageUrl: productData.imageUrl,
-        categoryTags: productData.categoryTags,
+        isLoading: true,
         selectedDiscountIds: [],
-      });
+        addedAt: new Date(),
+      };
 
-      if (updatedCart) {
-        setCart(updatedCart);
-        // 성공 피드백은 소리나 진동으로만 (토스트는 너무 많이 뜸)
-        return true;
-      } else {
+      const updatedCart = clientDb.addItemToCart(id, placeholderItem);
+
+      if (!updatedCart) {
         setToast({ message: '장바구니에 추가할 수 없습니다', type: 'error' });
         return false;
       }
+
+      setCart(updatedCart);
+
+      // 2. 백그라운드에서 상품 정보 로드
+      (async () => {
+        try {
+          const response = await fetch(`/api/products?barcode=${barcode}&limit=1`);
+          const data = await response.json();
+
+          if (!data.success || !data.data || data.data.length === 0) {
+            // 실패: 에러 상태로 업데이트
+            clientDb.updateCartItem(id, barcode, {
+              isLoading: false,
+              loadError: '상품을 찾을 수 없습니다',
+              name: '알 수 없는 상품',
+            });
+          } else {
+            // 성공: 실제 정보로 업데이트
+            const product = data.data[0];
+            clientDb.updateCartItem(id, barcode, {
+              productId: product._id,
+              name: product.name,
+              price: product.price,
+              imageUrl: product.imageUrl,
+              categoryTags: product.categoryTags,
+              brand: product.brand,
+              isLoading: false,
+              loadError: undefined,
+              lastSyncedAt: new Date(),
+            });
+          }
+
+          // 장바구니 다시 로드
+          const newCart = clientDb.getCart(id);
+          if (newCart) {
+            setCart(newCart);
+          }
+        } catch (error) {
+          console.error('Failed to load product info:', error);
+          // 에러 상태로 업데이트
+          clientDb.updateCartItem(id, barcode, {
+            isLoading: false,
+            loadError: '로딩 실패',
+            name: '로딩 실패',
+          });
+
+          const newCart = clientDb.getCart(id);
+          if (newCart) {
+            setCart(newCart);
+          }
+        }
+      })();
+
+      return true;
     } catch (error) {
       console.error('Failed to add product:', error);
       setToast({ message: '상품 추가 중 오류가 발생했습니다', type: 'error' });
@@ -547,11 +587,32 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
           ) : (
             <div className="space-y-3">
               {cart.items.map((item, index) => (
-                <div key={item.barcode} className="border border-gray-200 rounded-xl p-3 md:p-4 relative hover:shadow-md transition-shadow">
+                <div key={item.barcode} className={`border rounded-xl p-3 md:p-4 relative hover:shadow-md transition-shadow ${
+                  item.loadError ? 'border-red-300 bg-red-50' : item.isLoading ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+                }`}>
+                  {/* 로딩/에러 배너 */}
+                  {item.isLoading && (
+                    <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 px-3 rounded-t-xl flex items-center gap-2">
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>상품 정보 로딩 중...</span>
+                    </div>
+                  )}
+                  {item.loadError && (
+                    <div className="absolute top-0 left-0 right-0 bg-red-500 text-white text-xs py-1 px-3 rounded-t-xl flex items-center justify-between">
+                      <span>⚠️ {item.loadError}</span>
+                      <button
+                        onClick={() => handleRemoveItem(item.barcode)}
+                        className="underline hover:text-red-200"
+                      >
+                        제거
+                      </button>
+                    </div>
+                  )}
+
                   {/* 삭제 버튼 */}
                   <button
                     onClick={() => handleRemoveItem(item.barcode)}
-                    className="absolute top-2 right-2 md:top-3 md:right-3 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-10"
+                    className={`absolute ${item.isLoading || item.loadError ? 'top-8' : 'top-2'} right-2 md:right-3 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-10`}
                     title="삭제"
                   >
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -560,7 +621,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                   </button>
 
                   <div
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${item.isLoading || item.loadError ? 'pt-6' : ''}`}
                     onClick={() => setSelectedItemIndex(index)}
                   >
                     {/* 모바일: 2단 레이아웃 / PC: 가로 한 줄 레이아웃 */}

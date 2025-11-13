@@ -39,12 +39,12 @@ export interface CartCalculation {
 
 // 저장용 카트 아이템 (하이브리드 방식)
 export interface ICartItem {
-  productId: Types.ObjectId | string;
+  productId?: Types.ObjectId | string; // 로딩 중일 때는 없을 수 있음
   barcode: string;
 
   // 스냅샷 필수 정보 (담았을 당시)
-  name: string;
-  price: number;           // 담았을 당시 가격
+  name: string;  // 로딩 중일 때는 "상품 정보 로딩 중..."
+  price: number;           // 담았을 당시 가격, 로딩 중일 때는 0
   quantity: number;
 
   // 캐시된 정보 (자동 업데이트 가능)
@@ -60,6 +60,10 @@ export interface ICartItem {
   // 가격 변경 감지
   latestPrice?: number;    // 서버에서 확인한 최신 가격 (price와 다르면 알림)
   priceCheckedAt?: Date;   // 가격 마지막 확인 시간
+
+  // 비동기 로딩 상태
+  isLoading?: boolean;     // 상품 정보 로딩 중
+  loadError?: string;      // 로딩 실패 시 에러 메시지
 
   selectedDiscountIds: (Types.ObjectId | string)[];
 }

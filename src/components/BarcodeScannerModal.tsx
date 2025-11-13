@@ -3,13 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { normalizeBarcode } from '@/lib/utils/barcodeUtils';
-import { IProduct } from '@/types/product';
-import { loadAllProducts, findProductByBarcode } from '@/lib/utils/productLoader';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onScan: (barcode: string, product?: IProduct) => Promise<boolean>; // 성공 여부를 반환, 중복 조회 방지를 위해 product 전달
+  onScan: (barcode: string) => Promise<boolean>; // 바코드만 전달, 즉시 추가
   cartId: string;
 }
 
@@ -29,8 +27,6 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [laserLinePosition, setLaserLinePosition] = useState<{ top: number; width: number } | null>(null);
   const [barcodeDetected, setBarcodeDetected] = useState(false);
-  const [allProducts, setAllProducts] = useState<IProduct[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isStoppingRef = useRef(false);
   const elementId = 'continuous-barcode-reader';
@@ -77,49 +73,25 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
           setBarcodeDetected(true);
 
           try {
-            // 메모리에서 상품 검색 (즉시 검색)
-            const product = findProductByBarcode(allProducts, normalizedBarcode);
+            // 장바구니에 즉시 추가 (바코드만 전달, 상품 정보는 백그라운드에서 로딩)
+            const success = await onScan(normalizedBarcode);
 
-            if (!product) {
-              setScanFeedback({ type: 'error', message: '상품을 찾을 수 없습니다' });
-              if (navigator.vibrate) {
-                navigator.vibrate(200);
-              }
-              setLastScannedProduct({
-                barcode: normalizedBarcode,
-                name: '알 수 없는 상품',
-                price: 0,
-                success: false,
-              });
-              setTimeout(() => {
-                setScanFeedback(null);
-                setBarcodeDetected(false);
-              }, 800);
-              setIsScanning(false);
-              processingBarcodeRef.current = false;
-              return;
-            }
-
-            // 장바구니에 추가 (상품 정보를 함께 전달하여 중복 조회 방지)
-            const success = await onScan(normalizedBarcode, product);
-
-            // 마지막 스캔 상품 정보 저장
+            // 마지막 스캔 바코드 저장
             setLastScannedProduct({
-              barcode: product.barcode,
-              name: product.name,
-              price: product.price,
-              imageUrl: product.imageUrl,
+              barcode: normalizedBarcode,
+              name: '로딩 중...',
+              price: 0,
               success,
             });
 
             // 피드백 표시
             if (success) {
-              setScanFeedback({ type: 'success', message: '상품이 추가되었습니다!' });
+              setScanFeedback({ type: 'success', message: '장바구니에 추가됨!' });
               if (navigator.vibrate) {
                 navigator.vibrate([100, 50, 100]);
               }
             } else {
-              setScanFeedback({ type: 'error', message: '장바구니에 추가할 수 없습니다' });
+              setScanFeedback({ type: 'error', message: '추가 실패' });
               if (navigator.vibrate) {
                 navigator.vibrate(200);
               }
@@ -129,14 +101,14 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
             setTimeout(() => {
               setScanFeedback(null);
               setBarcodeDetected(false);
-            }, 800);
+            }, 500);
 
             setIsScanning(false);
             processingBarcodeRef.current = false;
 
           } catch (error) {
             console.error('Scan error:', error);
-            setScanFeedback({ type: 'error', message: '스캔 중 오류가 발생했습니다' });
+            setScanFeedback({ type: 'error', message: '스캔 오류' });
             setTimeout(() => {
               setScanFeedback(null);
               setBarcodeDetected(false);
@@ -248,19 +220,6 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
       isStoppingRef.current = false;
     }
   };
-
-  // 모달이 열릴 때 전체 상품 로드
-  useEffect(() => {
-    if (isOpen) {
-      const loadProducts = async () => {
-        setIsLoadingProducts(true);
-        const products = await loadAllProducts();
-        setAllProducts(products);
-        setIsLoadingProducts(false);
-      };
-      loadProducts();
-    }
-  }, [isOpen]);
 
   // 모달이 열릴 때 카메라 시작 및 스크롤 방지
   useEffect(() => {
@@ -396,24 +355,14 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
             </div>
           )}
 
-          {/* 상품 로딩 중 */}
-          {isLoadingProducts && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-xl text-center">
-              <div className="flex items-center justify-center gap-2 text-blue-700">
-                <div className="w-5 h-5 border-2 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
-                <p className="font-medium">상품 정보 로딩 중...</p>
-              </div>
-            </div>
-          )}
-
-          {/* 스캔 버튼 - 상품 로드 완료 후 표시 */}
-          {isCameraReady && !scanFeedback && !isLoadingProducts && (
+          {/* 스캔 버튼 */}
+          {isCameraReady && !scanFeedback && (
             <div className="mt-4">
               <button
                 onClick={handleScanClick}
-                disabled={isScanning || allProducts.length === 0}
+                disabled={isScanning}
                 className={`w-full py-5 rounded-xl font-bold text-xl transition-all ${
-                  isScanning || allProducts.length === 0
+                  isScanning
                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     : 'bg-green-600 text-white hover:bg-green-700 active:scale-95 shadow-lg'
                 }`}
@@ -434,9 +383,6 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
               </button>
               <p className="text-center text-sm text-gray-500 mt-2">
                 바코드를 빨간 선에 맞추고 버튼을 누르세요
-              </p>
-              <p className="text-center text-xs text-gray-400 mt-1">
-                {allProducts.length.toLocaleString()}개 상품 로드 완료
               </p>
             </div>
           )}
