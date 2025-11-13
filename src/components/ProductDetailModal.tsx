@@ -79,8 +79,10 @@ export default function ProductDetailModal({
   useEffect(() => {
     const checkAdmin = async () => {
       const userAddress = localStorage.getItem('accountAddress');
+      console.log('🔍 관리자 체크 - userAddress:', userAddress);
       if (userAddress) {
         const adminStatus = await checkIsAdminClient(userAddress);
+        console.log('🔍 관리자 체크 결과:', adminStatus);
         setIsAdmin(adminStatus);
       }
     };
@@ -89,6 +91,10 @@ export default function ProductDetailModal({
 
   // 간편식사 카테고리 체크
   const isSimpleMeal = product.categoryTags?.some(tag => tag.name === '간편식사') || false;
+  console.log('🔍 상품 카테고리:', product.categoryTags);
+  console.log('🔍 간편식사 체크:', isSimpleMeal);
+  console.log('🔍 관리자 여부:', isAdmin);
+  console.log('🔍 UI 표시 조건:', isAdmin && isSimpleMeal);
 
   const handleAddToCart = () => {
     onAddToCart(quantity);
