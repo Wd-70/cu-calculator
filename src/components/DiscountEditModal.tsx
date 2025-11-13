@@ -271,7 +271,7 @@ export default function DiscountEditModal({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    config: { ...formData.config!, percentage: Number(e.target.value) },
+                    config: { ...formData.config!, percentage: Number(e.target.value) } as any,
                   })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -292,7 +292,7 @@ export default function DiscountEditModal({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    config: { ...formData.config!, fixedAmount: Number(e.target.value) },
+                    config: { ...formData.config!, fixedAmount: Number(e.target.value) } as any,
                   })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
