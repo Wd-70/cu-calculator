@@ -72,10 +72,17 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
           const normalizedBarcode = normalizeBarcode(decodedText);
           setBarcodeDetected(true);
 
+          console.log('[BarcodeScannerModal] 바코드 인식:', normalizedBarcode);
+          console.log('[BarcodeScannerModal] onScan 호출 시작');
+
           // 장바구니에 즉시 추가 (fire-and-forget, UI 차단 방지)
-          onScan(normalizedBarcode).catch(error => {
-            console.error('Scan error:', error);
-          });
+          onScan(normalizedBarcode)
+            .then(result => {
+              console.log('[BarcodeScannerModal] onScan 완료:', result);
+            })
+            .catch(error => {
+              console.error('[BarcodeScannerModal] onScan 에러:', error);
+            });
 
           // 마지막 스캔 바코드 저장
           setLastScannedProduct({
