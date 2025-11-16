@@ -410,12 +410,23 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
 
       {/* 마지막 스캔 상품 정보 */}
       {lastScannedProduct && (
-        <div className="bg-white border-t border-gray-200 px-4 py-4">
+        <div className="bg-white border-t border-gray-200 px-4 py-4 relative">
           <div className="max-w-2xl mx-auto">
-            <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-              <span className="w-1 h-4 bg-purple-600 rounded"></span>
-              {lastScannedProduct.success ? '추가된 상품' : '스캔 실패'}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                <span className="w-1 h-4 bg-purple-600 rounded"></span>
+                {lastScannedProduct.success ? '추가된 상품' : '스캔 실패'}
+              </h3>
+              <button
+                onClick={() => setLastScannedProduct(null)}
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                title="닫기"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <div className={`flex items-center gap-4 p-4 rounded-xl ${
               lastScannedProduct.success
                 ? 'bg-green-50 border-2 border-green-200'
