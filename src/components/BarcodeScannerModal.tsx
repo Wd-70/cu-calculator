@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { normalizeBarcode } from '@/lib/utils/barcodeUtils';
+import * as clientDb from '@/lib/clientDb';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
@@ -106,6 +107,33 @@ export default function BarcodeScannerModal({ isOpen, onClose, onScan, cartId }:
 
           setIsScanning(false);
           processingBarcodeRef.current = false;
+
+          // 백그라운드 로딩 완료 후 상품 정보 업데이트 (폴링)
+          const checkForUpdate = (attempts = 0) => {
+            if (attempts > 20) return; // 최대 2초 대기 (20 * 100ms)
+
+            setTimeout(() => {
+              const cart = clientDb.getCart(cartId);
+              if (cart) {
+                const item = cart.items.find(i => i.barcode === normalizedBarcode);
+                if (item && !item.isLoading) {
+                  // 로딩 완료됨
+                  console.log('[BarcodeScannerModal] 상품 정보 업데이트:', item.name);
+                  setLastScannedProduct({
+                    barcode: normalizedBarcode,
+                    name: item.name || '알 수 없는 상품',
+                    price: item.price || 0,
+                    imageUrl: item.imageUrl,
+                    success: !item.loadError,
+                  });
+                } else if (item && item.isLoading) {
+                  // 아직 로딩 중 - 다시 체크
+                  checkForUpdate(attempts + 1);
+                }
+              }
+            }, 100);
+          };
+          checkForUpdate();
         },
         () => {
           // 스캔 에러 무시

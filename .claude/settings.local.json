@@ -10,7 +10,9 @@
       "mcp__playwright__playwright_close",
       "Bash(tree:*)",
       "Bash(git -C \"F:\\Data\\Git\\Nextjs\\cu-discount-calculator\" log --oneline -20)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git commit:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
