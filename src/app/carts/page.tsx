@@ -39,6 +39,16 @@ export default function CartsPage() {
     loadCarts();
     loadDiscounts();
     loadPromotions();
+
+    // storage 이벤트 리스너 (ProductSearch의 백그라운드 업데이트 감지)
+    const handleStorageChange = () => {
+      loadCarts();
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // 카트 로드

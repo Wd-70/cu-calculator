@@ -7,6 +7,7 @@ import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 import ProductSearchModal from './ProductSearchModal';
 import { getUnifiedCategory } from '@/lib/constants/categoryMapping';
 import { normalizeBarcode } from '@/lib/utils/barcodeUtils';
+import * as clientDb from '@/lib/clientDb';
 
 interface ProductSearchProps {
   onAddItem: (item: ICartItem) => void;
@@ -106,30 +107,86 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
     }
   };
 
-  // 바코드 스캐너에서 스캔 시 처리
+  // 바코드 스캐너에서 스캔 시 처리 (즉시 추가 + 백그라운드 로딩)
   const handleScan = async (barcode: string, product?: IProduct): Promise<boolean> => {
     // 바코드 정규화 (18자리 -> 13자리)
     const normalizedBarcode = normalizeBarcode(barcode);
+    console.log('[ProductSearch.handleScan] 시작:', normalizedBarcode);
 
     try {
-      // product가 전달되었으면 바로 사용 (중복 조회 방지)
+      // product가 전달되었으면 바로 사용
       if (product) {
         handleAddProduct(product);
         return true;
       }
 
-      // product가 없으면 조회
-      const response = await fetch(`/api/products?barcode=${normalizedBarcode}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data && data.data.length > 0) {
-          handleAddProduct(data.data[0]);
-          return true;
-        }
-      }
-      return false;
+      // 1. 즉시 placeholder 아이템 추가
+      const placeholderItem: ICartItem = {
+        barcode: normalizedBarcode,
+        quantity: 1,
+        name: '상품 정보 로딩 중...',
+        price: 0,
+        isLoading: true,
+      };
+
+      console.log('[ProductSearch.handleScan] placeholder 추가');
+      onAddItem(placeholderItem);
+
+      // 2. 백그라운드에서 상품 정보 로드
+      setTimeout(() => {
+        (async () => {
+          try {
+            console.log('[ProductSearch 백그라운드] API 요청:', normalizedBarcode);
+            const response = await fetch(`/api/products?barcode=${normalizedBarcode}`);
+            const data = await response.json();
+            console.log('[ProductSearch 백그라운드] API 응답:', data);
+
+            if (!data.success || !data.data || data.data.length === 0) {
+              console.log('[ProductSearch 백그라운드] 상품 없음 - 에러 상태로 업데이트');
+              // 실패: 에러 상태로 업데이트
+              clientDb.updateCartItem(cartId, normalizedBarcode, {
+                isLoading: false,
+                loadError: '상품을 찾을 수 없습니다',
+                name: '알 수 없는 상품',
+              });
+              // 부모 컴포넌트에 변경사항 알림 (새로고침 트리거)
+              window.dispatchEvent(new Event('storage'));
+            } else {
+              // 성공: 실제 상품 정보로 업데이트
+              const product = data.data[0];
+              console.log('[ProductSearch 백그라운드] 상품 정보로 교체:', product.name);
+
+              clientDb.updateCartItem(cartId, normalizedBarcode, {
+                productId: product._id,
+                name: product.name,
+                price: product.price,
+                imageUrl: product.imageUrl,
+                categoryTags: product.categoryTags,
+                brand: product.brand,
+                isLoading: false,
+                loadError: undefined,
+                lastSyncedAt: new Date(),
+                latestPrice: product.price,
+                priceCheckedAt: new Date(),
+              });
+              // 부모 컴포넌트에 변경사항 알림 (새로고침 트리거)
+              window.dispatchEvent(new Event('storage'));
+            }
+          } catch (error) {
+            console.error('[ProductSearch 백그라운드] 에러:', error);
+            clientDb.updateCartItem(cartId, normalizedBarcode, {
+              isLoading: false,
+              loadError: '로딩 실패',
+              name: '로딩 실패',
+            });
+            window.dispatchEvent(new Event('storage'));
+          }
+        })();
+      }, 100);
+
+      return true;
     } catch (error) {
-      console.error('바코드 스캔 처리 실패:', error);
+      console.error('[ProductSearch.handleScan] 에러:', error);
       return false;
     }
   };
