@@ -873,7 +873,7 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
       // ===== 상품 그룹 처리 (세트 상품) =====
       interface ProductGroupInstance {
         group: any; // ProductGroup
-        items: typeof applicableItems;
+        items: Array<{ item: any; promotion?: any }>;
         totalPrice: number;
       }
 
@@ -937,7 +937,7 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
           console.log(`    필요 바코드: ${group.barcodes.join(', ')}`);
 
           // 이 그룹의 모든 상품이 장바구니에 있는지 확인
-          const groupItems: typeof applicableItems = [];
+          const groupItems: typeof normalizedItems = [];
           let canFormGroup = true;
 
           for (const barcode of group.barcodes) {
@@ -993,7 +993,7 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
       interface ApplyUnit {
         type: 'group' | 'item';
         groupInstance?: ProductGroupInstance;
-        item?: typeof applicableItems[0];
+        item?: { item: any; promotion?: any };
         price: number; // 총 가격 (개당가격 × 수량)
         unitPrice: number; // 개당 가격 (정렬 기준)
         countAs: number; // 개수 카운트 (그룹은 countAs 값, 개별 상품은 quantity)
@@ -1169,7 +1169,6 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
           amount: totalDiscountForThisRule,
           baseAmount: totalApplicableAmount,
           appliedProducts: appliedProductsList,
-          totalQuantity: appliedProductsList.reduce((sum, p) => sum + p.quantity, 0), // 실제 총 수량
         });
       }
     }
@@ -1226,7 +1225,7 @@ function calculateCombinationDiscount(
 
   // 장바구니 아이템별로 할인 매핑
   const discountSelections = validCartItems.map((item) => ({
-    productId: item.productId,
+    productId: item.productId ?? item.barcode,
     productBarcode: item.barcode,
     selectedDiscounts: discounts,
   }));
@@ -1234,7 +1233,7 @@ function calculateCombinationDiscount(
   // 할인 계산 (최적화 중이므로 verbose=false)
   const calculationOptions = {
     items: validCartItems.map((item) => ({
-      productId: item.productId,
+      productId: item.productId ?? item.barcode,
       productBarcode: item.barcode,
       productName: item.name,
       quantity: item.quantity,
@@ -1411,7 +1410,7 @@ export function findOptimalDiscountCombination(
 
   // ICartItem → CartItem 변환
   const cartItemsForPromotion: CartItem[] = cartItems.map(item => ({
-    productId: item.productId,
+    productId: item.productId ?? item.barcode,
     productBarcode: item.barcode,
     productName: item.name,
     productCategory: item.category,

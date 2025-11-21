@@ -52,6 +52,7 @@ export function validatePaymentMethodCompatibility(
   return {
     isValid: errors.length === 0,
     errors,
+    warnings: [],
   };
 }
 
@@ -95,7 +96,7 @@ export function validateDiscountCombination(
       const discount2Id = discount2._id.toString();
 
       if (
-        discount1.cannotCombineWith.some((id) => id.toString() === discount2Id)
+        discount1.cannotCombineWithIds?.some((id) => id.toString() === discount2Id)
       ) {
         errors.push(
           `'${discount1.name}'와 '${discount2.name}'은 함께 적용할 수 없습니다.`
@@ -104,10 +105,10 @@ export function validateDiscountCombination(
     }
   }
 
-  // 3. Validate prerequisite discounts (requiresPreviousDiscount)
+  // 3. Validate prerequisite discounts (requiresDiscountId)
   for (const discount of selectedDiscounts) {
-    if (discount.requiresPreviousDiscount) {
-      const requiredId = discount.requiresPreviousDiscount.toString();
+    if (discount.requiresDiscountId) {
+      const requiredId = discount.requiresDiscountId.toString();
       const hasPrerequisite = selectedDiscounts.some(
         (d) => d._id.toString() === requiredId
       );
@@ -120,31 +121,10 @@ export function validateDiscountCombination(
     }
   }
 
-  // 4. Validate whitelist combinations (canCombineWith)
-  for (const discount of selectedDiscounts) {
-    if (discount.canCombineWith.length > 0) {
-      const otherDiscounts = selectedDiscounts.filter(
-        (d) => d._id.toString() !== discount._id.toString()
-      );
-
-      for (const other of otherDiscounts) {
-        const otherId = other._id.toString();
-        const canCombine = discount.canCombineWith.some(
-          (id) => id.toString() === otherId
-        );
-
-        if (!canCombine) {
-          errors.push(
-            `'${discount.name}'은 '${other.name}'과 조합할 수 없습니다.`
-          );
-        }
-      }
-    }
-  }
-
   return {
     isValid: errors.length === 0,
     errors,
+    warnings: [],
   };
 }
 
@@ -155,14 +135,16 @@ export function sortDiscountsByOrder(
   discounts: IDiscountRule[]
 ): IDiscountRule[] {
   return [...discounts].sort((a, b) => {
-    // Sort by applicationOrder (lower numbers first)
-    if (a.applicationOrder !== b.applicationOrder) {
-      return a.applicationOrder - b.applicationOrder;
+    // Sort by priority (higher numbers first)
+    const priorityA = a.priority ?? 0;
+    const priorityB = b.priority ?? 0;
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA;
     }
 
     // If one requires the other as prerequisite, prerequisite comes first
-    if (b.requiresPreviousDiscount?.toString() === a._id.toString()) return -1;
-    if (a.requiresPreviousDiscount?.toString() === b._id.toString()) return 1;
+    if (b.requiresDiscountId?.toString() === a._id.toString()) return -1;
+    if (a.requiresDiscountId?.toString() === b._id.toString()) return 1;
 
     return 0;
   });
