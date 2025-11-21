@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUserAddress } from '@/lib/userAuth';
 import Toast from '@/components/Toast';
 
-export default function NewProductPage() {
+function NewProductPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const barcodeFromUrl = searchParams.get('barcode');
@@ -482,5 +482,20 @@ export default function NewProductPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function NewProductPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#7C3FBF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">페이지 로딩 중...</p>
+        </div>
+      </div>
+    }>
+      <NewProductPageContent />
+    </Suspense>
   );
 }

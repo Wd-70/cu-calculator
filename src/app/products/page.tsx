@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import * as clientDb from '@/lib/clientDb';
@@ -28,7 +28,7 @@ interface Product {
   imageUrl?: string;
 }
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [carts, setCarts] = useState<ICart[]>([]);
@@ -643,5 +643,20 @@ export default function ProductsPage() {
         </div>
       </nav>
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#7C3FBF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">상품 목록 로딩 중...</p>
+        </div>
+      </div>
+    }>
+      <ProductsPageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DiscountRulesTab from '@/components/tabs/DiscountRulesTab';
@@ -8,7 +8,7 @@ import PromotionsTab from '@/components/tabs/PromotionsTab';
 
 type TabType = 'discounts' | 'promotions';
 
-export default function DiscountsPage() {
+function DiscountsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('discounts');
@@ -97,5 +97,20 @@ export default function DiscountsPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function DiscountsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#7C3FBF] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    }>
+      <DiscountsPageContent />
+    </Suspense>
   );
 }
