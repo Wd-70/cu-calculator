@@ -6,8 +6,8 @@ import connectDB from '@/lib/mongodb';
 import Promotion from '@/lib/models/Promotion';
 import PromotionIndex from '@/lib/models/PromotionIndex';
 
-// API 라우트 타임아웃 설정 (10분)
-export const maxDuration = 600;
+// API 라우트 타임아웃 설정 (5분 - Vercel Hobby 플랜 최대값)
+export const maxDuration = 300;
 
 /**
  * POST /api/admin/update-categories-stream
