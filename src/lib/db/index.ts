@@ -12,8 +12,10 @@ import { MongoDBAdapter } from './mongodb.adapter';
 // 데이터베이스 타입
 export type DatabaseType = 'memory' | 'mongodb';
 
-// 환경 변수로 데이터베이스 선택 (기본값: memory)
-const DB_TYPE = (process.env.NEXT_PUBLIC_DB_TYPE as DatabaseType) || 'memory';
+// 환경 변수로 데이터베이스 선택
+// MONGODB_URI가 설정되어 있으면 자동으로 MongoDB 사용, 아니면 Memory 사용
+const DB_TYPE = (process.env.NEXT_PUBLIC_DB_TYPE as DatabaseType) ||
+                (process.env.MONGODB_URI ? 'mongodb' : 'memory');
 
 // 싱글톤 인스턴스
 let dbInstance: IDatabase | null = null;
