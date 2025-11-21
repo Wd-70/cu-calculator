@@ -13,10 +13,28 @@ import { IProduct } from '@/types/product';
 import { IDiscountRule } from '@/types/discount';
 import { IModificationHistory } from '@/lib/models/ModificationHistory';
 
-// Generic query filter type
-export type QueryFilter<T> = Partial<T> & {
-  $or?: Partial<T>[];
-  $and?: Partial<T>[];
+// MongoDB query operators
+export type MongoQueryOperators<T> = {
+  $eq?: T;
+  $ne?: T;
+  $gt?: T;
+  $gte?: T;
+  $lt?: T;
+  $lte?: T;
+  $in?: T[];
+  $nin?: T[];
+  $exists?: boolean;
+  $regex?: string | RegExp;
+  $options?: string;
+};
+
+// Generic query filter type that supports MongoDB operators
+export type QueryFilter<T> = {
+  [K in keyof T]?: T[K] | MongoQueryOperators<T[K]> | RegExp;
+} & {
+  $or?: QueryFilter<T>[];
+  $and?: QueryFilter<T>[];
+  $nor?: QueryFilter<T>[];
   [key: string]: any;
 };
 
@@ -25,6 +43,7 @@ export interface QueryOptions {
   limit?: number;
   skip?: number;
   sort?: Record<string, 1 | -1>;
+  projection?: Record<string, 0 | 1>;
 }
 
 // Database adapter interface

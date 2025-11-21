@@ -59,9 +59,7 @@ export class MongoDBAdapter implements IDatabase {
     }
 
     // Lean 옵션으로 plain JavaScript object 반환 (더 빠름)
-    query = query.lean();
-
-    return query.exec();
+    return query.lean().exec() as Promise<IProduct[]>;
   }
 
   async findProductById(id: string): Promise<IProduct | null> {

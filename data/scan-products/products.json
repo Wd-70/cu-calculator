@@ -1,6 +1,15 @@
 {
   "products": [
     {
+      "barcode": "4901085003800",
+      "name": "농심)오이오차녹차P500",
+      "price": 2200,
+      "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/4901085003800.jpg",
+      "scannedAt": "2025-11-21T09:47:27.284Z",
+      "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+      "isActive": true
+    },
+    {
       "barcode": "8801094202408",
       "name": "코카)스프라이트P1.5L",
       "price": 3700,
@@ -106,7 +115,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801043450690.jpg",
       "scannedAt": "2025-11-10T13:57:34.218Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801223100254",
@@ -115,7 +124,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223100254.jpg",
       "scannedAt": "2025-11-10T13:57:24.934Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8806011416685",
@@ -124,7 +133,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806011416685.jpg",
       "scannedAt": "2025-11-10T13:57:17.978Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801223014025",
@@ -133,7 +142,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801223014025.jpg",
       "scannedAt": "2025-11-10T13:57:07.493Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8809626921612",
@@ -142,7 +151,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809626921612.jpg",
       "scannedAt": "2025-11-10T13:56:56.341Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801094013004",
@@ -151,7 +160,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801094013004.png",
       "scannedAt": "2025-11-10T13:56:48.351Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8809422046045",
@@ -178,7 +187,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801105914610.png",
       "scannedAt": "2025-11-10T13:55:46.121Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801097280014",
@@ -187,7 +196,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801097280014.png",
       "scannedAt": "2025-11-10T13:55:22.647Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8806002022185",
@@ -196,7 +205,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806002022185.png",
       "scannedAt": "2025-11-10T13:55:12.747Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8805915912804",
@@ -205,7 +214,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8805915912804.jpg",
       "scannedAt": "2025-11-10T13:54:48.767Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801056048129",
@@ -241,7 +250,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806002010861.png",
       "scannedAt": "2025-11-10T13:53:40.113Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801013777468",
@@ -250,7 +259,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801013777468.png",
       "scannedAt": "2025-11-10T13:53:29.192Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801094503000",
@@ -277,7 +286,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801056050269.jpg",
       "scannedAt": "2025-11-10T13:52:49.527Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8809495075478",
@@ -313,7 +322,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8809713919027.jpg",
       "scannedAt": "2025-11-10T13:52:15.277Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8806004000945",
@@ -322,7 +331,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8806004000945.jpg",
       "scannedAt": "2025-11-10T13:52:05.138Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801056018948",
@@ -340,7 +349,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047284642.jpg",
       "scannedAt": "2025-11-10T13:51:39.818Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801382148500",
@@ -412,7 +421,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8808244201014.png",
       "scannedAt": "2025-11-10T13:50:10.362Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801047288114",
@@ -421,7 +430,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047288114.png",
       "scannedAt": "2025-11-10T13:49:56.958Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8801382147060",
@@ -466,7 +475,7 @@
       "imageUrl": "https://tqklhszfkvzk6518638.edge.naverncp.com/product/8801047284581.jpg",
       "scannedAt": "2025-11-10T13:49:03.367Z",
       "scannedBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
-      "isActive": true
+      "isActive": false
     },
     {
       "barcode": "8809799270661",
@@ -658,5 +667,5 @@
       "isActive": true
     }
   ],
-  "lastUpdated": "2025-11-13T08:17:45.547Z"
+  "lastUpdated": "2025-11-21T09:47:27.284Z"
 }

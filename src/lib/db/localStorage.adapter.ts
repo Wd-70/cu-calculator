@@ -225,6 +225,28 @@ export class LocalStorageAdapter implements IDatabase {
     return newProduct;
   }
 
+  async bulkCreateProducts(
+    data: Omit<IProduct, '_id' | 'createdAt' | 'updatedAt'>[]
+  ): Promise<{ insertedCount: number; insertedIds: string[] }> {
+    const products = getStorageData<IProduct>(STORAGE_KEYS.PRODUCTS);
+    const now = new Date();
+    const insertedIds: string[] = [];
+
+    data.forEach((item) => {
+      const newProduct: IProduct = {
+        ...item,
+        _id: new Types.ObjectId(generateObjectId()),
+        createdAt: now,
+        updatedAt: now,
+      };
+      products.push(newProduct);
+      insertedIds.push(String(newProduct._id));
+    });
+
+    setStorageData(STORAGE_KEYS.PRODUCTS, products);
+    return { insertedCount: data.length, insertedIds };
+  }
+
   async updateProduct(
     id: string,
     data: Partial<IProduct>

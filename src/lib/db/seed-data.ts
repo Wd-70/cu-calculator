@@ -114,7 +114,6 @@ export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'created
       paymentMethodNames: [],
       validFrom: monthStart,
       validTo: monthEnd,
-      description: '우주패스 가입자 할인',
       isActive: true,
     },
     {
@@ -134,7 +133,6 @@ export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'created
       paymentMethodNames: [],
       validFrom: monthStart,
       validTo: monthEnd,
-      description: 'KT알뜰 요금제 가입자 할인',
       isActive: true,
     },
 
@@ -203,7 +201,6 @@ export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'created
       cannotCombineWithCategories: ['payment_instant'], // 독립형과 중복 불가
       validFrom: monthStart,
       validTo: monthEnd,
-      description: 'CU 상품권',
       isActive: true,
     },
 
@@ -222,12 +219,11 @@ export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'created
       },
       applicableProducts: [],
       applicableCategories: [],
-      requiredPaymentMethods: [PAYMENT_METHODS.CARD_SHINHAN],
+      requiredPaymentMethods: [PAYMENT_METHODS.CARD],
       paymentMethodNames: ['신한카드'],
       cannotCombineWithCategories: ['voucher'], // 금액권과 중복 불가
       validFrom: monthStart,
       validTo: monthEnd,
-      description: '신한카드 즉시할인 25%',
       isActive: true,
     },
     {
@@ -247,7 +243,6 @@ export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'created
       paymentMethodNames: ['네이버페이'],
       validFrom: monthStart,
       validTo: monthEnd,
-      description: '네이버플러스 멤버십 회원 할인',
       isActive: true,
     },
 
@@ -269,7 +264,6 @@ export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'created
       paymentMethodNames: [],
       validFrom: monthStart,
       validTo: monthEnd,
-      description: '오키클럽 회원 누적 할인',
       isActive: true,
     },
     {
@@ -283,11 +277,10 @@ export function getSampleDiscountRulesV2(): Omit<IDiscountRule, '_id' | 'created
       },
       applicableProducts: [],
       applicableCategories: [],
-      requiredPaymentMethods: [PAYMENT_METHODS.CARD_KB],
+      requiredPaymentMethods: [PAYMENT_METHODS.CARD],
       paymentMethodNames: ['KB국민카드'],
       validFrom: monthStart,
       validTo: monthEnd,
-      description: 'KB국민카드 청구할인',
       isActive: true,
     },
 

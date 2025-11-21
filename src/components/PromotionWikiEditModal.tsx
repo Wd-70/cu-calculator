@@ -296,7 +296,9 @@ export default function PromotionWikiEditModal({
           searchResults={searchResults}
           isSearching={isSearching}
           onSelectProduct={(product) => {
-            handleAddProduct(product.barcode, false);
+            if (product.barcode) {
+              handleAddProduct(product.barcode, false);
+            }
           }}
           totalCount={totalCount}
         />
@@ -313,7 +315,9 @@ export default function PromotionWikiEditModal({
           searchResults={searchResults}
           isSearching={isSearching}
           onSelectProduct={(product) => {
-            handleAddProduct(product.barcode, true);
+            if (product.barcode) {
+              handleAddProduct(product.barcode, true);
+            }
           }}
           totalCount={totalCount}
         />

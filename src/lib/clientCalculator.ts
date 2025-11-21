@@ -106,7 +106,7 @@ export function calculateCartOnClient(
 
     // 총 원가 계산
     cartItems.forEach((item) => {
-      totalOriginalPrice += item.price * item.quantity;
+      totalOriginalPrice += (item.price ?? 0) * item.quantity;
     });
 
     // 각 할인별로 처리
@@ -138,7 +138,7 @@ export function calculateCartOnClient(
       if (eligibleItems.length === 0) return;
 
       // 비싼 상품부터 적용하기 위해 가격 기준 내림차순 정렬
-      const sortedItems = [...eligibleItems].sort((a, b) => b.price - a.price);
+      const sortedItems = [...eligibleItems].sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
 
       // 한도만큼만 적용
       let remainingLimit = usageLimit;
@@ -155,7 +155,7 @@ export function calculateCartOnClient(
         if (remainingLimit <= 0) break;
 
         const applyCount = Math.min(item.quantity, remainingLimit);
-        const discountPerItem = Math.floor(item.price * ((discount.config as any).percentage / 100));
+        const discountPerItem = Math.floor((item.price ?? 0) * ((discount.config as any).percentage / 100));
         const discountForThisItem = discountPerItem * applyCount;
 
         totalDiscount += discountForThisItem;
@@ -164,8 +164,8 @@ export function calculateCartOnClient(
 
         // 적용된 상품 정보 저장
         appliedItems.push({
-          productName: item.name,
-          price: item.price,
+          productName: item.name ?? '알 수 없는 상품',
+          price: item.price ?? 0,
           quantity: applyCount,
           discountAmount: discountForThisItem
         });
@@ -207,6 +207,7 @@ export function calculateCartOnClient(
       const representativeItem = cartItems[0];
       const calculationItems = [{
         productId: 'cart-total',
+        productBarcode: 'cart-total',
         quantity: 1,
         unitPrice: baseAmount,
         productCategory: representativeItem.categoryTags?.[0]?.name || '',
@@ -235,7 +236,7 @@ export function calculateCartOnClient(
             discountId: String(step.discountId),
             name: step.discountName,
             amount: step.discountAmount,
-            calculationDetails: step.calculationDetails,
+            calculationDetails: step.calculationDetails ?? '',
             afterAmount: currentTotalAmount,
           });
         });

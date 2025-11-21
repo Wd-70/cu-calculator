@@ -90,7 +90,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
             const latestProduct = data.data[0];
 
             // 가격 변경 감지
-            if (latestProduct.price !== item.price) {
+            if (item.price !== undefined && latestProduct.price !== item.price) {
               changes[item.barcode] = {
                 oldPrice: item.price,
                 newPrice: latestProduct.price,
@@ -1030,14 +1030,14 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="flex justify-between text-lg">
                       <span className="text-gray-700">총 상품금액</span>
                       <span className="font-bold text-gray-900">
-                        {cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}원
+                        {cart.items.reduce((sum, item) => sum + ((item.price ?? 0) * item.quantity), 0).toLocaleString()}원
                       </span>
                     </div>
                     <div className="border-t-2 border-purple-300 pt-4 mt-4">
                       <div className="flex justify-between items-center">
                         <span className="text-2xl font-bold text-[#7C3FBF]">최종 결제금액</span>
                         <span className="text-4xl font-bold text-[#7C3FBF]">
-                          {cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}원
+                          {cart.items.reduce((sum, item) => sum + ((item.price ?? 0) * item.quantity), 0).toLocaleString()}원
                         </span>
                       </div>
                     </div>
@@ -1157,7 +1157,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                     {cart.items[selectedItemIndex].name}
                   </h2>
                   <p className="text-xl font-bold text-purple-600">
-                    {cart.items[selectedItemIndex].price.toLocaleString()}원
+                    {cart.items[selectedItemIndex].price?.toLocaleString() ?? '-'}원
                   </p>
                 </div>
 
@@ -1220,7 +1220,7 @@ export default function CartDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="text-right">
                       <p className="text-sm text-gray-600">소계</p>
                       <p className="text-2xl font-bold text-purple-600">
-                        {(cart.items[selectedItemIndex].price * cart.items[selectedItemIndex].quantity).toLocaleString()}원
+                        {((cart.items[selectedItemIndex].price ?? 0) * cart.items[selectedItemIndex].quantity).toLocaleString()}원
                       </p>
                     </div>
                   </div>

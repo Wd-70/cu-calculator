@@ -12,7 +12,8 @@
       "Bash(git -C \"F:\\Data\\Git\\Nextjs\\cu-discount-calculator\" log --oneline -20)",
       "WebSearch",
       "Bash(git commit:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []

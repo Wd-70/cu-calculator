@@ -171,7 +171,7 @@ export default function PromotionDetailModal({
               onUpdate(updatedPromotion);
             }
           }}
-          userAddress={userAddress}
+          userAddress={userAddress ?? null}
         />
       )}
 

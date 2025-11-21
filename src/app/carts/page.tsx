@@ -407,7 +407,7 @@ export default function CartsPage() {
     });
   };
 
-  const totalOriginalPrice = selectedCart?.items.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+  const totalOriginalPrice = selectedCart?.items.reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0) || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -644,8 +644,8 @@ export default function CartsPage() {
           product={{
             _id: selectedProductForDetail.barcode, // barcode를 _id로 사용
             barcode: selectedProductForDetail.barcode,
-            name: selectedProductForDetail.name,
-            price: selectedProductForDetail.price,
+            name: selectedProductForDetail.name ?? '알 수 없는 상품',
+            price: selectedProductForDetail.price ?? 0,
             brand: selectedProductForDetail.brand,
             imageUrl: selectedProductForDetail.imageUrl,
             categoryTags: selectedProductForDetail.categoryTags || (

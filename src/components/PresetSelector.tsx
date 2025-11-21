@@ -104,7 +104,7 @@ export default function PresetSelector({ onSelect, discounts, className = '' }: 
                 저장된 프리셋 ({presets.length})
               </div>
               {presets.map((preset) => {
-                const discountNames = getDiscountNames(preset.discountIds);
+                const discountNames = getDiscountNames(preset.discountIds ?? []);
                 return (
                   <button
                     key={String(preset._id)}
@@ -139,7 +139,7 @@ export default function PresetSelector({ onSelect, discounts, className = '' }: 
                             </span>
                           )}
                         </div>
-                        {preset.usageCount > 0 && (
+                        {(preset.usageCount ?? 0) > 0 && (
                           <div className="text-xs text-gray-500 mt-2">
                             사용 횟수: {preset.usageCount}회
                           </div>

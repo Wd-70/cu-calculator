@@ -1,0 +1,27 @@
+{
+  "sessionId": "session_2025-11-20T08-53-43",
+  "sessionName": "코카)스프라이트P1.5L (8801094202408)",
+  "createdAt": "2025-11-20T08:54:09.730Z",
+  "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+  "photos": [
+    {
+      "filename": "photo_2025-11-20T08-54-08-580Z.jpg",
+      "uploadedAt": "2025-11-20T08:54:09.730Z",
+      "status": "uploaded"
+    },
+    {
+      "filename": "photo_2025-11-21T09-31-58-165Z.jpg",
+      "uploadedAt": "2025-11-21T09:31:59.003Z",
+      "status": "uploaded"
+    },
+    {
+      "filename": "photo_2025-11-21T09-40-57-043Z.jpg",
+      "uploadedAt": "2025-11-21T09:40:57.690Z",
+      "status": "uploaded"
+    }
+  ],
+  "conversionStatus": "pending",
+  "lastUpdated": "2025-11-21T09:40:57.690Z",
+  "productBarcode": "8801097235670",
+  "productName": "동아)나랑드파인P500ml"
+}

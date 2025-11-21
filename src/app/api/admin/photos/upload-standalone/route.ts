@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
     const sessionId = formData.get('sessionId') as string;
     const sessionName = formData.get('sessionName') as string;
     const accountAddress = formData.get('accountAddress') as string;
+    const productBarcode = formData.get('productBarcode') as string;
+    const productName = formData.get('productName') as string;
 
     // 관리자 권한 확인
     if (!isAdmin(accountAddress)) {
@@ -52,11 +54,21 @@ export async function POST(request: NextRequest) {
       metadata = {
         sessionId: sessionId,
         sessionName: sessionName || `세션 ${sessionId}`,
+        productBarcode: productBarcode || null,
+        productName: productName || null,
         createdAt: new Date().toISOString(),
         createdBy: accountAddress,
         photos: [],
         conversionStatus: 'pending',
       };
+    }
+
+    // 기존 metadata가 있어도 상품 정보 업데이트 (최신 정보로 유지)
+    if (productBarcode) {
+      metadata.productBarcode = productBarcode;
+    }
+    if (productName) {
+      metadata.productName = productName;
     }
 
     // 사진 정보 추가

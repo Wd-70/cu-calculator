@@ -580,8 +580,11 @@ ${filteredPhotos.map((p, idx) => {
 ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
 `;
   } else {
+    const productInfo = (p as any).productName && (p as any).productBarcode
+      ? `${(p as any).productName} (${(p as any).productBarcode})`
+      : p.sessionName;
     return `
-### ${idx + 1}. ${p.sessionName} (독립 촬영)
+### ${idx + 1}. ${productInfo} (독립 촬영)
 - Session ID: ${p.sessionId}
 - 사진 개수: ${p.photoCount}장
 - 사진 위치: data/photos/${p.sessionId}/
@@ -889,17 +892,21 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
                     </button>
                   </div>
                   <div className="space-y-2">
-                    {scannedProducts.filter(p => showInactiveProducts || p.isActive).map((product, index) => (
+                    {scannedProducts.filter(p => showInactiveProducts || p.isActive).map((product) => {
+                      // 원본 배열에서의 인덱스를 찾기
+                      const originalIndex = scannedProducts.findIndex(p => p.barcode === product.barcode);
+
+                      return (
                       <div
                         key={product.barcode}
                         className={`p-4 border rounded-lg transition-all ${
                           !product.isActive ? 'opacity-60 bg-gray-50' : ''
                         } ${
-                          selectedProductIndex === index && product.isActive
+                          selectedProductIndex === originalIndex && product.isActive
                             ? 'border-purple-500 bg-purple-50 shadow-md cursor-pointer'
                             : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50 cursor-pointer'
                         }`}
-                        onClick={() => product.isActive && handleSelectProduct(index)}
+                        onClick={() => product.isActive && handleSelectProduct(originalIndex)}
                       >
                         <div className="flex items-center gap-4">
                           {/* 상품 이미지 */}
@@ -963,7 +970,7 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
                         </div>
 
                         {/* 선택된 상품의 바코드 표시 */}
-                        {selectedProductIndex === index && product.isActive && (
+                        {selectedProductIndex === originalIndex && product.isActive && (
                           <div className="mt-4 p-4 bg-white rounded-lg border-2 border-purple-300">
                             <h6 className="text-sm font-semibold text-purple-900 mb-3 text-center">
                               ⬇️ POS에서 이 바코드를 스캔하세요 ⬇️
@@ -992,7 +999,8 @@ ${p.photos.map(photo => `  - ${photo.filename}`).join('\n')}
                           </div>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

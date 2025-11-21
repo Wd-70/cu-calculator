@@ -125,7 +125,7 @@ export default function AlternativeCombinations({
 
                       // 현재 프리셋의 결제수단/구독 확인
                       const hasPaymentMethod = currentPreset?.paymentMethods && currentPreset.paymentMethods.length > 0;
-                      const currentPaymentMethods = new Set(currentPreset?.paymentMethods?.map(pm => pm.type) || []);
+                      const currentPaymentMethods = new Set(currentPreset?.paymentMethods?.map(pm => pm.method) || []);
                       const currentSubscriptions = new Set(currentPreset?.subscriptions || []);
 
                       combination.discountBreakdown.forEach((breakdown) => {

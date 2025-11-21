@@ -21,7 +21,7 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, on
   }
 
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = items.reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -66,9 +66,9 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, on
 
                 <div className="flex items-center gap-3">
                   <div className="text-sm font-semibold text-purple-600">
-                    {item.price.toLocaleString()}원
+                    {item.price?.toLocaleString() ?? '-'}원
                   </div>
-                  {item.latestPrice && item.latestPrice !== item.price && (
+                  {item.price !== undefined && item.latestPrice && item.latestPrice !== item.price && (
                     <div className="text-xs text-orange-600">
                       가격 변동: {item.latestPrice.toLocaleString()}원
                     </div>
@@ -116,7 +116,7 @@ export default function CartItemList({ items, onUpdateQuantity, onRemoveItem, on
                   </div>
 
                   <div className="text-sm text-gray-600">
-                    = {(item.price * item.quantity).toLocaleString()}원
+                    = {((item.price ?? 0) * item.quantity).toLocaleString()}원
                   </div>
 
                   <button

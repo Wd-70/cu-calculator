@@ -1,0 +1,17 @@
+{
+  "sessionId": "session_2025-11-21T09-42-14",
+  "sessionName": "1945레몬콜라350 (8801223014629)",
+  "productBarcode": "8801223014629",
+  "productName": "1945레몬콜라350",
+  "createdAt": "2025-11-21T09:42:30.874Z",
+  "createdBy": "0x0Fe781c0D8e903b41564C541c8845efCE279CC42",
+  "photos": [
+    {
+      "filename": "photo_2025-11-21T09-42-30-140Z.jpg",
+      "uploadedAt": "2025-11-21T09:42:30.874Z",
+      "status": "uploaded"
+    }
+  ],
+  "conversionStatus": "pending",
+  "lastUpdated": "2025-11-21T09:42:30.874Z"
+}

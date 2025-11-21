@@ -45,6 +45,8 @@ export async function GET(request: NextRequest) {
               sessions.push({
                 sessionId: metadata.sessionId,
                 sessionName: metadata.sessionName,
+                productBarcode: metadata.productBarcode || null,
+                productName: metadata.productName || null,
                 photoCount: metadata.photos?.length || 0,
                 createdAt: metadata.createdAt,
                 lastUpdated: metadata.lastUpdated || metadata.createdAt,

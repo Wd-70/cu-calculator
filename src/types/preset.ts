@@ -122,4 +122,6 @@ export interface UpdatePresetInput {
   paymentMethods?: PaymentMethodInfo[];
   subscriptions?: UserSubscription[];
   hasQRScanner?: boolean;
+  usageCount?: number;
+  lastUsedAt?: Date;
 }

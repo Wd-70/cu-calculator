@@ -78,6 +78,6 @@ export function getCurrentDatabaseType(): DatabaseType {
 export default getDatabase();
 
 // 편의 함수들
-export { IDatabase, DatabaseType } from './interfaces';
+export type { IDatabase } from './interfaces';
 export { MemoryAdapter } from './memory.adapter';
 export { MongoDBAdapter } from './mongodb.adapter';

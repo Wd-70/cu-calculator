@@ -58,9 +58,9 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
   const handleAddProduct = (product: IProduct) => {
     const cartItem: ICartItem = {
       productId: product._id,
-      barcode: product.barcode,
-      name: product.name,
-      price: product.price,
+      barcode: product.barcode ?? '',
+      name: product.name ?? '알 수 없는 상품',
+      price: product.price ?? 0,
       quantity: 1,
       imageUrl: product.imageUrl,
       categoryTags: product.categoryTags,
@@ -68,7 +68,7 @@ export default function ProductSearch({ onAddItem, cartId }: ProductSearchProps)
       selectedDiscountIds: [],
       addedAt: new Date(),
       lastSyncedAt: new Date(),
-      latestPrice: product.price,
+      latestPrice: product.price ?? 0,
       priceCheckedAt: new Date(),
     };
 

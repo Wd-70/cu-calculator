@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     await db.connect();
 
     // 바코드가 있는 상품만 조회 (정렬 없이)
-    const filter = {
+    const filter: any = {
       barcode: { $exists: true, $nin: [null, ''] }
     };
 
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       brand: 1,
       imageUrl: 1,
       categoryTags: 1,
-    };
+    } as const;
 
     const products = await db.findProducts(filter, {
       projection,
