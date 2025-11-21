@@ -830,6 +830,7 @@ export function calculateDiscountForItem(
     // 크로스 프로모션 스텝 추가 (장바구니 레벨에서 계산된 것)
     if (crossPromotionDiscount > 0) {
       steps.push({
+        discountId: 'cross-promotion',
         category: 'promotion',
         discountName: '크로스 프로모션',
         baseAmount: originalPrice,
@@ -929,7 +930,7 @@ export function calculateDiscountForItem(
             isOriginalPriceBased: promotionAmount > 0 ? false : true,
             discountAmount: amount,
             amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
-            calculationDetails: `${(d.config as any).percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}${getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount.toLocaleString()}원)` : ''}`,
+            calculationDetails: `${(d.config as any).percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}${getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount?.toLocaleString()}원)` : ''}`,
           });
         }
       });
@@ -969,7 +970,7 @@ export function calculateDiscountForItem(
 
           const limitInfo = [];
           if (config.maxDiscountPerMonth) limitInfo.push(`월 최대 ${config.maxDiscountPerMonth.toLocaleString()}원`);
-          if (getConstraints(d).maxDiscountAmount) limitInfo.push(`최대 ${getConstraints(d).maxDiscountAmount.toLocaleString()}원`);
+          if (getConstraints(d).maxDiscountAmount) limitInfo.push(`최대 ${getConstraints(d).maxDiscountAmount?.toLocaleString()}원`);
           const limitText = limitInfo.length > 0 ? ` (${limitInfo.join(', ')})` : '';
 
           steps.push({
@@ -1021,7 +1022,7 @@ export function calculateDiscountForItem(
             isOriginalPriceBased: promotionAmount > 0 ? false : true,
             discountAmount: amount,
             amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
-            calculationDetails: detail + (getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount.toLocaleString()}원)` : ''),
+            calculationDetails: detail + (getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount?.toLocaleString()}원)` : ''),
           });
         }
       });
@@ -1062,7 +1063,7 @@ export function calculateDiscountForItem(
         isOriginalPriceBased: false,
         discountAmount: amount,
         amountAfterDiscount: currentAmount,
-        calculationDetails: detail + (getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount.toLocaleString()}원)` : ''),
+        calculationDetails: detail + (getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount?.toLocaleString()}원)` : ''),
       });
     }
   }
@@ -1112,7 +1113,7 @@ export function calculateDiscountForItem(
             isOriginalPriceBased: promotionAmount > 0 ? false : true,
             discountAmount: amount,
             amountAfterDiscount: adjustedBasePrice - amount,  // 개별 할인액만 차감
-            calculationDetails: `${(d.config as any).percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}${getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount.toLocaleString()}원)` : ''}`,
+            calculationDetails: `${(d.config as any).percentage}% 할인${promotionAmount > 0 ? ' (프로모션 적용 후 기준)' : ''}${getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount?.toLocaleString()}원)` : ''}`,
           });
         }
       });
@@ -1139,7 +1140,7 @@ export function calculateDiscountForItem(
         isOriginalPriceBased: false,
         discountAmount: amount,
         amountAfterDiscount: currentAmount,
-        calculationDetails: `${(d.config as any).percentage}% 할인 (누적 금액 기준)${getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount.toLocaleString()}원)` : ''}`,
+        calculationDetails: `${(d.config as any).percentage}% 할인 (누적 금액 기준)${getConstraints(d).maxDiscountAmount ? ` (최대 ${getConstraints(d).maxDiscountAmount?.toLocaleString()}원)` : ''}`,
       });
     }
   }
@@ -1482,7 +1483,7 @@ export function calculateCart(
 
     const limitInfo = [];
     if (config.maxDiscountPerMonth) limitInfo.push(`월 최대 ${config.maxDiscountPerMonth.toLocaleString()}원`);
-    if (getConstraints(discount).maxDiscountAmount) limitInfo.push(`최대 ${getConstraints(discount).maxDiscountAmount.toLocaleString()}원`);
+    if (getConstraints(discount).maxDiscountAmount) limitInfo.push(`최대 ${getConstraints(discount).maxDiscountAmount?.toLocaleString()}원`);
     const limitText = limitInfo.length > 0 ? ` (${limitInfo.join(', ')})` : '';
 
     // 장바구니 레벨 할인 결과 저장 (배분 없음)

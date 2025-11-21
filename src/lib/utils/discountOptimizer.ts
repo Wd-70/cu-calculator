@@ -296,12 +296,12 @@ function calculateCombinationDiscountWithFiltering(
     };
   }
 
-  const originalPrice = validCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const originalPrice = validCartItems.reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0);
 
   // 각 상품의 현재 가격 추적 (할인 적용 후)
   const itemPrices = new Map<string, number>();
   validCartItems.forEach(item => {
-    itemPrices.set(item.barcode, item.price * item.quantity);
+    itemPrices.set(item.barcode, (item.price ?? 0) * item.quantity);
   });
 
   const discountBreakdown: Array<{
@@ -368,7 +368,7 @@ function calculateCombinationDiscountWithFiltering(
 
       const totalApplicableAmount = applicableItems.reduce((sum, item) => {
         if (useOriginalPrice) {
-          return sum + (item.price * item.quantity);
+          return sum + ((item.price ?? 0) * item.quantity);
         } else {
           return sum + (itemPrices.get(item.barcode) || 0);
         }
@@ -392,7 +392,7 @@ function calculateCombinationDiscountWithFiltering(
       applicableItems.forEach((item, index) => {
         const currentPrice = itemPrices.get(item.barcode) || 0;
         const itemBaseAmount = useOriginalPrice
-          ? (item.price * item.quantity)
+          ? ((item.price ?? 0) * item.quantity)
           : currentPrice;
         const ratio = itemBaseAmount / totalApplicableAmount;
         let itemDiscount = Math.floor(discountAmount * ratio);
@@ -433,9 +433,9 @@ function calculateCombinationDiscountWithFiltering(
       const appliedProductsList = applicableItems.map(item => ({
         productId: String(item.productId),
         barcode: item.barcode,
-        name: item.name,
+        name: item.name ?? '알 수 없는 상품',
         quantity: item.quantity,
-        price: item.price,
+        price: item.price ?? 0,
       }));
 
       discountBreakdown.push({
@@ -481,15 +481,15 @@ function calculateCombinationDiscountWithFiltering(
 
       if (totalDiscountForThisRule > 0) {
         const totalApplicableAmount = actuallyAppliedItems.reduce((sum, item) =>
-          sum + item.price * item.quantity, 0
+          sum + (item.price ?? 0) * item.quantity, 0
         );
 
         const appliedProductsList = actuallyAppliedItems.map(item => ({
           productId: String(item.productId),
           barcode: item.barcode,
-          name: item.name,
+          name: item.name ?? '알 수 없는 상품',
           quantity: item.quantity,
-          price: item.price,
+          price: item.price ?? 0,
         }));
 
         discountBreakdown.push({
@@ -545,7 +545,7 @@ function calculateCombinationDiscountWithFiltering(
     let totalAfterPromotion = 0;
 
     const totalApplicableAmount = applicableItems.reduce((sum, item) => {
-      const itemOriginal = item.price * item.quantity;
+      const itemOriginal = (item.price ?? 0) * item.quantity;
       const currentPrice = itemPrices.get(item.barcode) || 0;
       const promotionDiscount = promotionDiscountMap.get(item.barcode) || 0;
       const afterPromotion = itemOriginal - promotionDiscount;
@@ -585,16 +585,16 @@ function calculateCombinationDiscountWithFiltering(
     if (cartDiscountAmount === 0) continue;
 
     const appliedProductsList = applicableItems.map(item => {
-      const itemOriginal = item.price * item.quantity;
+      const itemOriginal = (item.price ?? 0) * item.quantity;
       const promotionDiscount = promotionDiscountMap.get(item.barcode) || 0;
       const afterPromotion = itemOriginal - promotionDiscount;
 
       return {
         productId: String(item.productId),
         barcode: item.barcode,
-        name: item.name,
+        name: item.name ?? '알 수 없는 상품',
         quantity: item.quantity,
-        price: item.price,
+        price: item.price ?? 0,
         promotionDiscount: promotionDiscount > 0 ? promotionDiscount : undefined,
         itemAmountAfterPromotion: promotionDiscount > 0 ? afterPromotion : undefined,
       };
@@ -680,12 +680,12 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
     };
   }
 
-  const originalPrice = validCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const originalPrice = validCartItems.reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0);
 
   // 각 상품의 현재 가격 추적 (할인 적용 후)
   const itemPrices = new Map<string, number>();
   validCartItems.forEach(item => {
-    itemPrices.set(item.barcode, item.price * item.quantity);
+    itemPrices.set(item.barcode, (item.price ?? 0) * item.quantity);
   });
 
   const discountBreakdown: Array<{
@@ -748,7 +748,7 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
       const totalApplicableAmount = applicableItems.reduce((sum, item) => {
         if (useOriginalPrice) {
           // 정가 기준 (원가)
-          const originalPrice = item.price * item.quantity;
+          const originalPrice = (item.price ?? 0) * item.quantity;
           console.log(`  - ${item.name}: 원가 ${originalPrice}원 사용`);
           return sum + originalPrice;
         } else {
@@ -782,7 +782,7 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
 
         // 분배 비율 계산: 할인 기준 금액과 동일한 기준 사용
         const itemBaseAmount = useOriginalPrice
-          ? (item.price * item.quantity)
+          ? ((item.price ?? 0) * item.quantity)
           : currentPrice;
         const ratio = itemBaseAmount / totalApplicableAmount;
         let itemDiscount = Math.floor(discountAmount * ratio);
@@ -843,9 +843,9 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
       const appliedProductsList = applicableItems.map(item => ({
         productId: String(item.productId),
         barcode: item.barcode,
-        name: item.name,
+        name: item.name ?? '알 수 없는 상품',
         quantity: item.quantity,
-        price: item.price,
+        price: item.price ?? 0,
       }));
 
       discountBreakdown.push({
@@ -855,7 +855,6 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
         amount: actualDiscountTotal,
         baseAmount: totalApplicableAmount,
         appliedProducts: appliedProductsList,
-        totalQuantity: appliedProductsList.reduce((sum, p) => sum + p.quantity, 0), // 실제 총 수량
       });
 
     } else if (applicationMethod === 'per_item') {
@@ -885,8 +884,8 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
 
       const firstItem = applicableItems[0];
       // CartItem은 barcode 필드를 가짐, item wrapper는 item.productBarcode를 가짐
-      const isWrappedStructure = firstItem && firstItem.item && firstItem.item.productBarcode;
-      const isDirectStructure = firstItem && !firstItem.item && firstItem.barcode;
+      const isWrappedStructure = firstItem && (firstItem as any).item && (firstItem as any).item.productBarcode;
+      const isDirectStructure = firstItem && !(firstItem as any).item && firstItem.barcode;
 
       console.log(`\n[${discount.name}] applicableItems 구조 확인:`);
       console.log(`  총 ${applicableItems.length}개 항목`);
@@ -894,9 +893,9 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
 
       if (!isWrappedStructure && !isDirectStructure && firstItem) {
         console.log(`  첫 번째 항목 샘플:`, {
-          hasItem: !!firstItem.item,
+          hasItem: !!(firstItem as any).item,
           hasBarcode: !!firstItem.barcode,
-          hasProductBarcode: !!firstItem.productBarcode,
+          hasProductBarcode: !!(firstItem as any).productBarcode,
           keys: Object.keys(firstItem).slice(0, 5)
         });
       }
@@ -911,7 +910,7 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
             ...cartItem,
             productBarcode: cartItem.barcode, // barcode를 productBarcode로도 매핑
             productName: cartItem.name,
-            productCategories: cartItem.categories,
+            productCategories: cartItem.categoryTags?.map(tag => tag.name),
             productBrand: cartItem.brand
           },
           promotion: undefined
@@ -919,7 +918,7 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
         console.log(`  → CartItem[]을 래핑된 구조로 변환 (필드명 정규화)`);
       } else if (isWrappedStructure) {
         // 이미 올바른 구조
-        normalizedItems = applicableItems;
+        normalizedItems = applicableItems as any;
       } else {
         console.log(`  ⚠️ 알 수 없는 구조, 빈 배열로 초기화`);
         normalizedItems = [];
@@ -1152,15 +1151,15 @@ function calculateCombinationDiscountWithFiltering_LEGACY(
 
       if (totalDiscountForThisRule > 0) {
         const totalApplicableAmount = actuallyAppliedItems.reduce((sum, item) =>
-          sum + item.price * item.quantity, 0
+          sum + (item.price ?? 0) * item.quantity, 0
         );
 
         const appliedProductsList = actuallyAppliedItems.map(item => ({
           productId: String(item.productId),
           barcode: item.barcode,
-          name: item.name,
+          name: item.name ?? '알 수 없는 상품',
           quantity: item.quantity,
-          price: item.price,
+          price: item.price ?? 0,
         }));
 
         discountBreakdown.push({
@@ -1239,7 +1238,7 @@ function calculateCombinationDiscount(
       productBarcode: item.barcode,
       productName: item.name,
       quantity: item.quantity,
-      unitPrice: item.price,
+      unitPrice: item.price ?? 0,
       productCategory: item.category,
       productBrand: item.brand,
     })),
@@ -1418,7 +1417,7 @@ export function findOptimalDiscountCombination(
     productCategory: item.category,
     productCategories: item.categoryTags?.map(tag => tag.name) || [],
     productBrand: item.brand,
-    unitPrice: item.price,
+    unitPrice: item.price ?? 0,
     quantity: item.quantity,
   }));
 
@@ -1438,7 +1437,7 @@ export function findOptimalDiscountCombination(
   // ========================================================================
   console.log('\n[2단계] 할인규칙 필터링');
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = cartItems.reduce((sum, item) => sum + (item.price ?? 0) * item.quantity, 0);
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   // 프리셋으로 적용 가능한 할인규칙 필터링

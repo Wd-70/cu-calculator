@@ -157,12 +157,12 @@ const DiscountRuleSchema = new Schema<IDiscountRule>(
     // 위키형 시스템: 생성자 및 수정 이력
     createdBy: {
       type: String,
-      required: true,
+      required: false,
       index: true,
     },
     lastModifiedBy: {
       type: String,
-      required: true,
+      required: false,
     },
     modificationHistory: [{
       modifiedBy: String,

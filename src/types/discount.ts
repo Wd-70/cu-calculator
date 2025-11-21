@@ -399,6 +399,16 @@ export interface IDiscountRuleV2 {
   createdAt: Date;
   updatedAt: Date;
 
+  // 9. 위키형 시스템: 생성자 및 수정 이력
+  createdBy?: string;
+  lastModifiedBy?: string;
+  modificationHistory?: Array<{
+    modifiedBy: string;
+    modifiedAt: Date;
+    changes?: any;
+    comment?: string;
+  }>;
+
   // ===== 하위 호환성을 위한 레거시 필드 (새로운 코드에서는 사용 안 함) =====
   // 아래 필드들은 combinationRules와 constraints로 통합되었지만,
   // 기존 데이터베이스 호환성을 위해 유지
