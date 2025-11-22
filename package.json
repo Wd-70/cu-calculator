@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "@zxing/library": "^0.21.3",
     "ethers": "^6.15.0",
     "html5-qrcode": "^2.3.8",
