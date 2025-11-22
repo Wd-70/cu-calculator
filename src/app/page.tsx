@@ -64,7 +64,7 @@ export default function Home() {
             <span className="text-gray-700 font-semibold text-sm">AI 최적화 할인 계산</span>
           </div>
           <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            CU에서 쓴 돈,
+            CU에서 쓰는 돈,
             <br />
             <span className="bg-gradient-to-r from-[#7C3FBF] to-[#FF3B3B] bg-clip-text text-transparent">
               최대한 아껴드립니다
