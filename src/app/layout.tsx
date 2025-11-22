@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import UserInitializer from "@/components/UserInitializer";
 import { Analytics } from "@vercel/analytics/react";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -87,6 +88,7 @@ export default function RootLayout({
       >
         <UserInitializer />
         {children}
+        <PWAInstallPrompt />
         <Analytics />
       </body>
     </html>
