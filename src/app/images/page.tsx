@@ -8,71 +8,86 @@ export default function ImagesPage() {
   const icon512Ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    // OG Image (1200x630)
+    // OG Image (1200x630) - 개선된 디자인
     const ogCanvas = ogCanvasRef.current;
     if (ogCanvas) {
       const ctx = ogCanvas.getContext('2d');
       if (ctx) {
-        // 배경 그라디언트
-        const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
-        gradient.addColorStop(0, '#7C3FBF');
-        gradient.addColorStop(1, '#9B5FD9');
-        ctx.fillStyle = gradient;
+        // 배경 - 부드러운 그라디언트
+        const bgGradient = ctx.createLinearGradient(0, 0, 1200, 630);
+        bgGradient.addColorStop(0, '#7C3FBF');  // 보라
+        bgGradient.addColorStop(0.5, '#00D563'); // 초록
+        bgGradient.addColorStop(1, '#7C3FBF');   // 보라
+        ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, 1200, 630);
 
-        // 장식 요소 (반투명 원들)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        // 장식 원들 (더 큰 효과)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.beginPath();
-        ctx.arc(1000, 100, 200, 0, Math.PI * 2);
+        ctx.arc(950, 150, 250, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(200, 500, 150, 0, Math.PI * 2);
+        ctx.arc(250, 480, 200, 0, Math.PI * 2);
         ctx.fill();
 
-        // 흰색 카드 배경
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.roundRect(100, 100, 1000, 430, 30);
-        ctx.fill();
-
-        // CU 로고 박스
-        const logoGradient = ctx.createLinearGradient(150, 150, 250, 250);
-        logoGradient.addColorStop(0, '#7C3FBF');
-        logoGradient.addColorStop(1, '#9B5FD9');
-        ctx.fillStyle = logoGradient;
-        ctx.roundRect(150, 150, 100, 100, 20);
-        ctx.fill();
-
-        // CU 텍스트
+        // 메인 흰색 영역
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 60px Arial';
+        ctx.fillRect(0, 180, 1200, 270);
+
+        // 상단 보라색 바
+        ctx.fillStyle = '#7C3FBF';
+        ctx.fillRect(0, 180, 1200, 120);
+
+        // CU 로고 (큰 원형)
+        const logoGradient = ctx.createLinearGradient(80, 200, 180, 300);
+        logoGradient.addColorStop(0, '#00D563');
+        logoGradient.addColorStop(1, '#00B050');
+        ctx.fillStyle = logoGradient;
+        ctx.beginPath();
+        ctx.arc(130, 240, 60, 0, Math.PI * 2);
+        ctx.fill();
+
+        // CU 텍스트 (로고 안)
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 50px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('CU', 200, 200);
+        ctx.fillText('CU', 130, 240);
 
-        // 메인 제목
-        ctx.fillStyle = '#1F2937';
-        ctx.font = 'bold 72px Arial';
+        // 메인 타이틀 (흰색 배경 위)
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 70px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText('CU 할인계산기', 300, 210);
+        ctx.fillText('할인계산기', 220, 245);
 
-        // 부제목
-        ctx.fillStyle = '#6B7280';
-        ctx.font = '36px Arial';
-        ctx.fillText('편의점 할인을 똑똑하게 계산하세요', 150, 330);
+        // 부제목 (흰색 영역)
+        ctx.fillStyle = '#1F2937';
+        ctx.font = 'bold 48px Arial';
+        ctx.fillText('CU에서 쓰는 돈, 최대한 아껴드립니다', 80, 350);
 
-        // 기능 목록
-        ctx.font = '28px Arial';
-        ctx.fillStyle = '#4B5563';
-        const features = ['✓ 1+1, 2+1 프로모션', '✓ 쿠폰 & 카드할인', '✓ 통신사 할인', '✓ AI 최적화'];
-        features.forEach((feature, i) => {
-          ctx.fillText(feature, 150, 400 + i * 40);
+        // 기능 태그들 (초록색 박스)
+        const tags = ['1+1·2+1', '쿠폰할인', '카드할인', '통신사할인'];
+        let tagX = 80;
+        tags.forEach((tag) => {
+          // 태그 배경
+          ctx.fillStyle = '#00D563';
+          ctx.roundRect(tagX, 390, tag.length * 24 + 30, 45, 10);
+          ctx.fill();
+
+          // 태그 텍스트
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 26px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(tag, tagX + 15, 417);
+
+          tagX += tag.length * 24 + 45;
         });
 
-        // 하단 URL
-        ctx.fillStyle = '#7C3FBF';
-        ctx.font = 'bold 32px Arial';
+        // 하단 URL (초록색)
+        ctx.fillStyle = '#00D563';
+        ctx.font = 'bold 38px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('cu-calc.app', 600, 490);
+        ctx.fillText('cu-calc.app', 600, 530);
       }
     }
 
@@ -81,12 +96,19 @@ export default function ImagesPage() {
     if (icon192) {
       const ctx = icon192.getContext('2d');
       if (ctx) {
-        // 배경 그라디언트
+        // 배경 그라디언트 (보라 → 초록)
         const gradient = ctx.createLinearGradient(0, 0, 192, 192);
         gradient.addColorStop(0, '#7C3FBF');
-        gradient.addColorStop(1, '#9B5FD9');
+        gradient.addColorStop(0.5, '#00D563');
+        gradient.addColorStop(1, '#7C3FBF');
         ctx.fillStyle = gradient;
         ctx.roundRect(0, 0, 192, 192, 40);
+        ctx.fill();
+
+        // 장식 원
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.beginPath();
+        ctx.arc(150, 40, 60, 0, Math.PI * 2);
         ctx.fill();
 
         // CU 텍스트
@@ -107,18 +129,22 @@ export default function ImagesPage() {
     if (icon512) {
       const ctx = icon512.getContext('2d');
       if (ctx) {
-        // 배경 그라디언트
+        // 배경 그라디언트 (보라 → 초록)
         const gradient = ctx.createLinearGradient(0, 0, 512, 512);
         gradient.addColorStop(0, '#7C3FBF');
-        gradient.addColorStop(1, '#9B5FD9');
+        gradient.addColorStop(0.5, '#00D563');
+        gradient.addColorStop(1, '#7C3FBF');
         ctx.fillStyle = gradient;
         ctx.roundRect(0, 0, 512, 512, 100);
         ctx.fill();
 
-        // 장식 원
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        // 장식 원들
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.beginPath();
         ctx.arc(400, 100, 150, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(100, 400, 120, 0, Math.PI * 2);
         ctx.fill();
 
         // CU 텍스트
@@ -131,15 +157,6 @@ export default function ImagesPage() {
         // 부제
         ctx.font = 'bold 50px Arial';
         ctx.fillText('할인계산기', 256, 360);
-
-        // 작은 아이콘 (체크마크)
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(180, 420);
-        ctx.lineTo(220, 460);
-        ctx.lineTo(330, 380);
-        ctx.stroke();
       }
     }
   }, []);
