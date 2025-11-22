@@ -21,32 +21,27 @@ export default function ImagesPage() {
         ctx.fillStyle = '#7C3FBF';
         ctx.fillRect(0, 0, 450, 630);
 
-        // 장식 원들 (밝은 보라 - 반투명)
-        ctx.fillStyle = 'rgba(155, 95, 217, 0.4)';
+        // 장식 원들 (밝은 보라 - 반투명, 글자 뒤쪽에 배치)
+        ctx.fillStyle = 'rgba(155, 95, 217, 0.3)';
         ctx.beginPath();
-        ctx.arc(380, 120, 100, 0, Math.PI * 2);
+        ctx.arc(100, 550, 70, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(350, 500, 80, 0, Math.PI * 2);
+        ctx.arc(350, 80, 80, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(80, 80, 60, 0, Math.PI * 2);
+        ctx.arc(380, 550, 60, 0, Math.PI * 2);
         ctx.fill();
 
-        // CU 로고 영역 (흰색 둥근 카드)
+        // CU 텍스트 (대형, 흰색 - 직접 배경에)
         ctx.fillStyle = 'white';
-        ctx.roundRect(70, 180, 310, 270, 25);
-        ctx.fill();
-
-        // CU 텍스트 (대형, 보라색)
-        ctx.fillStyle = '#7C3FBF';
-        ctx.font = 'bold 130px Arial';
+        ctx.font = 'bold 150px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('CU', 225, 280);
+        ctx.fillText('CU', 225, 270);
 
-        // 할인계산기 텍스트
-        ctx.font = 'bold 36px Arial';
+        // 할인계산기 텍스트 (흰색)
+        ctx.font = 'bold 40px Arial';
         ctx.fillText('할인계산기', 225, 380);
 
         // 우측 영역 - 큰 타이틀
@@ -124,13 +119,13 @@ export default function ImagesPage() {
         ctx.roundRect(0, 0, 192, 192, 40);
         ctx.fill();
 
-        // 장식 원들 (밝은 보라 - 반투명)
+        // 장식 원들 (밝은 보라 - 반투명, 잘리지 않도록 안쪽에 배치)
         ctx.fillStyle = 'rgba(155, 95, 217, 0.4)';
         ctx.beginPath();
-        ctx.arc(150, 40, 50, 0, Math.PI * 2);
+        ctx.arc(140, 50, 40, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(30, 160, 35, 0, Math.PI * 2);
+        ctx.arc(50, 145, 35, 0, Math.PI * 2);
         ctx.fill();
 
         // CU 텍스트 (최대 크기)
@@ -156,13 +151,13 @@ export default function ImagesPage() {
         ctx.roundRect(0, 0, 512, 512, 100);
         ctx.fill();
 
-        // 장식 원들 (밝은 보라 - 반투명)
+        // 장식 원들 (밝은 보라 - 반투명, 잘리지 않도록 안쪽에 배치)
         ctx.fillStyle = 'rgba(155, 95, 217, 0.4)';
         ctx.beginPath();
-        ctx.arc(400, 100, 130, 0, Math.PI * 2);
+        ctx.arc(370, 130, 100, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(80, 430, 100, 0, Math.PI * 2);
+        ctx.arc(130, 390, 85, 0, Math.PI * 2);
         ctx.fill();
 
         // CU 텍스트 (최대 크기)
