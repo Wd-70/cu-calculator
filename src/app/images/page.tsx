@@ -8,154 +8,141 @@ export default function ImagesPage() {
   const icon512Ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    // OG Image (1200x630) - 개선된 디자인
+    // OG Image (1200x630) - 세련된 플랫 디자인
     const ogCanvas = ogCanvasRef.current;
     if (ogCanvas) {
       const ctx = ogCanvas.getContext('2d');
       if (ctx) {
-        // 배경 - 부드러운 그라디언트
-        const bgGradient = ctx.createLinearGradient(0, 0, 1200, 630);
-        bgGradient.addColorStop(0, '#7C3FBF');  // 보라
-        bgGradient.addColorStop(0.5, '#00D563'); // 초록
-        bgGradient.addColorStop(1, '#7C3FBF');   // 보라
-        ctx.fillStyle = bgGradient;
+        // 배경 - 밝은 회색
+        ctx.fillStyle = '#F9FAFB';
         ctx.fillRect(0, 0, 1200, 630);
 
-        // 장식 원들 (더 큰 효과)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.beginPath();
-        ctx.arc(950, 150, 250, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(250, 480, 200, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 메인 흰색 영역
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 180, 1200, 270);
-
-        // 상단 보라색 바
+        // 좌측 보라색 영역 (1/3)
         ctx.fillStyle = '#7C3FBF';
-        ctx.fillRect(0, 180, 1200, 120);
+        ctx.fillRect(0, 0, 400, 630);
 
-        // CU 로고 (큰 원형)
-        const logoGradient = ctx.createLinearGradient(80, 200, 180, 300);
-        logoGradient.addColorStop(0, '#00D563');
-        logoGradient.addColorStop(1, '#00B050');
-        ctx.fillStyle = logoGradient;
-        ctx.beginPath();
-        ctx.arc(130, 240, 60, 0, Math.PI * 2);
+        // 보라색 영역 위 장식 도형 (밝은 보라)
+        ctx.fillStyle = '#9B5FD9';
+        ctx.fillRect(320, 100, 80, 80);
+        ctx.fillRect(320, 450, 80, 80);
+
+        // CU 로고 박스 (흰색 사각형)
+        ctx.fillStyle = 'white';
+        ctx.roundRect(80, 200, 240, 230, 20);
         ctx.fill();
 
-        // CU 텍스트 (로고 안)
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 50px Arial';
+        // CU 텍스트 (보라색)
+        ctx.fillStyle = '#7C3FBF';
+        ctx.font = 'bold 100px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('CU', 130, 240);
+        ctx.fillText('CU', 200, 280);
 
-        // 메인 타이틀 (흰색 배경 위)
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 70px Arial';
+        // 할인 텍스트 (보라색)
+        ctx.font = 'bold 32px Arial';
+        ctx.fillText('할인계산기', 200, 370);
+
+        // 우측 흰색 영역 - 메인 타이틀
+        ctx.fillStyle = '#111827';
+        ctx.font = 'bold 68px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText('할인계산기', 220, 245);
+        ctx.fillText('CU에서 쓰는 돈,', 460, 200);
 
-        // 부제목 (흰색 영역)
-        ctx.fillStyle = '#1F2937';
-        ctx.font = 'bold 48px Arial';
-        ctx.fillText('CU에서 쓰는 돈, 최대한 아껴드립니다', 80, 350);
+        // 강조 텍스트 (보라색)
+        ctx.fillStyle = '#7C3FBF';
+        ctx.font = 'bold 68px Arial';
+        ctx.fillText('최대한 아껴드립니다', 460, 280);
 
-        // 기능 태그들 (초록색 박스)
-        const tags = ['1+1·2+1', '쿠폰할인', '카드할인', '통신사할인'];
-        let tagX = 80;
-        tags.forEach((tag) => {
-          // 태그 배경
-          ctx.fillStyle = '#00D563';
-          ctx.roundRect(tagX, 390, tag.length * 24 + 30, 45, 10);
-          ctx.fill();
+        // 구분선
+        ctx.fillStyle = '#E5E7EB';
+        ctx.fillRect(460, 330, 680, 3);
 
-          // 태그 텍스트
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 26px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(tag, tagX + 15, 417);
+        // 기능 목록 (아이콘 스타일)
+        ctx.fillStyle = '#6B7280';
+        ctx.font = '32px Arial';
 
-          tagX += tag.length * 24 + 45;
+        const features = [
+          '✓  1+1, 2+1 프로모션 자동 계산',
+          '✓  쿠폰, 카드할인 최적화',
+          '✓  통신사 할인 조합',
+          '✓  AI 기반 할인 추천'
+        ];
+
+        features.forEach((feature, i) => {
+          ctx.fillText(feature, 460, 390 + i * 48);
         });
 
-        // 하단 URL (초록색)
-        ctx.fillStyle = '#00D563';
-        ctx.font = 'bold 38px Arial';
+        // 하단 URL (보라색 박스)
+        ctx.fillStyle = '#7C3FBF';
+        ctx.roundRect(950, 540, 200, 60, 10);
+        ctx.fill();
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 28px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('cu-calc.app', 600, 530);
+        ctx.fillText('cu-calc.app', 1050, 575);
       }
     }
 
-    // Icon 192x192
+    // Icon 192x192 - 세련된 보라색 디자인
     const icon192 = icon192Ref.current;
     if (icon192) {
       const ctx = icon192.getContext('2d');
       if (ctx) {
-        // 배경 그라디언트 (보라 → 초록)
-        const gradient = ctx.createLinearGradient(0, 0, 192, 192);
-        gradient.addColorStop(0, '#7C3FBF');
-        gradient.addColorStop(0.5, '#00D563');
-        gradient.addColorStop(1, '#7C3FBF');
-        ctx.fillStyle = gradient;
+        // 배경 - 진한 보라색
+        ctx.fillStyle = '#7C3FBF';
         ctx.roundRect(0, 0, 192, 192, 40);
         ctx.fill();
 
-        // 장식 원
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.beginPath();
-        ctx.arc(150, 40, 60, 0, Math.PI * 2);
-        ctx.fill();
+        // 장식 사각형 (밝은 보라)
+        ctx.fillStyle = '#9B5FD9';
+        ctx.fillRect(135, 20, 40, 40);
+        ctx.fillRect(17, 132, 40, 40);
 
         // CU 텍스트
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 80px Arial';
+        ctx.font = 'bold 70px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('CU', 96, 96);
+        ctx.fillText('CU', 96, 85);
 
         // 작은 부제
-        ctx.font = 'bold 20px Arial';
-        ctx.fillText('할인', 96, 140);
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText('할인계산기', 96, 130);
       }
     }
 
-    // Icon 512x512
+    // Icon 512x512 - 세련된 보라색 디자인
     const icon512 = icon512Ref.current;
     if (icon512) {
       const ctx = icon512.getContext('2d');
       if (ctx) {
-        // 배경 그라디언트 (보라 → 초록)
-        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
-        gradient.addColorStop(0, '#7C3FBF');
-        gradient.addColorStop(0.5, '#00D563');
-        gradient.addColorStop(1, '#7C3FBF');
-        ctx.fillStyle = gradient;
+        // 배경 - 진한 보라색
+        ctx.fillStyle = '#7C3FBF';
         ctx.roundRect(0, 0, 512, 512, 100);
         ctx.fill();
 
-        // 장식 원들
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        // 장식 사각형들 (밝은 보라)
+        ctx.fillStyle = '#9B5FD9';
+        ctx.fillRect(370, 50, 100, 100);
+        ctx.fillRect(42, 362, 100, 100);
+
+        // 흰색 원형 배경 (로고용)
+        ctx.fillStyle = 'white';
         ctx.beginPath();
-        ctx.arc(400, 100, 150, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(100, 400, 120, 0, Math.PI * 2);
+        ctx.arc(256, 200, 120, 0, Math.PI * 2);
         ctx.fill();
 
-        // CU 텍스트
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 200px Arial';
+        // CU 텍스트 (보라색)
+        ctx.fillStyle = '#7C3FBF';
+        ctx.font = 'bold 120px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('CU', 256, 220);
+        ctx.fillText('CU', 256, 200);
 
-        // 부제
-        ctx.font = 'bold 50px Arial';
+        // 부제 (흰색)
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 48px Arial';
         ctx.fillText('할인계산기', 256, 360);
       }
     }
